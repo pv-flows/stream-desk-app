@@ -4,8 +4,8 @@
 - [x] Inicializar estrutura base do repositório e regras globais.
 - [x] Inicializar estrutura de projeto do **Desktop** (`desktop/`) com Tauri (React + TypeScript) e dependências WebSocket (`axum`, `tokio`, `serde`).
 - [x] Inicializar estrutura de projeto do **Mobile** (`mobile/`) com React Native / Expo (TypeScript).
-- [ ] Configurar persistência SQLite no **Desktop** (`desktop/`).
-- [ ] Definir contrato de eventos e tipos compartilhados TypeScript/Rust para a comunicação WebSocket.
+- [x] Configurar persistência SQLite no **Desktop** (`desktop/src-tauri/src/db.rs` com `rusqlite`).
+- [x] Definir contrato de eventos e tipos compartilhados TypeScript/Rust para a comunicação WebSocket (`get_layout` / `sync_layout`).
 
 ## 2. Comunicação & Rede (LAN)
 - [x] Implementar servidor WebSocket com Axum no Tauri (`0.0.0.0:8080/ws`) com resposta de eco de comandos.
@@ -16,7 +16,7 @@
 ## 3. Funcionalidades Core (Gratuitas)
 - [x] Execução de atalhos globais, macros e abertura de aplicativos no Desktop (integração Enigo para teclas multimídia e crate Open para abrir calculadora).
 - [x] Renderização de grade de botões interativos no Mobile (`DeckGrid` e `DeckButton`) mapeados para macros do sistema.
-- [ ] Persistência de perfis e botões em SQLite.
+- [x] Persistência de perfis e botões em SQLite (`streamdesk.db` com seed automático e sincronização dinâmica via WebSocket).
 
 ## 4. Recursos Pro (Freemium) & Futuros
 - [x] Motor de temas base (`default`, `ios`, `windows`, `gamer`) com Zustand (`themeStore`) no Mobile.

@@ -1,28 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { DeckButtonItem } from '../components/DeckButton';
-import { DeckGrid } from '../components/DeckGrid';
+import { DeckButton, DeckButtonItem } from '../components/DeckButton';
 import { ConnectionStatus, websocketService } from '../services/websocketService';
 import { useThemeStore } from '../store/themeStore';
 import { ThemeName } from '../theme/colors';
 
-const INITIAL_BUTTONS: DeckButtonItem[] = [
-  { id: '1', label: 'Vol +', action: 'vol_up', icon: '🔊' },
-  { id: '2', label: 'Vol -', action: 'vol_down', icon: '🔉' },
-  { id: '3', label: 'Play/Pause', action: 'play_pause', icon: '⏯️' },
-  { id: '4', label: 'Calculadora', action: 'open_calc', icon: '🧮' },
-];
-
 const THEME_OPTIONS: ThemeName[] = ['default', 'ios', 'windows', 'gamer'];
 
 export const HomeScreen: React.FC = () => {
-  const { theme, palette, setTheme } = useThemeStore();
+  const { theme, palette, buttons, setTheme } = useThemeStore();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [lastAction, setLastAction] = useState<string>('Aguardando comando...');
   const [serverReply, setServerReply] = useState<string>('');
 
   useEffect(() => {
-    // Inicia conexão WebSocket com o host Desktop na LAN
+    // Inicia conexão WebSocket com o host Desktop na LAN (ao abrir, dispara get_layout)
     websocketService.connect();
 
     const unsubscribeStatus = websocketService.onStatusChange((status) => {
@@ -33,7 +25,9 @@ export const HomeScreen: React.FC = () => {
     });
 
     const unsubscribeMessage = websocketService.onMessage((data) => {
-      setServerReply(`Resposta PC: ${data.message}`);
+      if (data.message) {
+        setServerReply(`Resposta PC: ${data.message}`);
+      }
     });
 
     return () => {
@@ -44,12 +38,11 @@ export const HomeScreen: React.FC = () => {
   }, []);
 
   const handleButtonPress = (item: DeckButtonItem) => {
-    setLastAction(`Comando: ${item.label} (${item.action})`);
+    setLastAction(`Comando: ${item.label} (${item.action_name})`);
 
-    // Envia o comando via WebSocket para o servidor Desktop
-    const sent = websocketService.sendCommand(item.action, item.label);
+    const sent = websocketService.sendCommand(item.action_name, item.label);
     if (!sent) {
-      setServerReply('Aviso: WebSocket desconectado (ajuste o IP em websocketService.ts)');
+      setServerReply('Aviso: WebSocket desconectado');
     }
   };
 
@@ -85,7 +78,17 @@ export const HomeScreen: React.FC = () => {
       </View>
 
       <View style={styles.gridContainer}>
-        <DeckGrid buttons={INITIAL_BUTTONS} onButtonPress={handleButtonPress} />
+        {buttons.length > 0 ? (
+          <View style={styles.grid}>
+            {buttons.map((item) => (
+              <DeckButton key={String(item.id)} item={item} onPress={handleButtonPress} />
+            ))}
+          </View>
+        ) : (
+          <Text style={[styles.emptyText, { color: palette.textColor }]}>
+            Sincronizando layout de botões com o PC...
+          </Text>
+        )}
       </View>
 
       <View style={[styles.footer, { borderTopColor: palette.borderColor }]}>
@@ -170,6 +173,21 @@ const styles = StyleSheet.create({
   gridContainer: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    opacity: 0.7,
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
   footer: {
     paddingVertical: 16,

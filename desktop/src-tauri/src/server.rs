@@ -1,3 +1,4 @@
+use crate::db;
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -48,14 +49,36 @@ async fn handle_socket(mut socket: WebSocket) {
             Ok(Message::Text(text)) => {
                 println!("Comando recebido: {}", text);
 
-                let mut action_name = text.to_string();
-
-                if let Ok(cmd) = serde_json::from_str::<ClientCommand>(&text) {
-                    action_name = cmd.action.clone();
-                    execute_macro(&cmd.action);
+                let action_name = if let Ok(cmd) = serde_json::from_str::<ClientCommand>(&text) {
+                    cmd.action
                 } else {
-                    execute_macro(text.trim());
+                    text.trim().to_string()
+                };
+
+                if action_name == "get_layout" {
+                    match db::get_all_buttons() {
+                        Ok(buttons) => {
+                            let response = serde_json::json!({
+                                "status": "ok",
+                                "action": "sync_layout",
+                                "payload": buttons,
+                                "message": "Layout sincronizado com sucesso"
+                            })
+                            .to_string();
+
+                            if let Err(err) = socket.send(Message::Text(response.into())).await {
+                                eprintln!("[Server] Erro ao enviar sync_layout: {:?}", err);
+                                break;
+                            }
+                        }
+                        Err(err) => {
+                            eprintln!("[DB] Erro ao buscar botões: {:?}", err);
+                        }
+                    }
+                    continue;
                 }
+
+                execute_macro(&action_name);
 
                 let response = serde_json::json!({
                     "status": "ok",

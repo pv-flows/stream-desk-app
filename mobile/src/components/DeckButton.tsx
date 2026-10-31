@@ -1,13 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { useThemeStore } from '../store/themeStore';
+import { DeckButtonItem, useThemeStore } from '../store/themeStore';
 
-export interface DeckButtonItem {
-  id: string;
-  label: string;
-  action: string;
-  icon?: string;
-}
+export { DeckButtonItem };
 
 interface DeckButtonProps {
   item: DeckButtonItem;
@@ -16,6 +11,7 @@ interface DeckButtonProps {
 
 export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
   const palette = useThemeStore((state) => state.palette);
+  const accentColor = item.color || palette.highlight;
 
   return (
     <Pressable
@@ -24,13 +20,13 @@ export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
         styles.button,
         {
           backgroundColor: palette.buttonBackground,
-          borderColor: pressed ? palette.highlight : palette.borderColor,
+          borderColor: pressed ? accentColor : item.color || palette.borderColor,
           transform: [{ scale: pressed ? 0.94 : 1 }],
         },
       ]}
     >
       {item.icon ? (
-        <Text style={[styles.icon, { color: palette.highlight }]}>{item.icon}</Text>
+        <Text style={[styles.icon, { color: accentColor }]}>{item.icon}</Text>
       ) : null}
       <Text style={[styles.label, { color: palette.textColor }]} numberOfLines={2}>
         {item.label}
@@ -60,4 +56,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

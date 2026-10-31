@@ -8,6 +8,9 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 - Fixação explícita do endereço WebSocket da máquina host (`ws://192.168.1.97:8080/ws`) em `mobile/src/services/websocketService.ts`.
 
 ### Added
+- Persistência local em SQLite no Desktop (`desktop/src-tauri/src/db.rs`) com `rusqlite` (`bundled`), criando o banco `streamdesk.db`, tabela `buttons` e seed inicial automático dos 4 botões padrão.
+- Rota de sincronização no WebSocket do Desktop (`server.rs`): tratamento da action `get_layout` retornando a lista de botões do SQLite no payload de `sync_layout`.
+- Estado dinâmico de botões no Mobile (`themeStore.ts` / `deckStore.ts`), disparo automático de `get_layout` no `onopen` do `websocketService.ts` e renderização dinâmica via `.map()` na `HomeScreen.tsx`.
 - Integração das crates `enigo` e `open` no Desktop (`desktop/src-tauri/src/server.rs`) para controle de teclas de multimídia (`vol_up`, `vol_down`, `play_pause`) e abertura de aplicativos do sistema (`open_calc`).
 - Mapeamento de 4 botões funcionais na `HomeScreen.tsx` do Mobile conectando as ações `vol_up`, `vol_down`, `play_pause` e `open_calc` ao servidor WebSocket do Desktop.
 - Script de inicialização automática `iniciar.bat` na raiz do monorepo para iniciar simultaneamente o servidor Desktop (Tauri) e o app Mobile (Expo).

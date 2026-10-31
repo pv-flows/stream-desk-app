@@ -1,11 +1,15 @@
+import { DeckButtonItem, useThemeStore } from '../store/themeStore';
+
 export interface CommandMessage {
   action: string;
   payload?: string;
 }
 
 export interface ServerResponse {
-  status: string;
-  message: string;
+  status?: string;
+  action?: string;
+  payload?: DeckButtonItem[] | string;
+  message?: string;
 }
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -20,7 +24,10 @@ class WebSocketService {
   private currentStatus: ConnectionStatus = 'disconnected';
 
   public connect(url: string = this.defaultUrl): void {
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+    if (
+      this.socket &&
+      (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)
+    ) {
       console.log('[WebSocket] Conexão já em andamento ou ativa.');
       return;
     }
@@ -34,12 +41,24 @@ class WebSocketService {
       this.socket.onopen = () => {
         this.setStatus('connected');
         console.log('[WebSocket] Conectado com sucesso ao servidor desktop!');
+        // Solicita automaticamente o layout de botões persistido no SQLite do PC
+        this.sendCommand('get_layout');
       };
 
       this.socket.onmessage = (event) => {
         try {
           const parsed: ServerResponse = JSON.parse(event.data);
           console.log('[WebSocket] Resposta do servidor recebida:', parsed);
+
+          if (parsed.action === 'sync_layout' && parsed.payload) {
+            const buttons: DeckButtonItem[] =
+              typeof parsed.payload === 'string' ? JSON.parse(parsed.payload) : parsed.payload;
+
+            if (Array.isArray(buttons)) {
+              useThemeStore.getState().setButtons(buttons);
+            }
+          }
+
           this.notifyMessage(parsed);
         } catch (err) {
           console.warn('[WebSocket] Mensagem não formatada em JSON:', event.data);
@@ -113,4 +132,3 @@ class WebSocketService {
 }
 
 export const websocketService = new WebSocketService();
-
