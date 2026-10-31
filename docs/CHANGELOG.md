@@ -4,6 +4,8 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Integração das crates `enigo` e `open` no Desktop (`desktop/src-tauri/src/server.rs`) para controle de teclas de multimídia (`vol_up`, `vol_down`, `play_pause`) e abertura de aplicativos do sistema (`open_calc`).
+- Mapeamento de 4 botões funcionais na `HomeScreen.tsx` do Mobile conectando as ações `vol_up`, `vol_down`, `play_pause` e `open_calc` ao servidor WebSocket do Desktop.
 - Script de inicialização automática `iniciar.bat` na raiz do monorepo para iniciar simultaneamente o servidor Desktop (Tauri) e o app Mobile (Expo).
 - Servidor WebSocket Axum no Desktop (`desktop/src-tauri/src/server.rs`) escutando na porta `8080` (`/ws`), processando mensagens de texto em JSON e respondendo com status de confirmação.
 - Serviço cliente WebSocket nativo no Mobile (`mobile/src/services/websocketService.ts`) com envio de comandos `{ action, payload }` e tratamento de status.

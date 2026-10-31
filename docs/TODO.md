@@ -14,8 +14,8 @@
 - [ ] Suporte a descoberta de rede (mDNS / Zeroconf).
 
 ## 3. Funcionalidades Core (Gratuitas)
-- [ ] Execução de atalhos globais, macros e abertura de aplicativos no Desktop.
-- [x] Renderização de grade de botões interativos no Mobile (`DeckGrid` e `DeckButton`).
+- [x] Execução de atalhos globais, macros e abertura de aplicativos no Desktop (integração Enigo para teclas multimídia e crate Open para abrir calculadora).
+- [x] Renderização de grade de botões interativos no Mobile (`DeckGrid` e `DeckButton`) mapeados para macros do sistema.
 - [ ] Persistência de perfis e botões em SQLite.
 
 ## 4. Recursos Pro (Freemium) & Futuros

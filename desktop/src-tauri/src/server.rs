@@ -4,7 +4,19 @@ use axum::{
     routing::get,
     Router,
 };
+use enigo::{
+    Direction::Click,
+    Enigo, Key, Keyboard as KeyboardControllable, Settings,
+};
+use serde::Deserialize;
 use std::net::SocketAddr;
+
+#[derive(Deserialize, Debug)]
+struct ClientCommand {
+    action: String,
+    #[allow(dead_code)]
+    payload: Option<String>,
+}
 
 pub async fn start_server() {
     let app = Router::new().route("/ws", get(ws_handler));
@@ -36,9 +48,18 @@ async fn handle_socket(mut socket: WebSocket) {
             Ok(Message::Text(text)) => {
                 println!("Comando recebido: {}", text);
 
+                let mut action_name = text.to_string();
+
+                if let Ok(cmd) = serde_json::from_str::<ClientCommand>(&text) {
+                    action_name = cmd.action.clone();
+                    execute_macro(&cmd.action);
+                } else {
+                    execute_macro(text.trim());
+                }
+
                 let response = serde_json::json!({
                     "status": "ok",
-                    "message": "Comando recebido pelo PC"
+                    "message": format!("Comando '{}' processado pelo PC", action_name)
                 })
                 .to_string();
 
@@ -60,3 +81,32 @@ async fn handle_socket(mut socket: WebSocket) {
     }
 }
 
+fn execute_macro(action: &str) {
+    match action {
+        "vol_up" => {
+            println!("[Macro] Executando Volume Up");
+            if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                let _ = enigo.key(Key::VolumeUp, Click);
+            }
+        }
+        "vol_down" => {
+            println!("[Macro] Executando Volume Down");
+            if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                let _ = enigo.key(Key::VolumeDown, Click);
+            }
+        }
+        "play_pause" => {
+            println!("[Macro] Executando Play/Pause");
+            if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                let _ = enigo.key(Key::MediaPlayPause, Click);
+            }
+        }
+        "open_calc" => {
+            println!("[Macro] Abrindo Calculadora");
+            open::that("calc").unwrap_or_default();
+        }
+        other => {
+            println!("[Macro] Comando não mapeado: {}", other);
+        }
+    }
+}

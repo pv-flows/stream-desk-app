@@ -7,15 +7,10 @@ import { useThemeStore } from '../store/themeStore';
 import { ThemeName } from '../theme/colors';
 
 const INITIAL_BUTTONS: DeckButtonItem[] = [
-  { id: '1', label: 'Ping Desktop', action: 'teste_ping', icon: '📡' },
-  { id: '2', label: 'Play / Pause', action: 'MEDIA_PLAY_PAUSE', icon: '⏯️' },
-  { id: '3', label: 'Next Track', action: 'MEDIA_NEXT', icon: '⏭️' },
-  { id: '4', label: 'OBS Scene 1', action: 'OBS_SCENE_1', icon: '🎬' },
-  { id: '5', label: 'Screenshot', action: 'SYSTEM_SCREENSHOT', icon: '📸' },
-  { id: '6', label: 'Open Browser', action: 'APP_OPEN_BROWSER', icon: '🌐' },
-  { id: '7', label: 'Volume +', action: 'AUDIO_VOL_UP', icon: '🔊' },
-  { id: '8', label: 'Volume -', action: 'AUDIO_VOL_DOWN', icon: '🔉' },
-  { id: '9', label: 'Lock PC', action: 'SYSTEM_LOCK', icon: '🔒' },
+  { id: '1', label: 'Vol +', action: 'vol_up', icon: '🔊' },
+  { id: '2', label: 'Vol -', action: 'vol_down', icon: '🔉' },
+  { id: '3', label: 'Play/Pause', action: 'play_pause', icon: '⏯️' },
+  { id: '4', label: 'Calculadora', action: 'open_calc', icon: '🧮' },
 ];
 
 const THEME_OPTIONS: ThemeName[] = ['default', 'ios', 'windows', 'gamer'];
