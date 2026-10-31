@@ -14,10 +14,11 @@
 
 ## 3. Funcionalidades Core (Gratuitas)
 - [ ] Execução de atalhos globais, macros e abertura de aplicativos no Desktop.
-- [ ] Renderização de grade de botões interativos no Mobile.
+- [x] Renderização de grade de botões interativos no Mobile (`DeckGrid` e `DeckButton`).
 - [ ] Persistência de perfis e botões em SQLite.
 
 ## 4. Recursos Pro (Freemium) & Futuros
-- [ ] Motor de temas e customização cosmética de botões.
+- [x] Motor de temas base (`default`, `ios`, `windows`, `gamer`) com Zustand (`themeStore`) no Mobile.
+- [ ] Customização cosmética avançada de botões.
 - [ ] Rastreamento de janela ativa para alternância automática de perfis.
 - [ ] Módulo experimental de webcam virtual via WebRTC.

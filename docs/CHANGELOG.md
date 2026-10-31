@@ -4,6 +4,8 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Implementação da UI do Mobile (`DeckGrid.tsx`, `DeckButton.tsx`) e gerenciamento de estado de temas com Zustand (`themeStore.ts` e paletas `default`, `ios`, `windows`, `gamer` em `colors.ts`).
+- Atualização da `HomeScreen.tsx` no Mobile com grade interativa de botões e seletor de temas no rodapé.
 - Inicialização do projeto Desktop (`desktop/`) com Tauri v2 e template React + TypeScript (`react-ts`).
 - Adição das dependências do servidor local Rust em `desktop/src-tauri/Cargo.toml`: `tokio` (`full`), `axum` (`ws`), `serde` e `serde_json`.
 - Estrutura base assíncrona (`tauri::async_runtime::spawn`) em `desktop/src-tauri/src/lib.rs` e `main.rs`, além da interface inicial em `desktop/src/App.tsx`.
