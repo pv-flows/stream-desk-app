@@ -3,6 +3,10 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Fixed
+- Atualização do `iniciar.bat` com `taskkill` para encerrar processos órfãos (`node.exe` e `desktop.exe`) antes de iniciar o Tauri e o Expo, resolvendo o erro `Port 1420 is already in use`.
+- Fixação explícita do endereço WebSocket da máquina host (`ws://192.168.1.97:8080/ws`) em `mobile/src/services/websocketService.ts`.
+
 ### Added
 - Integração das crates `enigo` e `open` no Desktop (`desktop/src-tauri/src/server.rs`) para controle de teclas de multimídia (`vol_up`, `vol_down`, `play_pause`) e abertura de aplicativos do sistema (`open_calc`).
 - Mapeamento de 4 botões funcionais na `HomeScreen.tsx` do Mobile conectando as ações `vol_up`, `vol_down`, `play_pause` e `open_calc` ao servidor WebSocket do Desktop.

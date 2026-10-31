@@ -10,11 +10,11 @@ export interface ServerResponse {
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+const HOST_WS_URL = 'ws://192.168.1.97:8080/ws';
+
 class WebSocketService {
   private socket: WebSocket | null = null;
-  // IP padrão provisório para desenvolvimento em rede local (LAN).
-  // Ajuste para o IP local da máquina host executando o Tauri (ex: ws://192.168.1.50:8080/ws)
-  private defaultUrl: string = 'ws://192.168.1.97:8080/ws';
+  private defaultUrl: string = HOST_WS_URL;
   private statusListeners: Array<(status: ConnectionStatus) => void> = [];
   private messageListeners: Array<(data: ServerResponse) => void> = [];
   private currentStatus: ConnectionStatus = 'disconnected';
