@@ -38,3 +38,4 @@ export const themes: Record<ThemeName, ThemePalette> = {
     borderColor: '#ff007f',
   },
 };
+

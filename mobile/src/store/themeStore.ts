@@ -16,3 +16,4 @@ export const useThemeStore = create<ThemeState>((set) => ({
       palette: themes[theme],
     }),
 }));
+

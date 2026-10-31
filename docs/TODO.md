@@ -8,8 +8,9 @@
 - [ ] Definir contrato de eventos e tipos compartilhados TypeScript/Rust para a comunicação WebSocket.
 
 ## 2. Comunicação & Rede (LAN)
-- [ ] Implementar servidor WebSocket no Tauri.
-- [ ] Implementar cliente WebSocket com reconexão automática e pareamento por QR Code no Expo.
+- [x] Implementar servidor WebSocket com Axum no Tauri (`0.0.0.0:8080/ws`) com resposta de eco de comandos.
+- [x] Implementar cliente WebSocket nativo no Mobile com envio de comandos JSON (`sendCommand`) e status de conexão.
+- [ ] Implementar reconexão automática contínua e pareamento por QR Code no Expo.
 - [ ] Suporte a descoberta de rede (mDNS / Zeroconf).
 
 ## 3. Funcionalidades Core (Gratuitas)
