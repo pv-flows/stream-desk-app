@@ -2,8 +2,9 @@
 
 ## 1. Fundação & Configuração Inicial
 - [x] Inicializar estrutura base do repositório e regras globais.
-- [ ] Inicializar estrutura de projeto do **Desktop** (`desktop/`) com Tauri + SQLite.
+- [x] Inicializar estrutura de projeto do **Desktop** (`desktop/`) com Tauri (React + TypeScript) e dependências WebSocket (`axum`, `tokio`, `serde`).
 - [x] Inicializar estrutura de projeto do **Mobile** (`mobile/`) com React Native / Expo (TypeScript).
+- [ ] Configurar persistência SQLite no **Desktop** (`desktop/`).
 - [ ] Definir contrato de eventos e tipos compartilhados TypeScript/Rust para a comunicação WebSocket.
 
 ## 2. Comunicação & Rede (LAN)
