@@ -10,6 +10,7 @@
 ## 2. Comunicação & Rede (LAN)
 - [x] Implementar servidor WebSocket com Axum no Tauri (`0.0.0.0:8080/ws`) com resposta de eco de comandos.
 - [x] Implementar cliente WebSocket nativo no Mobile com envio de comandos JSON (`sendCommand`) e status de conexão.
+- [x] Implementar broadcast em tempo real (`tokio::sync::broadcast`) para sincronizar alterações de layout (`sync_layout`) imediatamente ao criar/remover botões no Desktop.
 - [ ] Implementar reconexão automática contínua e pareamento por QR Code no Expo.
 - [ ] Suporte a descoberta de rede (mDNS / Zeroconf).
 

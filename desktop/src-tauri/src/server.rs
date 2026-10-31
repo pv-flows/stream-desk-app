@@ -1,6 +1,9 @@
 use crate::db;
 use axum::{
-    extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        State,
+    },
     response::IntoResponse,
     routing::get,
     Router,
@@ -11,6 +14,7 @@ use enigo::{
 };
 use serde::Deserialize;
 use std::net::SocketAddr;
+use tokio::sync::broadcast;
 
 #[derive(Deserialize, Debug)]
 struct ClientCommand {
@@ -19,8 +23,10 @@ struct ClientCommand {
     payload: Option<String>,
 }
 
-pub async fn start_server() {
-    let app = Router::new().route("/ws", get(ws_handler));
+pub async fn start_server(tx: broadcast::Sender<String>) {
+    let app = Router::new()
+        .route("/ws", get(ws_handler))
+        .with_state(tx);
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 
     println!("[Server] Servidor WebSocket iniciando em http://{}", addr);
@@ -37,68 +43,92 @@ pub async fn start_server() {
     }
 }
 
-async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(handle_socket)
+async fn ws_handler(
+    ws: WebSocketUpgrade,
+    State(tx): State<broadcast::Sender<String>>,
+) -> impl IntoResponse {
+    let rx = tx.subscribe();
+    ws.on_upgrade(move |socket| handle_socket(socket, rx))
 }
 
-async fn handle_socket(mut socket: WebSocket) {
+async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String>) {
     println!("[Server] Cliente conectado via WebSocket!");
 
-    while let Some(msg_result) = socket.recv().await {
-        match msg_result {
-            Ok(Message::Text(text)) => {
-                println!("Comando recebido: {}", text);
+    loop {
+        tokio::select! {
+            msg_option = socket.recv() => {
+                match msg_option {
+                    Some(Ok(Message::Text(text))) => {
+                        println!("Comando recebido: {}", text);
 
-                let action_name = if let Ok(cmd) = serde_json::from_str::<ClientCommand>(&text) {
-                    cmd.action
-                } else {
-                    text.trim().to_string()
-                };
+                        let action_name = if let Ok(cmd) = serde_json::from_str::<ClientCommand>(&text) {
+                            cmd.action
+                        } else {
+                            text.trim().to_string()
+                        };
 
-                if action_name == "get_layout" {
-                    match db::get_all_buttons() {
-                        Ok(buttons) => {
-                            let response = serde_json::json!({
-                                "status": "ok",
-                                "action": "sync_layout",
-                                "payload": buttons,
-                                "message": "Layout sincronizado com sucesso"
-                            })
-                            .to_string();
+                        if action_name == "get_layout" {
+                            match db::get_all_buttons() {
+                                Ok(buttons) => {
+                                    let response = serde_json::json!({
+                                        "status": "ok",
+                                        "action": "sync_layout",
+                                        "payload": buttons,
+                                        "message": "Layout sincronizado com sucesso"
+                                    })
+                                    .to_string();
 
-                            if let Err(err) = socket.send(Message::Text(response.into())).await {
-                                eprintln!("[Server] Erro ao enviar sync_layout: {:?}", err);
-                                break;
+                                    if let Err(err) = socket.send(Message::Text(response.into())).await {
+                                        eprintln!("[Server] Erro ao enviar sync_layout: {:?}", err);
+                                        break;
+                                    }
+                                }
+                                Err(err) => {
+                                    eprintln!("[DB] Erro ao buscar botões: {:?}", err);
+                                }
                             }
+                            continue;
                         }
-                        Err(err) => {
-                            eprintln!("[DB] Erro ao buscar botões: {:?}", err);
+
+                        execute_macro(&action_name);
+
+                        let response = serde_json::json!({
+                            "status": "ok",
+                            "message": format!("Comando '{}' processado pelo PC", action_name)
+                        })
+                        .to_string();
+
+                        if let Err(err) = socket.send(Message::Text(response.into())).await {
+                            eprintln!("[Server] Erro ao enviar resposta: {:?}", err);
+                            break;
                         }
                     }
-                    continue;
-                }
-
-                execute_macro(&action_name);
-
-                let response = serde_json::json!({
-                    "status": "ok",
-                    "message": format!("Comando '{}' processado pelo PC", action_name)
-                })
-                .to_string();
-
-                if let Err(err) = socket.send(Message::Text(response.into())).await {
-                    eprintln!("[Server] Erro ao enviar resposta: {:?}", err);
-                    break;
+                    Some(Ok(Message::Close(_))) | None => {
+                        println!("[Server] Conexão encerrada pelo cliente.");
+                        break;
+                    }
+                    Some(Ok(_)) => {}
+                    Some(Err(err)) => {
+                        eprintln!("[Server] Erro no recebimento do socket: {:?}", err);
+                        break;
+                    }
                 }
             }
-            Ok(Message::Close(_)) => {
-                println!("[Server] Conexão encerrada pelo cliente.");
-                break;
-            }
-            Ok(_) => {}
-            Err(err) => {
-                eprintln!("[Server] Erro no recebimento do socket: {:?}", err);
-                break;
+            broadcast_res = rx.recv() => {
+                match broadcast_res {
+                    Ok(msg) => {
+                        if let Err(err) = socket.send(Message::Text(msg.into())).await {
+                            eprintln!("[Server] Erro ao enviar broadcast para o cliente: {:?}", err);
+                            break;
+                        }
+                    }
+                    Err(broadcast::error::RecvError::Lagged(skipped)) => {
+                        eprintln!("[Server] Receptor de broadcast atrasado (pulou {} mensagens)", skipped);
+                    }
+                    Err(broadcast::error::RecvError::Closed) => {
+                        break;
+                    }
+                }
             }
         }
     }

@@ -8,6 +8,8 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 - Fixação explícita do endereço WebSocket da máquina host (`ws://192.168.1.97:8080/ws`) em `mobile/src/services/websocketService.ts`.
 
 ### Added
+- Canal de broadcast (`tokio::sync::broadcast::channel::<String>(100)`) gerenciado no estado global do Tauri (`lib.rs`) e integrado ao loop `tokio::select!` do servidor WebSocket Axum (`server.rs`).
+- Disparo automático de `sync_layout` em tempo real para todos os clientes Mobile conectados sempre que `add_button` ou `delete_button` são executados no Desktop.
 - Funções CRUD no SQLite (`add_button` e `delete_button` em `desktop/src-tauri/src/db.rs`) e exposição dos comandos Tauri (`get_buttons`, `add_button`, `delete_button` em `lib.rs`).
 - Interface de gerenciamento (CRUD) de botões no cliente React do Desktop (`desktop/src/App.tsx` e `App.css`) permitindo listar, criar (com seletor de cor e sugestões de macro) e excluir botões persistidos no SQLite.
 - Persistência local em SQLite no Desktop (`desktop/src-tauri/src/db.rs`) com `rusqlite` (`bundled`), criando o banco `streamdesk.db`, tabela `buttons` e seed inicial automático dos 4 botões padrão.
