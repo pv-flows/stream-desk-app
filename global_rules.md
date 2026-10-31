@@ -14,3 +14,11 @@
 - Não versionar chaves de API, senhas ou arquivos de ambiente (`.env`).
 - Manter `.gitignore` atualizado na raiz e nos subprojetos.
 - Escrever código legível, fortemente tipado (TypeScript) e manutenível.
+
+# Diretrizes Globais do Projeto Stream Deck
+
+1. **Economia de Tokens:** Nunca reescreva blocos de código que não foram alterados. Use comentários como `// ... código existente ...` para omitir partes inalteradas. Responda apenas o que foi solicitado.
+2. **Modularidade:** Mantenha funções pequenas (responsabilidade única). Isole a lógica de UI da lógica de rede.
+3. **Protocolo de Sincronização:** Toda resposta de conclusão de tarefa DEVE terminar com o bloco "[RELATÓRIO DE SINCRONIZAÇÃO PARA O GEMINI]".
+4. **Tratamento de Erros:** Todo erro de rede ou falha de WebSocket deve emitir logs locais e acionar um fallback visual no front-end.
+5. **Idioma:** Código, variáveis e commits estritamente em Inglês. Documentação estrutural em Português.

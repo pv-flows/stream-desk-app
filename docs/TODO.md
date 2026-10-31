@@ -5,3 +5,4 @@
 - [ ] Configurar workflows de CI em `.github/workflows/`.
 - [ ] Estabelecer protocolo de comunicação WebSocket entre Mobile e Desktop.
 - [ ] Definir instruções dos agentes em `.agentes/`.
+

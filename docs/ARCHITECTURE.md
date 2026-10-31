@@ -8,3 +8,4 @@ Sistema de controle remoto estilo Stream Deck composto por:
 ## Comunicação
 - **Protocolo**: WebSocket / HTTP local.
 - **Descoberta de Serviços**: mDNS/Zeroconf ou entrada manual de IP e porta.
+

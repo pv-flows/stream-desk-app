@@ -13,3 +13,4 @@ Repositório monorepo para o sistema de controle Stream Deck, contemplando aplic
 - **`desktop/`**: Aplicação Desktop (Tauri / Rust / Node).
 - **`mobile/`**: Aplicação Mobile (React Native / Expo).
 - **`global_rules.md`**: Diretrizes gerais de engenharia e boas práticas.
+
