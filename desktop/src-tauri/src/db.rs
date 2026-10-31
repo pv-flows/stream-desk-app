@@ -5,7 +5,7 @@ const DB_PATH: &str = "streamdesk.db";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Button {
-    pub id: i64,
+    pub id: i32,
     pub label: String,
     pub action_name: String,
     pub color: String,
@@ -67,3 +67,15 @@ pub fn get_all_buttons() -> Result<Vec<Button>> {
     Ok(buttons)
 }
 
+pub fn add_button(label: &str, action_name: &str, color: &str) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute(
+        "INSERT INTO buttons (label, action_name, color) VALUES (?1, ?2, ?3)",
+        params![label, action_name, color],
+    )
+}
+
+pub fn delete_button(id: i32) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute("DELETE FROM buttons WHERE id = ?1", params![id])
+}

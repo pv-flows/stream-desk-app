@@ -8,6 +8,8 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 - Fixação explícita do endereço WebSocket da máquina host (`ws://192.168.1.97:8080/ws`) em `mobile/src/services/websocketService.ts`.
 
 ### Added
+- Funções CRUD no SQLite (`add_button` e `delete_button` em `desktop/src-tauri/src/db.rs`) e exposição dos comandos Tauri (`get_buttons`, `add_button`, `delete_button` em `lib.rs`).
+- Interface de gerenciamento (CRUD) de botões no cliente React do Desktop (`desktop/src/App.tsx` e `App.css`) permitindo listar, criar (com seletor de cor e sugestões de macro) e excluir botões persistidos no SQLite.
 - Persistência local em SQLite no Desktop (`desktop/src-tauri/src/db.rs`) com `rusqlite` (`bundled`), criando o banco `streamdesk.db`, tabela `buttons` e seed inicial automático dos 4 botões padrão.
 - Rota de sincronização no WebSocket do Desktop (`server.rs`): tratamento da action `get_layout` retornando a lista de botões do SQLite no payload de `sync_layout`.
 - Estado dinâmico de botões no Mobile (`themeStore.ts` / `deckStore.ts`), disparo automático de `get_layout` no `onopen` do `websocketService.ts` e renderização dinâmica via `.map()` na `HomeScreen.tsx`.
