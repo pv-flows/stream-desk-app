@@ -1,8 +1,9 @@
 # TODO List - Stream Desk
 
 ## 1. Fundação & Configuração Inicial
+- [x] Inicializar estrutura base do repositório e regras globais.
 - [ ] Inicializar estrutura de projeto do **Desktop** (`desktop/`) com Tauri + SQLite.
-- [ ] Inicializar estrutura de projeto do **Mobile** (`mobile/`) com React Native / Expo.
+- [x] Inicializar estrutura de projeto do **Mobile** (`mobile/`) com React Native / Expo (TypeScript).
 - [ ] Definir contrato de eventos e tipos compartilhados TypeScript/Rust para a comunicação WebSocket.
 
 ## 2. Comunicação & Rede (LAN)
