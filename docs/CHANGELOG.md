@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Fixed
+- Correções do Auto-Profile e Contenção de Drag-and-Drop:
+  - **Exclusão de Regras de Auto-Profile no Desktop:** Corrigido CSS onde `.delete-btn` dentro de `.rule-badge-card` herdava posicionamento absoluto do container global, tornando o botão invisível e inalcançável; adicionado `position: static !important;`, cursor explícito e atualização otimista imediata na UI (`App.tsx`, `App.css`).
+  - **Case-Insensitive e Normalização em Regras (Spotify vs Chrome):** Tratamento abrangente no `server.rs` normalizando processo, executável (`exe_base`), nome da aplicação (`app_base`) e regra de banco para minúsculo, removendo sufixos `.exe` e cobrindo detecção mesmo quando aplicativos como Spotify são identificados pelo título da janela ou processo em background.
+  - **Contenção Visual de Drag-and-Drop:** Adicionado container delimitador `.deck-grid-container` e `.deck-card` com `overflow: hidden`, contenção no `body` e `.container` com `overflow-x: hidden`, e remoção de `transform: scale` em `.deck-item.dragging` que conflitava com os cálculos de translação do `@hello-pangea/dnd`, eliminando vazamentos de scroll e distorções de tela.
+### Fixed
 - Auditoria Estática Inicial e Blindagem de Estabilidade (Debugger QA):
   - **Deleção de Páginas & Integridade Referencial:** Proteção no SQLite (`desktop/src-tauri/src/db.rs`) impedindo a exclusão da última página restante e remoção em cascata de regras de `window_rules` vinculadas à página excluída.
   - **Prevenção de Índice Órfão no Mobile:** Adicionado clamp de `currentPage` na `HomeScreen.tsx` para garantir que a exclusão da página ativa reposicione imediatamente a visualização na última página válida sem crashar o `<PagerView>`.

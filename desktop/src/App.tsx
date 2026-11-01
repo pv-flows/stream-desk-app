@@ -381,12 +381,14 @@ function App() {
 
   const handleDeleteRule = async (id: number, procName: string) => {
     try {
+      setRules((prev) => prev.filter((r) => r.id !== id));
       await invoke("delete_window_rule", { id });
       setStatusMsg(`Regra para "${procName}" removida.`);
       await loadRules();
     } catch (error) {
       console.error("Erro ao remover regra:", error);
       setStatusMsg("Erro ao remover regra.");
+      await loadRules();
     }
   };
 
@@ -575,7 +577,7 @@ function App() {
         {statusMsg && <p className="status-msg">{statusMsg}</p>}
       </section>
 
-      <section className="card">
+      <section className="card deck-card">
         <div className="section-header">
           <h2>
             Grade de Botões - {activePageObj?.name || "Página"} (
@@ -655,75 +657,77 @@ function App() {
             Nenhum botão cadastrado na página "{activePageObj?.name || 'Atual'}". Adicione acima!
           </p>
         ) : (
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="deck-grid" direction="horizontal">
-              {(provided) => (
-                <div
-                  className="deck-grid"
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                >
-                  {currentPageButtons.map((btn, index) => (
-                    <Draggable
-                      key={String(btn.id)}
-                      draggableId={String(btn.id)}
-                      index={index}
-                    >
-                      {(dragProvided, dragSnapshot) => (
-                        <div
-                          ref={dragProvided.innerRef}
-                          {...dragProvided.draggableProps}
-                          {...dragProvided.dragHandleProps}
-                          className={`deck-item ${
-                            dragSnapshot.isDragging ? "dragging" : ""
-                          }`}
-                          style={{
-                            borderColor: btn.color || "#38bdf8",
-                            ...dragProvided.draggableProps.style,
-                          }}
-                        >
-                          <div className="item-actions">
+          <div className="deck-grid-container">
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="deck-grid" direction="horizontal">
+                {(provided) => (
+                  <div
+                    className="deck-grid"
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    {currentPageButtons.map((btn, index) => (
+                      <Draggable
+                        key={String(btn.id)}
+                        draggableId={String(btn.id)}
+                        index={index}
+                      >
+                        {(dragProvided, dragSnapshot) => (
+                          <div
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            {...dragProvided.dragHandleProps}
+                            className={`deck-item ${
+                              dragSnapshot.isDragging ? "dragging" : ""
+                            }`}
+                            style={{
+                              borderColor: btn.color || "#38bdf8",
+                              ...dragProvided.draggableProps.style,
+                            }}
+                          >
+                            <div className="item-actions">
+                              <span
+                                className="drag-handle-hint"
+                                title="Arraste para reordenar"
+                              >
+                                ⋮⋮
+                              </span>
+                              <button
+                                type="button"
+                                className="edit-btn"
+                                title="Editar botão"
+                                onClick={() => handleEditClick(btn)}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                type="button"
+                                className="delete-btn"
+                                title="Excluir botão"
+                                onClick={() => handleDeleteButton(btn.id, btn.label)}
+                              >
+                                ✕
+                              </button>
+                            </div>
                             <span
-                              className="drag-handle-hint"
-                              title="Arraste para reordenar"
-                            >
-                              ⋮⋮
+                              className="color-dot"
+                              style={{ backgroundColor: btn.color || "#38bdf8" }}
+                            />
+                            <strong className="deck-label">{btn.label}</strong>
+                            <span className="deck-icon-badge">
+                              icon: {btn.icon || "zap"}
                             </span>
-                            <button
-                              type="button"
-                              className="edit-btn"
-                              title="Editar botão"
-                              onClick={() => handleEditClick(btn)}
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              type="button"
-                              className="delete-btn"
-                              title="Excluir botão"
-                              onClick={() => handleDeleteButton(btn.id, btn.label)}
-                            >
-                              ✕
-                            </button>
+                            <code className="deck-action">{btn.action_name}</code>
                           </div>
-                          <span
-                            className="color-dot"
-                            style={{ backgroundColor: btn.color || "#38bdf8" }}
-                          />
-                          <strong className="deck-label">{btn.label}</strong>
-                          <span className="deck-icon-badge">
-                            icon: {btn.icon || "zap"}
-                          </span>
-                          <code className="deck-action">{btn.action_name}</code>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
         )}
       </section>
 
@@ -804,9 +808,12 @@ function App() {
                     </div>
                     <button
                       type="button"
-                      className="delete-btn"
+                      className="delete-btn rule-delete-btn"
                       title="Excluir regra"
-                      onClick={() => handleDeleteRule(rule.id, rule.process_name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteRule(rule.id, rule.process_name);
+                      }}
                     >
                       ✕
                     </button>

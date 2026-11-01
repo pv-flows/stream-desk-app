@@ -373,17 +373,29 @@ async fn start_window_monitor(tx: broadcast::Sender<String>) {
 
         let exe_lower = exe_name.to_lowercase();
         let app_lower = active_win.app_name.trim().to_lowercase();
+        let title_lower = active_win.title.trim().to_lowercase();
 
         let matched_rule = rules.into_iter().find(|rule| {
             let target = rule.process_name.trim().to_lowercase();
             if target.is_empty() || exe_lower.is_empty() {
                 return false;
             }
+
+            let target_base = target.trim_end_matches(".exe");
+            let exe_base = exe_lower.trim_end_matches(".exe");
+            let app_base = app_lower.trim_end_matches(".exe");
+
             exe_lower == target
+                || exe_base == target_base
+                || app_base == target_base
+                || app_lower == target
                 || exe_lower == format!("{}.exe", target)
                 || target == format!("{}.exe", exe_lower)
-                || (!app_lower.is_empty() && app_lower == target)
-                || exe_lower.starts_with(&target)
+                || (!target_base.is_empty() && (
+                    exe_lower.starts_with(target_base)
+                    || app_lower.starts_with(target_base)
+                    || title_lower.contains(target_base)
+                ))
         });
 
         if let Some(rule) = matched_rule {

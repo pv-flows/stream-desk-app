@@ -13,15 +13,20 @@
 body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 .container {
   max-width: 860px;
+  width: 100%;
   margin: 0 auto;
   padding: 28px 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  position: relative;
 }
 
 .header {
@@ -245,10 +250,25 @@ button {
   margin: 0;
 }
 
+.deck-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.deck-grid-container {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
 .deck-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .deck-item {
@@ -430,11 +450,13 @@ button {
 }
 
 .deck-item.dragging {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  transform: scale(1.03);
-  z-index: 1000;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+  z-index: 9999;
   opacity: 0.95;
   border-width: 2px;
+  max-width: 180px;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 
 .color-dot {
@@ -481,6 +503,7 @@ button {
 }
 
 .rule-badge-card {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -493,6 +516,32 @@ button {
 
 .rule-badge-card:hover {
   border-color: #38bdf8;
+}
+
+.rule-badge-card .delete-btn,
+.rule-delete-btn {
+  position: static !important;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  margin-left: 12px;
+  border-radius: 6px;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.rule-badge-card .delete-btn:hover,
+.rule-delete-btn:hover {
+  background-color: #ef4444;
+  color: #ffffff;
 }
 
 .rule-info {
