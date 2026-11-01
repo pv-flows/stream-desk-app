@@ -1,0 +1,234 @@
+import { useState } from "react";
+import {
+  Sparkles,
+  Plus,
+  Search,
+  Zap,
+  ExternalLink,
+  Volume2,
+  Play,
+  Terminal,
+  FolderOpen,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+
+export interface CentralAreaProps {
+  activePage: string;
+}
+
+export interface GridButton {
+  id: number;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  action: string;
+  color: string;
+  border: string;
+}
+
+export const MOCK_BUTTONS: GridButton[] = [
+  {
+    id: 1,
+    label: "Calculadora",
+    icon: Zap,
+    action: "open_app:calc",
+    color: "from-amber-500/20 to-amber-600/30",
+    border: "border-amber-500/40",
+  },
+  {
+    id: 2,
+    label: "Navegador",
+    icon: ExternalLink,
+    action: "open_url:https://google.com",
+    color: "from-sky-500/20 to-sky-600/30",
+    border: "border-sky-500/40",
+  },
+  {
+    id: 3,
+    label: "Terminal",
+    icon: Terminal,
+    action: "open_app:cmd",
+    color: "from-slate-500/20 to-slate-600/30",
+    border: "border-slate-500/40",
+  },
+  {
+    id: 4,
+    label: "Gerenciador",
+    icon: FolderOpen,
+    action: "open_app:explorer",
+    color: "from-emerald-500/20 to-emerald-600/30",
+    border: "border-emerald-500/40",
+  },
+  {
+    id: 5,
+    label: "Volume +",
+    icon: Volume2,
+    action: "vol_up",
+    color: "from-blue-500/20 to-blue-600/30",
+    border: "border-blue-500/40",
+  },
+  {
+    id: 6,
+    label: "Play/Pause",
+    icon: Play,
+    action: "play_pause",
+    color: "from-purple-500/20 to-purple-600/30",
+    border: "border-purple-500/40",
+  },
+];
+
+export function CentralArea({ activePage }: CentralAreaProps) {
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredButtons = MOCK_BUTTONS.filter((btn) =>
+    btn.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    btn.action.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <main className="flex-1 flex flex-col min-w-0 bg-neutral-950/60 overflow-hidden select-none">
+      {/* Top Header Dinâmico */}
+      <header className="h-14 border-b border-neutral-800/80 px-6 flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-semibold text-neutral-100 tracking-tight">
+            {activePage}
+          </h2>
+          <Badge
+            variant="secondary"
+            className="text-[11px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-400 font-normal border-neutral-700/60"
+          >
+            {filteredButtons.length} slots ativos
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar atalho ou app..."
+              className="w-52 h-8 pl-8 pr-3 text-xs bg-neutral-900/80 border-neutral-800 text-neutral-200 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-sky-500/50"
+            />
+          </div>
+          <Button
+            size="sm"
+            className="h-8 gap-1.5 px-3 text-xs font-medium bg-sky-500 hover:bg-sky-400 text-white shadow-sm shadow-sky-500/20"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Novo Botão</span>
+          </Button>
+        </div>
+      </header>
+
+      {/* Content View Area */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Quick Notice Banner */}
+        <div className="p-4 rounded-xl border border-sky-500/20 bg-gradient-to-r from-sky-950/30 to-indigo-950/20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-sky-300">
+                Design Profissional Modular (Fase 2)
+              </h3>
+              <p className="text-[11px] text-neutral-400">
+                Componentes shadcn/ui e arquitetura em 3 colunas independentes prontos para IPC.
+              </p>
+            </div>
+          </div>
+          <Badge className="bg-sky-500/20 text-sky-300 border border-sky-500/40 font-mono text-[10px]">
+            Ready for Integration
+          </Badge>
+        </div>
+
+        {/* Abas e Filtros de Categoria */}
+        <div className="flex items-center justify-between border-b border-neutral-800/60 pb-3">
+          <Tabs
+            value={filterCategory}
+            onValueChange={setFilterCategory}
+            className="w-auto"
+          >
+            <TabsList className="bg-neutral-900/80 border border-neutral-800 h-8 p-0.5">
+              <TabsTrigger
+                value="all"
+                className="text-xs px-3 py-1 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300"
+              >
+                Todos
+              </TabsTrigger>
+              <TabsTrigger
+                value="apps"
+                className="text-xs px-3 py-1 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300"
+              >
+                Aplicativos
+              </TabsTrigger>
+              <TabsTrigger
+                value="media"
+                className="text-xs px-3 py-1 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300"
+              >
+                Mídia & Som
+              </TabsTrigger>
+              <TabsTrigger
+                value="macros"
+                className="text-xs px-3 py-1 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300"
+              >
+                Macros
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <span className="text-[11px] text-neutral-400">
+            Arraste os cards para reorganizar a grade
+          </span>
+        </div>
+
+        {/* Placeholder da Grade Principal */}
+        <div>
+          <div className="grid grid-cols-3 gap-3.5">
+            {filteredButtons.map((btn) => {
+              const Icon = btn.icon;
+              return (
+                <Card
+                  key={btn.id}
+                  className={`group relative p-4 rounded-xl border ${btn.border} bg-gradient-to-b ${btn.color} hover:border-sky-400/60 hover:shadow-lg hover:shadow-sky-500/10 transition-all cursor-grab active:cursor-grabbing flex flex-col justify-between min-h-[110px] select-none`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="h-8 w-8 rounded-lg bg-neutral-900/80 border border-neutral-700/60 flex items-center justify-center text-neutral-200 group-hover:scale-105 transition-transform">
+                      <Icon className="w-4 h-4 text-sky-400" />
+                    </div>
+                    <span className="text-[10px] font-mono text-neutral-400">
+                      #{btn.id}
+                    </span>
+                  </div>
+
+                  <div className="mt-3">
+                    <h4 className="text-xs font-semibold text-neutral-100 tracking-tight">
+                      {btn.label}
+                    </h4>
+                    <code className="text-[10px] text-neutral-400 font-mono truncate block mt-0.5">
+                      {btn.action}
+                    </code>
+                  </div>
+                </Card>
+              );
+            })}
+
+            {/* Slot Vazio / Novo Botão */}
+            <button className="border-2 border-dashed border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/30 rounded-xl flex flex-col items-center justify-center gap-1.5 p-4 text-neutral-400 hover:text-neutral-300 transition-colors min-h-[110px]">
+              <Plus className="w-5 h-5 text-neutral-500" />
+              <span className="text-xs font-medium">Slot Vazio</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default CentralArea;
