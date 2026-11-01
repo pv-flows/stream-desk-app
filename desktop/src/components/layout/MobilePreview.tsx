@@ -3,7 +3,7 @@ import { Smartphone, RotateCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { getLucideIcon, getButtonColorStyles } from "@/lib/buttonUtils";
+import { getLucideIcon, getButtonColorStyles, isBase64Icon, getBase64Src } from "@/lib/buttonUtils";
 
 export interface MobilePreviewProps {
   activePage?: string;
@@ -98,6 +98,7 @@ export function MobilePreview({
                 pageButtons.map((btn) => {
                   const Icon = getLucideIcon(btn.icon);
                   const colorStyle = getButtonColorStyles(btn.color);
+                  const hasBase64 = isBase64Icon(btn.icon);
 
                   return (
                     <div
@@ -105,7 +106,15 @@ export function MobilePreview({
                       style={colorStyle.style}
                       className={`h-11 rounded-lg bg-neutral-800/80 border flex flex-col items-center justify-center text-center p-1 hover:border-sky-500/50 transition-colors shadow-sm ${colorStyle.className}`}
                     >
-                      <Icon className="w-3 h-3 text-sky-400 mb-0.5" />
+                      {hasBase64 ? (
+                        <img
+                          src={getBase64Src(btn.icon)}
+                          alt=""
+                          className="w-3.5 h-3.5 object-contain rounded mb-0.5"
+                        />
+                      ) : (
+                        <Icon className="w-3 h-3 text-sky-400 mb-0.5" />
+                      )}
                       <span className="text-[7.5px] font-medium text-neutral-200 leading-tight truncate w-full px-0.5">
                         {btn.label}
                       </span>

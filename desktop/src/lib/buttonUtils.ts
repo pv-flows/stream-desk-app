@@ -17,6 +17,19 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+export function isBase64Icon(icon?: string): boolean {
+  if (!icon) return false;
+  return icon.startsWith("base64:") || icon.startsWith("data:image");
+}
+
+export function getBase64Src(icon?: string): string {
+  if (!icon) return "";
+  if (icon.startsWith("base64:")) {
+    return `data:image/png;base64,${icon.slice(7)}`;
+  }
+  return icon;
+}
+
 export function getLucideIcon(iconName?: string): LucideIcon {
   if (!iconName) return Zap;
   const name = iconName.toLowerCase().replace(/[-_]/g, "");

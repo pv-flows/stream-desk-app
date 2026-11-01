@@ -3,14 +3,16 @@ import {
   Sparkles,
   Plus,
   Search,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { useDashboardStore } from "@/store/useDashboardStore";
-import { getLucideIcon, getButtonColorStyles } from "@/lib/buttonUtils";
+import { DeckButton, useDashboardStore } from "@/store/useDashboardStore";
+import { getLucideIcon, getButtonColorStyles, isBase64Icon, getBase64Src } from "@/lib/buttonUtils";
+import { ButtonEditorSheet } from "@/components/ButtonEditorSheet";
 
 export interface CentralAreaProps {
   activePage?: string;
@@ -19,6 +21,8 @@ export interface CentralAreaProps {
 export function CentralArea({ activePage: controlledPage }: CentralAreaProps = {}) {
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [buttonToEdit, setButtonToEdit] = useState<DeckButton | null>(null);
 
   const buttons = useDashboardStore((s) => s.buttons);
   const pages = useDashboardStore((s) => s.pages);
@@ -45,11 +49,21 @@ export function CentralArea({ activePage: controlledPage }: CentralAreaProps = {
       return btn.action_name.startsWith("vol") || btn.action_name.includes("play") || btn.action_name.includes("media");
     }
     if (filterCategory === "macros") {
-      return btn.action_name.startsWith("macro") || btn.action_name.startsWith("key");
+      return btn.action_name.startsWith("macro") || btn.action_name.startsWith("key") || btn.action_name.startsWith("hotkey");
     }
 
     return true;
   });
+
+  const handleOpenCreate = () => {
+    setButtonToEdit(null);
+    setEditorOpen(true);
+  };
+
+  const handleOpenEdit = (btn: DeckButton) => {
+    setButtonToEdit(btn);
+    setEditorOpen(true);
+  };
 
   return (
     <main className="flex-1 flex flex-col min-w-0 bg-neutral-950/60 overflow-hidden select-none">
@@ -80,6 +94,7 @@ export function CentralArea({ activePage: controlledPage }: CentralAreaProps = {
           </div>
           <Button
             size="sm"
+            onClick={handleOpenCreate}
             className="h-8 gap-1.5 px-3 text-xs font-medium bg-sky-500 hover:bg-sky-400 text-white shadow-sm shadow-sky-500/20"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -98,15 +113,15 @@ export function CentralArea({ activePage: controlledPage }: CentralAreaProps = {
             </div>
             <div>
               <h3 className="text-xs font-semibold text-sky-300">
-                Sincronização Reativa IPC Conectada
+                Editor de Botões & Scanner Local Prontos
               </h3>
               <p className="text-[11px] text-neutral-400">
-                Store Zustand integrada aos comandos nativos do Tauri com reatividade global.
+                Adicione, altere ou exclua botões com detecção automática de executáveis do Windows.
               </p>
             </div>
           </div>
           <Badge className="bg-sky-500/20 text-sky-300 border border-sky-500/40 font-mono text-[10px]">
-            IPC Active
+            IPC Editor Ready
           </Badge>
         </div>
 
@@ -156,20 +171,43 @@ export function CentralArea({ activePage: controlledPage }: CentralAreaProps = {
             {filteredButtons.map((btn) => {
               const Icon = getLucideIcon(btn.icon);
               const colorStyle = getButtonColorStyles(btn.color);
+              const hasBase64 = isBase64Icon(btn.icon);
 
               return (
                 <Card
                   key={btn.id}
                   style={colorStyle.style}
-                  className={`group relative p-4 rounded-xl border transition-all cursor-grab active:cursor-grabbing flex flex-col justify-between min-h-[110px] select-none ${colorStyle.className}`}
+                  onClick={() => handleOpenEdit(btn)}
+                  className={`group relative p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between min-h-[110px] select-none ${colorStyle.className}`}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="h-8 w-8 rounded-lg bg-neutral-900/80 border border-neutral-700/60 flex items-center justify-center text-neutral-200 group-hover:scale-105 transition-transform">
-                      <Icon className="w-4 h-4 text-sky-400" />
+                    <div className="h-9 w-9 rounded-lg bg-neutral-900/80 border border-neutral-700/60 flex items-center justify-center text-neutral-200 group-hover:scale-105 transition-transform">
+                      {hasBase64 ? (
+                        <img
+                          src={getBase64Src(btn.icon)}
+                          alt=""
+                          className="w-5 h-5 object-contain rounded"
+                        />
+                      ) : (
+                        <Icon className="w-4 h-4 text-sky-400" />
+                      )}
                     </div>
-                    <span className="text-[10px] font-mono text-neutral-400">
-                      pos: {btn.position}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono text-neutral-400">
+                        #{btn.id}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(btn);
+                        }}
+                        title="Editar Botão"
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-sky-300 transition-opacity"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-3">
@@ -185,13 +223,24 @@ export function CentralArea({ activePage: controlledPage }: CentralAreaProps = {
             })}
 
             {/* Slot Vazio / Novo Botão */}
-            <button className="border-2 border-dashed border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/30 rounded-xl flex flex-col items-center justify-center gap-1.5 p-4 text-neutral-400 hover:text-neutral-300 transition-colors min-h-[110px]">
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="border-2 border-dashed border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/30 rounded-xl flex flex-col items-center justify-center gap-1.5 p-4 text-neutral-400 hover:text-neutral-300 transition-colors min-h-[110px]"
+            >
               <Plus className="w-5 h-5 text-neutral-500" />
-              <span className="text-xs font-medium">Slot Vazio</span>
+              <span className="text-xs font-medium">Novo Botão</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Sheet de Edição e Criação */}
+      <ButtonEditorSheet
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        buttonToEdit={buttonToEdit}
+      />
     </main>
   );
 }
