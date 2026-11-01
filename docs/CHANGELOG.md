@@ -4,6 +4,8 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Descoberta nativa do IP IPv4 local na LAN via crate `local-ip-address` (`get_local_ip` em `desktop/src-tauri/src/lib.rs`).
+- Área de conexão no Dashboard Desktop (`desktop/src/App.tsx` e `App.css`) renderizando o QR Code dinâmico (`ws://${localIp}:8080/ws`) com `react-qr-code` e exibindo o endereço IP local ao lado.
 - Dicionário de Skins (`mobile/src/theme/skins.ts`) mapeando os conceitos visuais (`apple`, `windows`, `steam`, `oneui`, `chromebook`, `default`) com tipos (`glass`, `solid`, `flat`), raios de borda, cores e sombras.
 - Refatoração do `DeckButton.tsx` no Mobile com `expo-blur` (`<BlurView>` para temas `glass`) e animações específicas via `react-native-reanimated` (`withSpring` na escala para `apple`/`windows`, corte seco `withTiming` invertendo cores para `steam`, e efeito Ripple + elevação de sombra para `oneui`/`chromebook`).
 - Remoção permanente do seletor de temas local na `HomeScreen.tsx` do Mobile, consolidando o modelo "Dumb Client" onde apenas o Desktop controla a Skin ativa.

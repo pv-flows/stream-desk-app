@@ -28,6 +28,13 @@ fn get_buttons() -> Result<Vec<db::Button>, String> {
 }
 
 #[tauri::command]
+fn get_local_ip() -> Result<String, String> {
+    local_ip_address::local_ip()
+        .map(|ip| ip.to_string())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn get_theme() -> Result<String, String> {
     db::get_active_theme().map_err(|e| e.to_string())
 }
@@ -85,6 +92,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_buttons,
+            get_local_ip,
             get_theme,
             set_theme,
             add_button,

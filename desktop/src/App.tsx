@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import QRCode from "react-qr-code";
 import "./App.css";
 
 interface DeckButton {
@@ -12,6 +13,7 @@ interface DeckButton {
 function App() {
   const [buttons, setButtons] = useState<DeckButton[]>([]);
   const [activeTheme, setActiveTheme] = useState<string>("default");
+  const [localIp, setLocalIp] = useState<string>("127.0.0.1");
   const [label, setLabel] = useState("");
   const [actionName, setActionName] = useState("vol_up");
   const [color, setColor] = useState("#38bdf8");
@@ -36,9 +38,19 @@ function App() {
     }
   };
 
+  const loadLocalIp = async () => {
+    try {
+      const ip = await invoke<string>("get_local_ip");
+      if (ip) setLocalIp(ip);
+    } catch (error) {
+      console.error("Erro ao obter IP local:", error);
+    }
+  };
+
   useEffect(() => {
     loadButtons();
     loadTheme();
+    loadLocalIp();
   }, []);
 
   const handleThemeChange = async (theme: string) => {
@@ -92,20 +104,33 @@ function App() {
         <p className="subtitle">
           Servidor WebSocket ativo na porta <code>8080/ws</code> | Banco SQLite (<code>streamdesk.db</code>)
         </p>
-        <div className="theme-selector-bar">
-          <label htmlFor="theme-select">Tema Global (Mobile Skin):</label>
-          <select
-            id="theme-select"
-            value={activeTheme}
-            onChange={(e) => handleThemeChange(e.currentTarget.value)}
-          >
-            <option value="default">Padrão</option>
-            <option value="apple">Apple</option>
-            <option value="windows">Windows</option>
-            <option value="steam">Steam</option>
-            <option value="oneui">One UI</option>
-            <option value="chromebook">Chromebook</option>
-          </select>
+
+        <div className="connection-panel">
+          <div className="qr-wrapper">
+            <QRCode value={`ws://${localIp}:8080/ws`} size={128} />
+          </div>
+          <div className="connection-info">
+            <span className="connection-badge">Pareamento via QR Code</span>
+            <p className="connection-ip">
+              IP Local (LAN): <strong>{localIp}</strong>
+            </p>
+            <code className="connection-ws">ws://{localIp}:8080/ws</code>
+            <div className="theme-selector-bar">
+              <label htmlFor="theme-select">Tema Global (Mobile Skin):</label>
+              <select
+                id="theme-select"
+                value={activeTheme}
+                onChange={(e) => handleThemeChange(e.currentTarget.value)}
+              >
+                <option value="default">Padrão</option>
+                <option value="apple">Apple</option>
+                <option value="windows">Windows</option>
+                <option value="steam">Steam</option>
+                <option value="oneui">One UI</option>
+                <option value="chromebook">Chromebook</option>
+              </select>
+            </div>
+          </div>
         </div>
       </header>
 

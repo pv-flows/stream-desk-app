@@ -11,7 +11,8 @@
 - [x] Implementar servidor WebSocket com Axum no Tauri (`0.0.0.0:8080/ws`) com resposta de eco de comandos.
 - [x] Implementar cliente WebSocket nativo no Mobile com envio de comandos JSON (`sendCommand`) e status de conexão.
 - [x] Implementar broadcast em tempo real (`tokio::sync::broadcast`) para sincronizar alterações de layout (`sync_layout`) imediatamente ao criar/remover botões no Desktop.
-- [ ] Implementar reconexão automática contínua e pareamento por QR Code no Expo.
+- [x] Implementar descoberta de IP local nativa no Desktop (`local-ip-address`) e geração de QR Code de pareamento (`react-qr-code` em `desktop/src/App.tsx`).
+- [ ] Implementar leitor de QR Code e reconexão automática contínua no Mobile (Expo).
 - [ ] Suporte a descoberta de rede (mDNS / Zeroconf).
 
 ## 3. Funcionalidades Core (Gratuitas)
