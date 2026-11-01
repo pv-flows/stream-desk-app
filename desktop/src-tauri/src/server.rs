@@ -78,14 +78,21 @@ async fn health_handler() -> impl IntoResponse {
     let local_ip = local_ip_address::local_ip()
         .map(|ip| ip.to_string())
         .unwrap_or_else(|_| "127.0.0.1".to_string());
-    axum::Json(serde_json::json!({
-        "status": "ok",
-        "app": "streamdesk",
-        "name": "Stream Desk Desktop",
-        "version": "1.0.0",
-        "ip": local_ip,
-        "ws_url": format!("ws://{}:8080/ws", local_ip)
-    }))
+    (
+        [
+            (axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*"),
+            (axum::http::header::CONTENT_TYPE, "application/json"),
+        ],
+        serde_json::json!({
+            "status": "ok",
+            "app": "streamdesk",
+            "name": "Stream Desk Desktop",
+            "version": "1.0.0",
+            "ip": local_ip,
+            "ws_url": format!("ws://{}:8080/ws", local_ip)
+        })
+        .to_string(),
+    )
 }
 
 async fn discovery_handler() -> impl IntoResponse {

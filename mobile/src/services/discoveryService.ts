@@ -64,3 +64,13 @@ export async function scanSubnetForServer(
 
   return null;
 }
+
+export async function checkLocalOrSimulator(): Promise<DiscoveredServer | null> {
+  const localCandidates = ['127.0.0.1', '10.0.2.2', 'localhost'];
+  for (const host of localCandidates) {
+    const res = await checkServerAtIp(host, 400);
+    if (res) return res;
+  }
+  return null;
+}
+

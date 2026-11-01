@@ -80,8 +80,11 @@ pub struct BackupData {
 }
 
 pub fn init_db() -> Result<()> {
-    let conn = Connection::open(DB_PATH)?;
+    let mut conn = Connection::open(DB_PATH)?;
+    init_db_conn(&mut conn)
+}
 
+pub fn init_db_conn(conn: &mut Connection) -> Result<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS buttons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,7 +92,8 @@ pub fn init_db() -> Result<()> {
             action_name TEXT NOT NULL,
             color TEXT NOT NULL,
             icon TEXT DEFAULT 'zap',
-            page_index INTEGER DEFAULT 0
+            page_index INTEGER DEFAULT 1,
+            position INTEGER DEFAULT 0
         )",
         [],
     )?;
@@ -98,7 +102,8 @@ pub fn init_db() -> Result<()> {
         "CREATE TABLE IF NOT EXISTS window_rules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             process_name TEXT NOT NULL,
-            page_index INTEGER NOT NULL
+            page_index INTEGER NOT NULL,
+            enabled INTEGER DEFAULT 1
         )",
         [],
     )?;
@@ -113,39 +118,40 @@ pub fn init_db() -> Result<()> {
 
     // Migrações seguras caso a tabela já exista
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN icon TEXT DEFAULT 'zap'", []);
-    let _ = conn.execute("ALTER TABLE buttons ADD COLUMN page_index INTEGER DEFAULT 0", []);
+    let _ = conn.execute("ALTER TABLE buttons ADD COLUMN page_index INTEGER DEFAULT 1", []);
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN position INTEGER DEFAULT 0", []);
     let _ = conn.execute("ALTER TABLE window_rules ADD COLUMN enabled INTEGER DEFAULT 1", []);
 
-    // Migração de páginas dinâmicas: garante pelo menos a página "Principal"
+    // Migração de páginas dinâmicas: garante as páginas "Principal" e "Mídia"
     let page_count: i64 = conn
         .query_row("SELECT COUNT(*) FROM pages", [], |row| row.get(0))
         .unwrap_or(0);
     if page_count == 0 {
         let _ = conn.execute("INSERT INTO pages (name) VALUES ('Principal')", []);
-        let principal_id: i32 = conn.last_insert_rowid() as i32;
-
-        let has_media_buttons: bool = conn
-            .query_row(
-                "SELECT 1 FROM buttons WHERE page_index = 1 LIMIT 1",
-                [],
-                |_| Ok(true),
-            )
-            .unwrap_or(false);
-        if has_media_buttons {
-            let _ = conn.execute("INSERT INTO pages (name) VALUES ('Mídia')", []);
-            let media_id: i32 = conn.last_insert_rowid() as i32;
-            let _ = conn.execute(
-                "UPDATE buttons SET page_index = ?1 WHERE page_index = 1",
-                params![media_id],
-            );
-        }
-
-        let _ = conn.execute(
-            "UPDATE buttons SET page_index = ?1 WHERE page_index = 0",
-            params![principal_id],
-        );
+        let _ = conn.execute("INSERT INTO pages (name) VALUES ('Mídia')", []);
     }
+
+    let principal_id: i32 = conn
+        .query_row(
+            "SELECT id FROM pages WHERE name = 'Principal' ORDER BY id ASC LIMIT 1",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(1);
+
+    let media_id: i32 = conn
+        .query_row(
+            "SELECT id FROM pages WHERE name = 'Mídia' ORDER BY id ASC LIMIT 1",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(2);
+
+    // Corrige botões legados com page_index = 0
+    let _ = conn.execute(
+        "UPDATE buttons SET page_index = ?1 WHERE page_index <= 0",
+        params![principal_id],
+    );
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS settings (
@@ -176,6 +182,21 @@ pub fn init_db() -> Result<()> {
         [],
     )?;
 
+    let seed_buttons = [
+        // Página Principal: Apps / Atalhos de Sistema
+        ("Calculadora", "open_app:calc", "#f59e0b", "calculator", principal_id, 0),
+        ("Navegador", "open_url:https://google.com", "#38bdf8", "globe", principal_id, 1),
+        ("Terminal", "open_app:cmd", "#64748b", "terminal", principal_id, 2),
+        ("Tarefas", "hotkey:Ctrl+Shift+Escape", "#10b981", "zap", principal_id, 3),
+        // Página Mídia: Mídia & Controles de Áudio
+        ("Vol +", "vol_up", "#38bdf8", "volume-2", media_id, 0),
+        ("Vol -", "vol_down", "#0ea5e9", "volume-x", media_id, 1),
+        ("Mute", "mute", "#ef4444", "mic-off", media_id, 2),
+        ("Play/Pause", "play_pause", "#22c55e", "play", media_id, 3),
+        ("Próxima", "media_next", "#8b5cf6", "play", media_id, 4),
+        ("Anterior", "media_prev", "#6366f1", "play", media_id, 5),
+    ];
+
     // Migração de seed para organizar Página 1: Apps, Página 2: Mídia
     let has_migrated_seed: bool = conn
         .query_row(
@@ -186,27 +207,13 @@ pub fn init_db() -> Result<()> {
         .unwrap_or(false);
 
     if !has_migrated_seed {
-        println!("[DB] Aplicando migração do novo seed padrão organizado (Pág 0: Apps, Pág 1: Mídia)...");
+        println!("[DB] Aplicando migração do novo seed padrão organizado (Principal e Mídia)...");
         let _ = conn.execute("DELETE FROM buttons", []);
-        let seed_buttons = [
-            // Página 0: Apps / Atalhos de Sistema
-            ("Calculadora", "open_app:calc", "#f59e0b", "calculator", 0),
-            ("Navegador", "open_url:https://google.com", "#38bdf8", "globe", 0),
-            ("Terminal", "open_app:cmd", "#64748b", "terminal", 0),
-            ("Tarefas", "hotkey:Ctrl+Shift+Escape", "#10b981", "zap", 0),
-            // Página 1: Mídia & Controles de Áudio
-            ("Vol +", "vol_up", "#38bdf8", "volume-2", 1),
-            ("Vol -", "vol_down", "#0ea5e9", "volume-x", 1),
-            ("Mute", "mute", "#ef4444", "mic-off", 1),
-            ("Play/Pause", "play_pause", "#22c55e", "play", 1),
-            ("Próxima", "media_next", "#8b5cf6", "play", 1),
-            ("Anterior", "media_prev", "#6366f1", "play", 1),
-        ];
 
-        for (label, action_name, color, icon, page_index) in seed_buttons {
+        for (label, action_name, color, icon, page_idx, pos) in seed_buttons {
             let _ = conn.execute(
-                "INSERT INTO buttons (label, action_name, color, icon, page_index) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![label, action_name, color, icon, page_index],
+                "INSERT INTO buttons (label, action_name, color, icon, page_index, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![label, action_name, color, icon, page_idx, pos],
             );
         }
 
@@ -219,26 +226,11 @@ pub fn init_db() -> Result<()> {
     let count: i64 = conn.query_row("SELECT COUNT(*) FROM buttons", [], |row| row.get(0))?;
 
     if count == 0 {
-        println!("[DB] Tabela buttons vazia. Inserindo novo seed padrão (Página 1: Apps, Página 2: Mídia)...");
-        let seed_buttons = [
-            // Página 0: Apps / Atalhos de Sistema
-            ("Calculadora", "open_app:calc", "#f59e0b", "calculator", 0),
-            ("Navegador", "open_url:https://google.com", "#38bdf8", "globe", 0),
-            ("Terminal", "open_app:cmd", "#64748b", "terminal", 0),
-            ("Tarefas", "hotkey:Ctrl+Shift+Escape", "#10b981", "zap", 0),
-            // Página 1: Mídia & Controles de Áudio
-            ("Vol +", "vol_up", "#38bdf8", "volume-2", 1),
-            ("Vol -", "vol_down", "#0ea5e9", "volume-x", 1),
-            ("Mute", "mute", "#ef4444", "mic-off", 1),
-            ("Play/Pause", "play_pause", "#22c55e", "play", 1),
-            ("Próxima", "media_next", "#8b5cf6", "play", 1),
-            ("Anterior", "media_prev", "#6366f1", "play", 1),
-        ];
-
-        for (label, action_name, color, icon, page_index) in seed_buttons {
+        println!("[DB] Tabela buttons vazia. Inserindo seed padrão (Principal e Mídia)...");
+        for (label, action_name, color, icon, page_idx, pos) in seed_buttons {
             conn.execute(
-                "INSERT INTO buttons (label, action_name, color, icon, page_index) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![label, action_name, color, icon, page_index],
+                "INSERT INTO buttons (label, action_name, color, icon, page_index, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![label, action_name, color, icon, page_idx, pos],
             )?;
         }
     }
@@ -565,6 +557,10 @@ pub fn restore_backup(data: BackupData) -> Result<()> {
             }
         }
 
+        let first_page_id: i32 = tx
+            .query_row("SELECT id FROM pages ORDER BY id ASC LIMIT 1", [], |r| r.get(0))
+            .unwrap_or(1);
+
         let mut btn_stmt_with_id = tx.prepare(
             "INSERT INTO buttons (id, label, action_name, color, icon, page_index, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )?;
@@ -572,6 +568,7 @@ pub fn restore_backup(data: BackupData) -> Result<()> {
             "INSERT INTO buttons (label, action_name, color, icon, page_index, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         )?;
         for btn in &data.buttons {
+            let page_idx = if btn.page_index > 0 { btn.page_index } else { first_page_id };
             if btn.id > 0 {
                 btn_stmt_with_id.execute(params![
                     btn.id,
@@ -579,7 +576,7 @@ pub fn restore_backup(data: BackupData) -> Result<()> {
                     btn.action_name,
                     btn.color,
                     btn.icon,
-                    btn.page_index,
+                    page_idx,
                     btn.position
                 ])?;
             } else {
@@ -588,7 +585,7 @@ pub fn restore_backup(data: BackupData) -> Result<()> {
                     btn.action_name,
                     btn.color,
                     btn.icon,
-                    btn.page_index,
+                    page_idx,
                     btn.position
                 ])?;
             }
@@ -603,17 +600,18 @@ pub fn restore_backup(data: BackupData) -> Result<()> {
             )?;
             for rule in rules {
                 let enabled_val = if rule.enabled { 1 } else { 0 };
+                let page_idx = if rule.page_index > 0 { rule.page_index } else { first_page_id };
                 if rule.id > 0 {
                     rule_stmt_with_id.execute(params![
                         rule.id,
                         rule.process_name,
-                        rule.page_index,
+                        page_idx,
                         enabled_val
                     ])?;
                 } else {
                     rule_stmt_no_id.execute(params![
                         rule.process_name,
-                        rule.page_index,
+                        page_idx,
                         enabled_val
                     ])?;
                 }
@@ -698,4 +696,75 @@ pub fn set_obs_settings(settings: &crate::obs::ObsSettings) -> Result<()> {
     )?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_init_db_conn_fresh_schema() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        init_db_conn(&mut conn).unwrap();
+
+        // 1. Pages table must have at least Principal and Mídia
+        let pages_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM pages", [], |r| r.get(0))
+            .unwrap();
+        assert!(pages_count >= 2, "Fresh DB must contain at least 2 pages");
+
+        let p1: String = conn
+            .query_row("SELECT name FROM pages WHERE id = 1", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(p1, "Principal");
+
+        // 2. Buttons table must contain seeded buttons with no orphaned page_index <= 0
+        let zero_page_btns: i64 = conn
+            .query_row("SELECT COUNT(*) FROM buttons WHERE page_index <= 0", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(zero_page_btns, 0, "No button may have page_index <= 0");
+
+        let total_btns: i64 = conn
+            .query_row("SELECT COUNT(*) FROM buttons", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(total_btns, 10, "Default seed must contain 10 buttons");
+
+        // 3. Settings table must contain default appearance
+        let theme: String = conn
+            .query_row("SELECT value FROM settings WHERE key = 'active_theme'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(theme, "escuro");
+    }
+
+    #[test]
+    fn test_window_rule_toggle_in_memory() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        init_db_conn(&mut conn).unwrap();
+
+        conn.execute(
+            "INSERT INTO window_rules (process_name, page_index, enabled) VALUES ('test.exe', 1, 1)",
+            [],
+        )
+        .unwrap();
+
+        let rule_id = conn.last_insert_rowid() as i32;
+
+        let enabled: i32 = conn
+            .query_row("SELECT enabled FROM window_rules WHERE id = ?1", params![rule_id], |r| r.get(0))
+            .unwrap();
+        assert_eq!(enabled, 1);
+
+        // Toggle to false
+        conn.execute(
+            "UPDATE window_rules SET enabled = 0 WHERE id = ?1",
+            params![rule_id],
+        )
+        .unwrap();
+
+        let enabled_after: i32 = conn
+            .query_row("SELECT enabled FROM window_rules WHERE id = ?1", params![rule_id], |r| r.get(0))
+            .unwrap();
+        assert_eq!(enabled_after, 0);
+    }
+}
+
 

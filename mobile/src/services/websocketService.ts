@@ -66,11 +66,17 @@ class WebSocketService {
   }
 
   public connect(url: string): void {
-    const trimmedUrl = url?.trim();
+    let trimmedUrl = url?.trim();
     if (!trimmedUrl) {
       console.warn('[WebSocket] URL inválida para conexão.');
       this.setStatus('error');
       return;
+    }
+
+    if (trimmedUrl.startsWith('http://')) {
+      trimmedUrl = 'ws://' + trimmedUrl.slice(7);
+    } else if (trimmedUrl.startsWith('https://')) {
+      trimmedUrl = 'wss://' + trimmedUrl.slice(8);
     }
 
     this.lastUrl = trimmedUrl;

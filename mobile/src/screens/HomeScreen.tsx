@@ -15,7 +15,7 @@ import {
 import PagerView from 'react-native-pager-view';
 import { DeckButton, DeckButtonItem } from '../components/DeckButton';
 import { ConnectionStatus, websocketService } from '../services/websocketService';
-import { scanSubnetForServer } from '../services/discoveryService';
+import { checkLocalOrSimulator, scanSubnetForServer } from '../services/discoveryService';
 import { useThemeStore } from '../store/themeStore';
 import { getSkin } from '../theme/skins';
 
@@ -139,12 +139,15 @@ export const HomeScreen: React.FC = () => {
     setIsDiscovering(true);
     setDiscoveryMessage('Varrendo rede local (Zeroconf / mDNS)...');
     try {
-      const subnets = ['192.168.1', '192.168.0', '10.0.0'];
-      let found = null;
-      for (const sub of subnets) {
-        setDiscoveryMessage(`Buscando em ${sub}.x:8080...`);
-        found = await scanSubnetForServer(sub);
-        if (found) break;
+      let found = await checkLocalOrSimulator();
+
+      if (!found) {
+        const subnets = ['192.168.1', '192.168.0', '10.0.0'];
+        for (const sub of subnets) {
+          setDiscoveryMessage(`Buscando em ${sub}.x:8080...`);
+          found = await scanSubnetForServer(sub);
+          if (found) break;
+        }
       }
 
       if (found) {

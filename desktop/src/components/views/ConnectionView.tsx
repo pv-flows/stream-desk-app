@@ -14,7 +14,7 @@ export function ConnectionView() {
   const disconnectDevice = useDashboardStore((s) => s.disconnectDevice);
 
   const displayIp = localIp && localIp !== "0.0.0.0" ? localIp : "192.168.1.15";
-  const qrValue = `http://${displayIp}:8080/ws`;
+  const qrValue = `ws://${displayIp}:8080/ws`;
 
   useEffect(() => {
     fetchConnectedDevices();

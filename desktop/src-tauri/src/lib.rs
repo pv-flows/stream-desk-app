@@ -303,6 +303,9 @@ async fn test_obs_connection(settings: obs::ObsSettings) -> Result<String, Strin
 #[tauri::command]
 async fn execute_obs_action(action: String) -> Result<serde_json::Value, String> {
     let settings = db::get_obs_settings().map_err(|e| e.to_string())?;
+    if !settings.enabled {
+        return Err("A integração com o OBS Studio está desativada nas configurações.".to_string());
+    }
     obs::obs_dispatch(&settings, &action).await
 }
 
