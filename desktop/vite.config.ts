@@ -35,4 +35,34 @@ export default defineConfig(() => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("@hello-pangea/dnd")) {
+              return "vendor-dnd";
+            }
+            if (id.includes("lucide-react")) {
+              return "vendor-lucide";
+            }
+            if (
+              id.includes("react-dom") ||
+              id.includes("react") ||
+              id.includes("scheduler")
+            ) {
+              return "vendor-react";
+            }
+            if (id.includes("@tauri-apps")) {
+              return "vendor-tauri";
+            }
+            if (id.includes("@radix-ui")) {
+              return "vendor-radix";
+            }
+            return "vendor";
+          }
+        },
+      },
+    },
+  },
 }));

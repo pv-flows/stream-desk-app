@@ -45,4 +45,4 @@
 - [x] **E5** Coluna `enabled` em `window_rules` com toggle real — hoje o switch apaga a regra.
 - [ ] **E6** Integração OBS WebSocket v5 (primeira integração real em `IntegrationsView.tsx`).
 - [ ] **E7** Descoberta de rede mDNS/Zeroconf (item 2 acima).
-- [ ] **E8** Limpeza técnica: remover `ButtonEditorView.tsx` órfão e aplicar code-splitting (bundle > 500 kB).
+- [x] **E8** Limpeza técnica: remover `ButtonEditorView.tsx` órfão e aplicar code-splitting (bundle > 500 kB).

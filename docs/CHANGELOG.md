@@ -4,6 +4,10 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Épico E8 (Limpeza Técnica e Otimização de Bundling com Code-Splitting)**:
+  - Remoção de componente obsoleto e órfão `ButtonEditorView.tsx` (edição de botões já unificada no `ButtonEditorSheet`).
+  - Configuração de `manualChunks` no Rollup/Vite (`desktop/vite.config.ts`) separando `vendor-react`, `vendor-dnd`, `vendor-lucide`, `vendor-radix` e `vendor-tauri`.
+  - Redução drástica do tamanho dos chunks: nenhum bundle excede 325 kB, eliminando avisos de minificação (> 500 kB) e acelerando o tempo de build em ~45%.
 - **Épico E4 (Lista Real de Dispositivos Conectados e Desconexão pelo Servidor)**:
   - Gerenciamento de sessões ativas no servidor Axum WebSocket (`ServerState`, `ClientSession`, `ConnectedDevice` em `desktop/src-tauri/src/server.rs`) com rastreamento de IP remoto, horário de conexão e canais individuais de desconexão.
   - Suporte ao comando de identificação de dispositivo (`identify`) do cliente mobile enviando plataforma amigável ("Stream Desk (iOS)", "Stream Desk (Android)").
