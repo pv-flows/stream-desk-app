@@ -45,15 +45,63 @@ pub fn init_db() -> Result<()> {
         [],
     )?;
 
+    // Migração de seed para organizar Página 1: Apps, Página 2: Mídia
+    let has_migrated_seed: bool = conn
+        .query_row(
+            "SELECT 1 FROM settings WHERE key = 'seed_v2_applied'",
+            [],
+            |_| Ok(true),
+        )
+        .unwrap_or(false);
+
+    if !has_migrated_seed {
+        println!("[DB] Aplicando migração do novo seed padrão organizado (Pág 0: Apps, Pág 1: Mídia)...");
+        let _ = conn.execute("DELETE FROM buttons", []);
+        let seed_buttons = [
+            // Página 0: Apps / Atalhos de Sistema
+            ("Calculadora", "open_app:calc", "#f59e0b", "calculator", 0),
+            ("Navegador", "open_url:https://google.com", "#38bdf8", "globe", 0),
+            ("Terminal", "open_app:cmd", "#64748b", "terminal", 0),
+            ("Tarefas", "hotkey:Ctrl+Shift+Escape", "#10b981", "zap", 0),
+            // Página 1: Mídia & Controles de Áudio
+            ("Vol +", "vol_up", "#38bdf8", "volume-2", 1),
+            ("Vol -", "vol_down", "#0ea5e9", "volume-x", 1),
+            ("Mute", "mute", "#ef4444", "mic-off", 1),
+            ("Play/Pause", "play_pause", "#22c55e", "play", 1),
+            ("Próxima", "media_next", "#8b5cf6", "play", 1),
+            ("Anterior", "media_prev", "#6366f1", "play", 1),
+        ];
+
+        for (label, action_name, color, icon, page_index) in seed_buttons {
+            let _ = conn.execute(
+                "INSERT INTO buttons (label, action_name, color, icon, page_index) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![label, action_name, color, icon, page_index],
+            );
+        }
+
+        let _ = conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('seed_v2_applied', 'true')",
+            [],
+        );
+    }
+
     let count: i64 = conn.query_row("SELECT COUNT(*) FROM buttons", [], |row| row.get(0))?;
 
     if count == 0 {
-        println!("[DB] Tabela buttons vazia. Inserindo seed inicial de 4 botões...");
+        println!("[DB] Tabela buttons vazia. Inserindo novo seed padrão (Página 1: Apps, Página 2: Mídia)...");
         let seed_buttons = [
-            ("Vol +", "vol_up", "#38bdf8", "volume-2", 0),
-            ("Vol -", "vol_down", "#0ea5e9", "volume-x", 0),
-            ("Play/Pause", "play_pause", "#22c55e", "play", 0),
-            ("Calculadora", "open_calc", "#f59e0b", "calculator", 0),
+            // Página 0: Apps / Atalhos de Sistema
+            ("Calculadora", "open_app:calc", "#f59e0b", "calculator", 0),
+            ("Navegador", "open_url:https://google.com", "#38bdf8", "globe", 0),
+            ("Terminal", "open_app:cmd", "#64748b", "terminal", 0),
+            ("Tarefas", "hotkey:Ctrl+Shift+Escape", "#10b981", "zap", 0),
+            // Página 1: Mídia & Controles de Áudio
+            ("Vol +", "vol_up", "#38bdf8", "volume-2", 1),
+            ("Vol -", "vol_down", "#0ea5e9", "volume-x", 1),
+            ("Mute", "mute", "#ef4444", "mic-off", 1),
+            ("Play/Pause", "play_pause", "#22c55e", "play", 1),
+            ("Próxima", "media_next", "#8b5cf6", "play", 1),
+            ("Anterior", "media_prev", "#6366f1", "play", 1),
         ];
 
         for (label, action_name, color, icon, page_index) in seed_buttons {

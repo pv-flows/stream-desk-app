@@ -18,6 +18,8 @@
 ## 3. Funcionalidades Core (Gratuitas)
 - [x] Execução de atalhos globais, macros e abertura de aplicativos no Desktop (integração Enigo para teclas multimídia e crate Open para abrir calculadora).
 - [x] Motor de Ações Avançadas no Desktop (`server.rs`): suporte aos prefixos `open_url:` (sites via browser padrão) e `open_app:` (aplicativos/scripts do SO), além de controles multimídia expandidos (`mute`, `media_play`, `media_next`, `media_prev`).
+- [x] Suporte a Combinações de Teclas Complexas (`hotkey:<combo>` no `server.rs` via `enigo` com modificadores `Ctrl`, `Alt`, `Shift`, `Win`) e opção de hotkey no painel React Desktop.
+- [x] Reorganização do seed padrão do SQLite (`Página 1`: Apps / Atalhos de Sistema; `Página 2`: Mídia / Áudio).
 - [x] Renderização de grade de botões interativos no Mobile (`DeckGrid` e `DeckButton`) mapeados para macros do sistema.
 - [x] Persistência de perfis e botões em SQLite (`streamdesk.db` com seed automático e sincronização dinâmica via WebSocket).
 - [x] Interface CRUD completa no cliente React do Desktop (`get_buttons`, `add_button`, `update_button`, `delete_button`) integrada via Tauri Commands ao SQLite.

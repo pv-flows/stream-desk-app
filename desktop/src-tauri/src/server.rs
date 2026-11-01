@@ -9,7 +9,7 @@ use axum::{
     Router,
 };
 use enigo::{
-    Direction::Click,
+    Direction::{Click, Press, Release},
     Enigo, Key, Keyboard as KeyboardControllable, Settings,
 };
 use serde::Deserialize;
@@ -139,7 +139,85 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
     }
 }
 
+fn parse_key(key_str: &str) -> Option<Key> {
+    let lower = key_str.trim().to_lowercase();
+    match lower.as_str() {
+        "ctrl" | "control" => Some(Key::Control),
+        "alt" => Some(Key::Alt),
+        "shift" => Some(Key::Shift),
+        "win" | "cmd" | "meta" | "super" => Some(Key::Meta),
+        "enter" | "return" => Some(Key::Return),
+        "esc" | "escape" => Some(Key::Escape),
+        "tab" => Some(Key::Tab),
+        "space" => Some(Key::Space),
+        "backspace" => Some(Key::Backspace),
+        "up" => Some(Key::UpArrow),
+        "down" => Some(Key::DownArrow),
+        "left" => Some(Key::LeftArrow),
+        "right" => Some(Key::RightArrow),
+        "f1" => Some(Key::F1),
+        "f2" => Some(Key::F2),
+        "f3" => Some(Key::F3),
+        "f4" => Some(Key::F4),
+        "f5" => Some(Key::F5),
+        "f6" => Some(Key::F6),
+        "f7" => Some(Key::F7),
+        "f8" => Some(Key::F8),
+        "f9" => Some(Key::F9),
+        "f10" => Some(Key::F10),
+        "f11" => Some(Key::F11),
+        "f12" => Some(Key::F12),
+        _ => {
+            let mut chars = key_str.trim().chars();
+            if let (Some(c), None) = (chars.next(), chars.next()) {
+                Some(Key::Unicode(c))
+            } else {
+                None
+            }
+        }
+    }
+}
+
 fn execute_macro(action: &str) {
+    if let Some(hotkey_str) = action.strip_prefix("hotkey:") {
+        println!("[Macro] Executando Hotkey: {}", hotkey_str);
+        let tokens: Vec<&str> = hotkey_str.split('+').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+        if tokens.is_empty() {
+            return;
+        }
+
+        if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+            let mut modifiers = Vec::new();
+            let mut final_key = None;
+
+            for (i, token) in tokens.iter().enumerate() {
+                if i < tokens.len() - 1 {
+                    if let Some(k) = parse_key(token) {
+                        modifiers.push(k);
+                    }
+                } else {
+                    final_key = parse_key(token);
+                }
+            }
+
+            // Pressiona modificadores
+            for m in &modifiers {
+                let _ = enigo.key(*m, Press);
+            }
+
+            // Clica na tecla final
+            if let Some(k) = final_key {
+                let _ = enigo.key(k, Click);
+            }
+
+            // Solta os modificadores na ordem inversa
+            for m in modifiers.iter().rev() {
+                let _ = enigo.key(*m, Release);
+            }
+        }
+        return;
+    }
+
     if let Some(url) = action.strip_prefix("open_url:") {
         println!("[Macro] Abrindo URL: {}", url);
         if let Err(e) = open::that(url.trim()) {

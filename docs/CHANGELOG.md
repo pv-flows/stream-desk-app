@@ -3,6 +3,11 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Added
+- Suporte a Combinações de Teclas Complexas (Hotkeys) no motor de automação (`desktop/src-tauri/src/server.rs`): prefixo `hotkey:` com suporte a múltiplos modificadores (`Ctrl`, `Alt`, `Shift`, `Win`) e teclas de função/alfanuméricas via `enigo` (`Direction::Press`, `Click` e `Release`).
+- Reorganização do seed inicial padrão no SQLite (`desktop/src-tauri/src/db.rs`) dividindo atalhos por finalidade: Página 1 (Apps e Sistema: Calculadora, Navegador, Terminal, Tarefas) e Página 2 (Mídia e Áudio: Volume +, Volume -, Mute, Play/Pause, Próxima, Anterior).
+- Opção "Atalho de Teclado (Hotkey)" no formulário do painel Desktop (`desktop/src/App.tsx`) com input específico de combinações (ex: `Ctrl+Shift+Escape`, `Alt+F4`, `Ctrl+C`).
+
 ### Fixed
 - Recalibragem matemática completa da grade responsiva no Mobile (`mobile/src/screens/HomeScreen.tsx` e `mobile/src/components/DeckButton.tsx`):
   - Definição precisa de colunas (`COLUMNS = isLandscape ? 4 : 3`).

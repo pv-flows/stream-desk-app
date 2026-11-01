@@ -77,6 +77,9 @@ function App() {
     if (actionType === "open_app") {
       return `open_app:${actionCustomParam.trim()}`;
     }
+    if (actionType === "hotkey") {
+      return `hotkey:${actionCustomParam.trim()}`;
+    }
     return actionType;
   };
 
@@ -87,6 +90,9 @@ function App() {
     } else if (rawAction.startsWith("open_app:")) {
       setActionType("open_app");
       setActionCustomParam(rawAction.replace("open_app:", ""));
+    } else if (rawAction.startsWith("hotkey:")) {
+      setActionType("hotkey");
+      setActionCustomParam(rawAction.replace("hotkey:", ""));
     } else {
       setActionType(rawAction);
       setActionCustomParam("");
@@ -103,10 +109,10 @@ function App() {
     }
 
     if (
-      (actionType === "open_url" || actionType === "open_app") &&
+      (actionType === "open_url" || actionType === "open_app" || actionType === "hotkey") &&
       !actionCustomParam.trim()
     ) {
-      setStatusMsg("Informe a URL ou o Caminho do Aplicativo.");
+      setStatusMsg("Informe os parâmetros da ação selecionada (URL, Aplicativo ou Atalho).");
       return;
     }
 
@@ -248,16 +254,19 @@ function App() {
                 <option value="open_calc">Calculadora (open_calc)</option>
                 <option value="open_url">Abrir Site (URL)</option>
                 <option value="open_app">Abrir Aplicativo / Script</option>
+                <option value="hotkey">Atalho de Teclado (Hotkey)</option>
               </optgroup>
             </select>
           </div>
 
-          {(actionType === "open_url" || actionType === "open_app") && (
+          {(actionType === "open_url" || actionType === "open_app" || actionType === "hotkey") && (
             <div className="field">
               <label htmlFor="custom-param-input">
                 {actionType === "open_url"
                   ? "URL do Site (ex: https://youtube.com)"
-                  : "Caminho / Executável (ex: notepad, code, spotify)"}
+                  : actionType === "open_app"
+                  ? "Caminho / Executável (ex: notepad, code, spotify)"
+                  : "Combinação de Teclas (ex: Ctrl+Shift+A, Alt+F4, Ctrl+C)"}
               </label>
               <input
                 id="custom-param-input"
@@ -265,7 +274,9 @@ function App() {
                 placeholder={
                   actionType === "open_url"
                     ? "https://..."
-                    : "notepad / calc / caminho do .exe"
+                    : actionType === "open_app"
+                    ? "notepad / calc / caminho do .exe"
+                    : "Ctrl+Shift+A"
                 }
                 value={actionCustomParam}
                 onChange={(e) => setActionCustomParam(e.currentTarget.value)}
