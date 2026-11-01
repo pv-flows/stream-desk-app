@@ -3,6 +3,12 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Changed
+- Início da Fase 3: o fluxo agêntico passa a ser interno no Antigravity:
+  - **Fim do modelo duplo agêntico:** removido o handoff para o Gemini web como PM externo. O `[RELATÓRIO DE SINCRONIZAÇÃO PARA O GEMINI]` foi substituído pelo `[RELATÓRIO DE ENTREGA]` (`GEMINI.md`).
+  - **Nova persona `orchestrator`:** Tech Lead/PM interno responsável por plano, contrato IPC/WS, delegação e gate final (`.agents/orchestrator.md`).
+  - **Personas reescritas** (`backend_desktop`, `frontend_designer`, `frontend_mobile`, `debugger`, `version_controller`) com território por camada, padrões obrigatórios e gates objetivos. `src-tauri/` deixa de estar congelado e passa a pertencer exclusivamente ao `backend_desktop`.
+  - **`global_rules.md` consolidado** com a Definição de Pronto (cargo check / npm run build / tsc --noEmit / contrato / changelog / commit).
 ### Added
 - Início da Fase 2: Design UI/UX Profissional e Setup Tailwind CSS:
   - **Novo Agente Especialista (`.agents/frontend_designer.md`):** Arquiteto UI/UX focado em React, Tailwind CSS, shadcn/ui e `lucide-react`, com regra de ouro de isolamento estrito do backend Rust.
