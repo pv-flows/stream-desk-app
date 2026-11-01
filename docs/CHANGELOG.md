@@ -4,6 +4,13 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Mobile QoL: Tela Sempre Ativa e Reconexão Automática com Heartbeat:
+  - Adição da biblioteca `expo-keep-awake` e integração do hook `useKeepAwake()` na `HomeScreen.tsx` para impedir o bloqueio/suspensão de tela enquanto o Stream Desk estiver em primeiro plano.
+  - Heartbeat periódico a cada 30 segundos no `websocketService.ts` (`{"action": "ping"}`) garantindo que a conexão permaneça ativa.
+  - Reconexão automática resiliente com timer de 3000ms após quedas de Wi-Fi ou erros inesperados, respeitando a flag `isManualDisconnect` ao desconectar manualmente.
+  - Tratamento silencioso da ação `ping` no servidor Desktop (`desktop/src-tauri/src/server.rs`), mantendo o socket ativo sem acionar macros.
+
+### Added
 - Páginas Dinâmicas e Reordenação livre via Drag-and-Drop:
   - Tabela `pages` no SQLite (`desktop/src-tauri/src/db.rs`) com injeção automática da página padrão "Principal" e migração segura dos dados existentes.
   - Coluna `position INTEGER DEFAULT 0` na tabela `buttons` com ordenação determinística (`ORDER BY position ASC, id ASC`).

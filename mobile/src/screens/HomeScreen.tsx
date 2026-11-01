@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { CameraView, BarcodeScanningResult, useCameraPermissions } from 'expo-camera';
+import { useKeepAwake } from 'expo-keep-awake';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -13,6 +14,7 @@ import { getSkin } from '../theme/skins';
 const STORAGE_WS_URL_KEY = '@streamdesk_ws_url';
 
 export const HomeScreen: React.FC = () => {
+  useKeepAwake();
   const { theme, palette, buttons, pages } = useThemeStore();
   const dynamicPages = pages && pages.length > 0 ? pages : [{ id: 1, name: 'Principal' }];
   const skin = getSkin(theme);

@@ -74,6 +74,11 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
                             text.trim().to_string()
                         };
 
+                        if action_name == "ping" {
+                            // Heartbeat recebido do cliente mobile para manter a conexão ativa
+                            continue;
+                        }
+
                         if action_name == "get_layout" {
                             match db::get_all_buttons() {
                                 Ok(buttons) => {

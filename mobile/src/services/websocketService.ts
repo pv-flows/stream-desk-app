@@ -32,6 +32,35 @@ class WebSocketService {
   private messageListeners: Array<(data: ServerResponse) => void> = [];
   private pageChangeListeners: Array<(pageIndex: number) => void> = [];
   private currentStatus: ConnectionStatus = 'disconnected';
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private isManualDisconnect: boolean = false;
+  private lastUrl: string = '';
+
+  private clearTimers(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  private scheduleReconnect(): void {
+    if (this.isManualDisconnect || !this.lastUrl) return;
+    if (this.reconnectTimer) return;
+
+    console.log('[WebSocket] Agendando reconexão automática em 3000ms...');
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (!this.isManualDisconnect && this.lastUrl) {
+        console.log('[WebSocket] Tentando reconectar automaticamente...');
+        this.connect(this.lastUrl);
+      }
+    }, 3000);
+  }
 
   public connect(url: string): void {
     const trimmedUrl = url?.trim();
@@ -40,6 +69,10 @@ class WebSocketService {
       this.setStatus('error');
       return;
     }
+
+    this.lastUrl = trimmedUrl;
+    this.isManualDisconnect = false;
+    this.clearTimers();
 
     if (this.socket) {
       try {
@@ -61,6 +94,13 @@ class WebSocketService {
       this.socket.onopen = () => {
         this.setStatus('connected');
         console.log('[WebSocket] Conectado com sucesso ao servidor desktop!');
+
+        // Inicia envio periódico de heartbeat a cada 30 segundos
+        this.clearTimers();
+        this.heartbeatTimer = setInterval(() => {
+          this.sendCommand('ping');
+        }, 30000);
+
         // Solicita automaticamente o layout de botões persistido no SQLite do PC
         this.sendCommand('get_layout');
       };
@@ -112,25 +152,41 @@ class WebSocketService {
 
       this.socket.onerror = (error) => {
         console.error('[WebSocket] Erro na conexão:', error);
+        if (this.heartbeatTimer) {
+          clearInterval(this.heartbeatTimer);
+          this.heartbeatTimer = null;
+        }
         this.setStatus('error');
+        this.scheduleReconnect();
       };
 
       this.socket.onclose = (event) => {
         console.log(`[WebSocket] Conexão encerrada (código ${event.code}): ${event.reason}`);
+        if (this.heartbeatTimer) {
+          clearInterval(this.heartbeatTimer);
+          this.heartbeatTimer = null;
+        }
         if (this.currentStatus !== 'error') {
           this.setStatus('disconnected');
         }
         this.socket = null;
+        this.scheduleReconnect();
       };
     } catch (err) {
       console.error('[WebSocket] Falha ao instanciar WebSocket:', err);
       this.setStatus('error');
+      this.scheduleReconnect();
     }
   }
 
   public disconnect(): void {
+    this.isManualDisconnect = true;
+    this.clearTimers();
     if (this.socket) {
       try {
+        this.socket.onopen = null;
+        this.socket.onmessage = null;
+        this.socket.onerror = null;
         this.socket.onclose = null;
         this.socket.close();
       } catch {}
