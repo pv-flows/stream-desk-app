@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -18,6 +19,19 @@ interface DeckButtonProps {
   onPress: (item: DeckButtonItem) => void;
 }
 
+const FEATHER_ICONS = new Set([
+  'volume-2',
+  'volume-x',
+  'mic-off',
+  'play',
+  'calculator',
+  'globe',
+  'settings',
+  'folder',
+  'terminal',
+  'zap',
+]);
+
 export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
   const theme = useThemeStore((state) => state.theme);
   const skin = getSkin(theme);
@@ -30,6 +44,8 @@ export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
 
   const baseBorderColor = item.color || skin.borderColor;
   const activeAccentColor = item.color || skin.highlightColor;
+  const rawIcon = item.icon?.trim() || 'zap';
+  const isFeatherIcon = FEATHER_ICONS.has(rawIcon);
 
   const handlePressIn = () => {
     if (theme === 'apple' || theme === 'windows' || theme === 'ios') {
@@ -157,9 +173,15 @@ export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
         ) : null}
 
         <View style={styles.contentContainer}>
-          {item.icon ? (
-            <Text style={[styles.icon, { color: activeAccentColor }]}>{item.icon}</Text>
-          ) : null}
+          <View style={styles.iconWrapper}>
+            {isFeatherIcon ? (
+              <Feather name={rawIcon as any} size={26} color={activeAccentColor} />
+            ) : (
+              <Text style={[styles.fallbackIcon, { color: activeAccentColor }]}>
+                {rawIcon}
+              </Text>
+            )}
+          </View>
           <Text style={[styles.label, { color: skin.textColor }]} numberOfLines={2}>
             {item.label}
           </Text>
@@ -186,6 +208,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
+    gap: 6,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+  },
+  fallbackIcon: {
+    fontSize: 22,
+    fontWeight: '700',
   },
   rippleCircle: {
     position: 'absolute',
@@ -194,12 +226,8 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     zIndex: 1,
   },
-  icon: {
-    fontSize: 24,
-    marginBottom: 6,
-  },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
   },

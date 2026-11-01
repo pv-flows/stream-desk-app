@@ -297,6 +297,14 @@ button {
   color: #f8fafc;
 }
 
+.deck-icon-badge {
+  font-size: 0.72rem;
+  color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
 .deck-action {
   font-size: 0.75rem;
   color: #94a3b8;

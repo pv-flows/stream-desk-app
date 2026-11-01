@@ -9,6 +9,7 @@ pub struct Button {
     pub label: String,
     pub action_name: String,
     pub color: String,
+    pub icon: String,
 }
 
 pub fn init_db() -> Result<()> {
@@ -19,10 +20,14 @@ pub fn init_db() -> Result<()> {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             label TEXT NOT NULL,
             action_name TEXT NOT NULL,
-            color TEXT NOT NULL
+            color TEXT NOT NULL,
+            icon TEXT DEFAULT 'zap'
         )",
         [],
     )?;
+
+    // Migração segura caso a tabela já exista sem a coluna icon
+    let _ = conn.execute("ALTER TABLE buttons ADD COLUMN icon TEXT DEFAULT 'zap'", []);
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS settings (
@@ -42,16 +47,16 @@ pub fn init_db() -> Result<()> {
     if count == 0 {
         println!("[DB] Tabela buttons vazia. Inserindo seed inicial de 4 botões...");
         let seed_buttons = [
-            ("Vol +", "vol_up", "#38bdf8"),
-            ("Vol -", "vol_down", "#0ea5e9"),
-            ("Play/Pause", "play_pause", "#22c55e"),
-            ("Calculadora", "open_calc", "#f59e0b"),
+            ("Vol +", "vol_up", "#38bdf8", "volume-2"),
+            ("Vol -", "vol_down", "#0ea5e9", "volume-x"),
+            ("Play/Pause", "play_pause", "#22c55e", "play"),
+            ("Calculadora", "open_calc", "#f59e0b", "calculator"),
         ];
 
-        for (label, action_name, color) in seed_buttons {
+        for (label, action_name, color, icon) in seed_buttons {
             conn.execute(
-                "INSERT INTO buttons (label, action_name, color) VALUES (?1, ?2, ?3)",
-                params![label, action_name, color],
+                "INSERT INTO buttons (label, action_name, color, icon) VALUES (?1, ?2, ?3, ?4)",
+                params![label, action_name, color, icon],
             )?;
         }
     }
@@ -61,7 +66,7 @@ pub fn init_db() -> Result<()> {
 
 pub fn get_all_buttons() -> Result<Vec<Button>> {
     let conn = Connection::open(DB_PATH)?;
-    let mut stmt = conn.prepare("SELECT id, label, action_name, color FROM buttons ORDER BY id ASC")?;
+    let mut stmt = conn.prepare("SELECT id, label, action_name, color, COALESCE(icon, 'zap') FROM buttons ORDER BY id ASC")?;
 
     let button_iter = stmt.query_map([], |row| {
         Ok(Button {
@@ -69,6 +74,7 @@ pub fn get_all_buttons() -> Result<Vec<Button>> {
             label: row.get(1)?,
             action_name: row.get(2)?,
             color: row.get(3)?,
+            icon: row.get(4)?,
         })
     })?;
 
@@ -80,11 +86,11 @@ pub fn get_all_buttons() -> Result<Vec<Button>> {
     Ok(buttons)
 }
 
-pub fn add_button(label: &str, action_name: &str, color: &str) -> Result<usize> {
+pub fn add_button(label: &str, action_name: &str, color: &str, icon: &str) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute(
-        "INSERT INTO buttons (label, action_name, color) VALUES (?1, ?2, ?3)",
-        params![label, action_name, color],
+        "INSERT INTO buttons (label, action_name, color, icon) VALUES (?1, ?2, ?3, ?4)",
+        params![label, action_name, color, icon],
     )
 }
 

@@ -13,6 +13,7 @@ export interface SkinDefinition {
   id: SkinId;
   type: SkinType;
   screenBackground: string;
+  backgroundGradient: readonly [string, string, ...string[]];
   backgroundColor: string;
   pressedBackgroundColor: string;
   textColor: string;
@@ -31,6 +32,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'default',
     type: 'solid',
     screenBackground: '#0f172a',
+    backgroundGradient: ['#0f172a', '#1e293b'],
     backgroundColor: '#1e293b',
     pressedBackgroundColor: '#334155',
     textColor: '#f8fafc',
@@ -53,6 +55,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'apple',
     type: 'glass',
     screenBackground: '#1c1c1e',
+    backgroundGradient: ['#2c1654', '#ff416c', '#ff4b2b'],
     backgroundColor: 'rgba(255, 255, 255, 0.14)',
     pressedBackgroundColor: 'rgba(255, 255, 255, 0.26)',
     textColor: '#ffffff',
@@ -75,6 +78,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'windows',
     type: 'glass',
     screenBackground: '#111827',
+    backgroundGradient: ['#001f3f', '#003366', '#0078d4'],
     backgroundColor: 'rgba(32, 32, 32, 0.55)',
     pressedBackgroundColor: 'rgba(60, 60, 60, 0.7)',
     textColor: '#f3f4f6',
@@ -97,6 +101,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'steam',
     type: 'solid',
     screenBackground: '#171a21',
+    backgroundGradient: ['#171a21', '#1b2838', '#101822'],
     backgroundColor: '#1b2838',
     pressedBackgroundColor: '#66c0f4',
     textColor: '#c7d5e0',
@@ -119,6 +124,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'oneui',
     type: 'flat',
     screenBackground: '#000000',
+    backgroundGradient: ['#190f2a', '#2c1e4a', '#100c1a'],
     backgroundColor: '#17171a',
     pressedBackgroundColor: '#25252b',
     textColor: '#fafaff',
@@ -141,6 +147,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'chromebook',
     type: 'flat',
     screenBackground: '#202124',
+    backgroundGradient: ['#202124', '#2d3748', '#3c4043'],
     backgroundColor: '#303134',
     pressedBackgroundColor: '#3c4043',
     textColor: '#e8eaed',
@@ -163,6 +170,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'gamer',
     type: 'solid',
     screenBackground: '#090014',
+    backgroundGradient: ['#090014', '#16002b', '#2b0054'],
     backgroundColor: '#16002b',
     pressedBackgroundColor: '#2b0054',
     textColor: '#00ffcc',
@@ -185,6 +193,7 @@ export const skins: Record<SkinId, SkinDefinition> = {
     id: 'ios',
     type: 'glass',
     screenBackground: '#1c1c1e',
+    backgroundGradient: ['#2c1654', '#ff416c', '#ff4b2b'],
     backgroundColor: 'rgba(255, 255, 255, 0.14)',
     pressedBackgroundColor: 'rgba(255, 255, 255, 0.26)',
     textColor: '#ffffff',

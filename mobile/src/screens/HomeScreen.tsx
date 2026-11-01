@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
+import { BlurView } from 'expo-blur';
+import { CameraView, BarcodeScanningResult, useCameraPermissions } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { DeckButton, DeckButtonItem } from '../components/DeckButton';
@@ -127,78 +129,19 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  if (isScanning || !wsUrl) {
+  const renderHeader = () => {
+    const isGlass = skin.type === 'glass';
+
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: skin.screenBackground || palette.background }]}
-      >
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: skin.textColor }]}>Parear Stream Desk</Text>
-          <Text style={[styles.subtitle, { color: skin.highlightColor }]}>
-            Aponte a câmera para o QR Code exibido no aplicativo Desktop
-          </Text>
-          {connectionStatus === 'error' && wsUrl ? (
-            <Text style={styles.errorBanner}>
-              Falha ao conectar em {wsUrl}. Escaneie o QR Code novamente.
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.scannerWrapper}>
-          {!permission ? (
-            <Text style={[styles.emptyText, { color: skin.textColor }]}>
-              Verificando permissões da câmera...
-            </Text>
-          ) : !permission.granted ? (
-            <View style={styles.permissionBox}>
-              <Text style={[styles.emptyText, { color: skin.textColor }]}>
-                Precisamos de acesso à câmera para ler o QR Code de conexão do PC.
-              </Text>
-              <Pressable
-                onPress={requestPermission}
-                style={[styles.actionBtn, { backgroundColor: skin.highlightColor }]}
-              >
-                <Text style={styles.actionBtnText}>Permitir Câmera</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={[styles.cameraContainer, { borderColor: skin.highlightColor }]}>
-              <CameraView
-                style={StyleSheet.absoluteFill}
-                facing="back"
-                barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-                onBarcodeScanned={handleBarcodeScanned}
-              />
-              <View style={[styles.qrFrame, { borderColor: skin.highlightColor }]} />
-            </View>
-          )}
-        </View>
-
-        {wsUrl ? (
-          <View style={styles.footerBar}>
-            <Pressable
-              onPress={() => {
-                scannedLockRef.current = false;
-                setIsScanning(false);
-                websocketService.connect(wsUrl);
-              }}
-              style={[styles.disconnectBtn, { borderColor: skin.borderColor }]}
-            >
-              <Text style={[styles.disconnectBtnText, { color: skin.textColor }]}>
-                Tentar Reconectar ({wsUrl})
-              </Text>
-            </Pressable>
-          </View>
+      <View style={styles.headerWrapper}>
+        {isGlass ? (
+          <BlurView
+            intensity={skin.blurIntensity}
+            tint={skin.blurTint}
+            style={[StyleSheet.absoluteFill, styles.headerBlur]}
+          />
         ) : null}
-      </SafeAreaView>
-    );
-  }
 
-  return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: skin.screenBackground || palette.background }]}
-    >
-      <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <Text style={[styles.title, { color: skin.textColor }]}>Stream Desk</Text>
           <Pressable
@@ -221,25 +164,109 @@ export const HomeScreen: React.FC = () => {
           <Text style={[styles.serverReply, { color: skin.highlightColor }]}>{serverReply}</Text>
         ) : null}
       </View>
+    );
+  };
 
-      <View style={styles.gridContainer}>
-        {buttons.length > 0 ? (
-          <View style={styles.grid}>
-            {buttons.map((item) => (
-              <DeckButton key={String(item.id)} item={item} onPress={handleButtonPress} />
-            ))}
+  if (isScanning || !wsUrl) {
+    return (
+      <LinearGradient
+        colors={skin.backgroundGradient || ['#0f172a', '#1e293b']}
+        style={styles.gradientFill}
+      >
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: skin.textColor }]}>Parear Stream Desk</Text>
+            <Text style={[styles.subtitle, { color: skin.highlightColor }]}>
+              Aponte a câmera para o QR Code exibido no aplicativo Desktop
+            </Text>
+            {connectionStatus === 'error' && wsUrl ? (
+              <Text style={styles.errorBanner}>
+                Falha ao conectar em {wsUrl}. Escaneie o QR Code novamente.
+              </Text>
+            ) : null}
           </View>
-        ) : (
-          <Text style={[styles.emptyText, { color: skin.textColor }]}>
-            Sincronizando layout de botões com o PC...
-          </Text>
-        )}
-      </View>
-    </SafeAreaView>
+
+          <View style={styles.scannerWrapper}>
+            {!permission ? (
+              <Text style={[styles.emptyText, { color: skin.textColor }]}>
+                Verificando permissões da câmera...
+              </Text>
+            ) : !permission.granted ? (
+              <View style={styles.permissionBox}>
+                <Text style={[styles.emptyText, { color: skin.textColor }]}>
+                  Precisamos de acesso à câmera para ler o QR Code de conexão do PC.
+                </Text>
+                <Pressable
+                  onPress={requestPermission}
+                  style={[styles.actionBtn, { backgroundColor: skin.highlightColor }]}
+                >
+                  <Text style={styles.actionBtnText}>Permitir Câmera</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={[styles.cameraContainer, { borderColor: skin.highlightColor }]}>
+                <CameraView
+                  style={StyleSheet.absoluteFill}
+                  facing="back"
+                  barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+                  onBarcodeScanned={handleBarcodeScanned}
+                />
+                <View style={[styles.qrFrame, { borderColor: skin.highlightColor }]} />
+              </View>
+            )}
+          </View>
+
+          {wsUrl ? (
+            <View style={styles.footerBar}>
+              <Pressable
+                onPress={() => {
+                  scannedLockRef.current = false;
+                  setIsScanning(false);
+                  websocketService.connect(wsUrl);
+                }}
+                style={[styles.disconnectBtn, { borderColor: skin.borderColor }]}
+              >
+                <Text style={[styles.disconnectBtnText, { color: skin.textColor }]}>
+                  Tentar Reconectar ({wsUrl})
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  return (
+    <LinearGradient
+      colors={skin.backgroundGradient || ['#0f172a', '#1e293b']}
+      style={styles.gradientFill}
+    >
+      <SafeAreaView style={styles.container}>
+        {renderHeader()}
+
+        <View style={styles.gridContainer}>
+          {buttons.length > 0 ? (
+            <View style={styles.grid}>
+              {buttons.map((item) => (
+                <DeckButton key={String(item.id)} item={item} onPress={handleButtonPress} />
+              ))}
+            </View>
+          ) : (
+            <Text style={[styles.emptyText, { color: skin.textColor }]}>
+              Sincronizando layout de botões com o PC...
+            </Text>
+          )}
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  gradientFill: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'space-between',
@@ -249,6 +276,20 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
+  },
+  headerWrapper: {
+    paddingTop: 32,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  headerBlur: {
+    borderRadius: 20,
   },
   headerTopRow: {
     width: '100%',

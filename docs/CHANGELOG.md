@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Suporte a ícones dinâmicos no SQLite (`buttons.icon`) com migração suave (`ALTER TABLE buttons ADD COLUMN icon TEXT DEFAULT 'zap'`) e seed atualizado com ícones contextuais (`desktop/src-tauri/src/db.rs`, `lib.rs`).
+- Seletor de ícones (`volume-2`, `volume-x`, `mic-off`, `play`, `calculator`, etc.) e visualização de badge de ícone no painel Desktop (`desktop/src/App.tsx`, `App.css`).
+- Fundo em gradiente por Skin com `expo-linear-gradient` (`backgroundGradient` adicionado a cada definição em `mobile/src/theme/skins.ts` e aplicado em `HomeScreen.tsx`).
+- Barra de cabeçalho com `<BlurView>` para temas glass (`HomeScreen.tsx`).
+- Renderização de ícones dinâmicos Feather via `@expo/vector-icons` centralizados acima do label em `mobile/src/components/DeckButton.tsx`.
 - Pareamento dinâmico por QR Code no Mobile (`mobile/src/screens/HomeScreen.tsx` e `mobile/src/services/websocketService.ts`) utilizando `CameraView` (`expo-camera`) e persistência da chave `@streamdesk_ws_url` no `AsyncStorage`, eliminando o IP hardcoded e adicionando o botão "Desconectar" para novo pareamento.
 - Descoberta nativa do IP IPv4 local na LAN via crate `local-ip-address` (`get_local_ip` em `desktop/src-tauri/src/lib.rs`).
 - Área de conexão no Dashboard Desktop (`desktop/src/App.tsx` e `App.css`) renderizando o QR Code dinâmico (`ws://${localIp}:8080/ws`) com `react-qr-code` e exibindo o endereço IP local ao lado.

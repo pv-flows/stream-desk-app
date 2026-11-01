@@ -8,6 +8,7 @@ interface DeckButton {
   label: string;
   action_name: string;
   color: string;
+  icon?: string;
 }
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
   const [label, setLabel] = useState("");
   const [actionName, setActionName] = useState("vol_up");
   const [color, setColor] = useState("#38bdf8");
+  const [icon, setIcon] = useState("zap");
   const [statusMsg, setStatusMsg] = useState<string>("");
 
   const loadButtons = async () => {
@@ -76,6 +78,7 @@ function App() {
         label: label.trim(),
         actionName: actionName.trim(),
         color: color.trim() || "#38bdf8",
+        icon: icon.trim() || "zap",
       });
       setLabel("");
       setStatusMsg(`Botão "${label.trim()}" adicionado com sucesso!`);
@@ -166,6 +169,26 @@ function App() {
             </datalist>
           </div>
 
+          <div className="field">
+            <label htmlFor="icon-select">Ícone</label>
+            <select
+              id="icon-select"
+              value={icon}
+              onChange={(e) => setIcon(e.currentTarget.value)}
+            >
+              <option value="volume-2">volume-2 (Volume +)</option>
+              <option value="volume-x">volume-x (Volume -)</option>
+              <option value="mic-off">mic-off (Mute Mic)</option>
+              <option value="play">play (Play/Pause)</option>
+              <option value="calculator">calculator (Calculadora)</option>
+              <option value="globe">globe (Navegador)</option>
+              <option value="settings">settings (Configurações)</option>
+              <option value="folder">folder (Pastas)</option>
+              <option value="terminal">terminal (Terminal)</option>
+              <option value="zap">zap (Ação Rápida)</option>
+            </select>
+          </div>
+
           <div className="field field-color">
             <label htmlFor="color-input">Cor</label>
             <div className="color-Input-group">
@@ -222,6 +245,7 @@ function App() {
                   style={{ backgroundColor: btn.color || "#38bdf8" }}
                 />
                 <strong className="deck-label">{btn.label}</strong>
+                <span className="deck-icon-badge">icon: {btn.icon || "zap"}</span>
                 <code className="deck-action">{btn.action_name}</code>
               </div>
             ))}
