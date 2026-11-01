@@ -109,3 +109,22 @@ Disparado pelo rastreador de janelas ativas (`active_win_pos_rs`) quando um proc
 | `get_layout` | Nenhuma | Solicita envio imediato do layout de botões, páginas e aparência (`sync_layout`). |
 | `ping` | Nenhuma | Mensagem periódica de keepalive (responde com `pong`). |
 | `press_button` | `"Ctrl+C"` | Dispara a execução da macro/atalho associado no Windows. |
+
+### 5.4 Descoberta de Rede na LAN (Zeroconf / mDNS / HTTP)
+
+- **Endpoint HTTP de Descoberta (`GET /discovery` e `GET /health`)**:
+  Retorna JSON identificando o servidor na porta 8080:
+  ```json
+  {
+    "status": "ok",
+    "app": "streamdesk",
+    "name": "Stream Desk Desktop",
+    "version": "1.0.0",
+    "ip": "192.168.1.15",
+    "ws_url": "ws://192.168.1.15:8080/ws"
+  }
+  ```
+- **Beacon e Responder UDP (Porta 8081)**:
+  O servidor escuta datagramas UDP contendo `"STREAMDESK_DISCOVER"` e responde diretamente ao remetente com os dados de conexão do servidor.
+- **Cliente Mobile (`discoveryService.ts`)**:
+  Realiza varredura de candidatos na sub-rede local e pareamento automático dispensando leitura de QR Code em redes locais fechadas.

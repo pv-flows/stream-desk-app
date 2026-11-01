@@ -15,6 +15,7 @@ import {
 import PagerView from 'react-native-pager-view';
 import { DeckButton, DeckButtonItem } from '../components/DeckButton';
 import { ConnectionStatus, websocketService } from '../services/websocketService';
+import { scanSubnetForServer } from '../services/discoveryService';
 import { useThemeStore } from '../store/themeStore';
 import { getSkin } from '../theme/skins';
 
@@ -33,6 +34,8 @@ export const HomeScreen: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [lastAction, setLastAction] = useState<string>('Pronto para tocar');
   const [serverReply, setServerReply] = useState<string>('');
+  const [isDiscovering, setIsDiscovering] = useState<boolean>(false);
+  const [discoveryMessage, setDiscoveryMessage] = useState<string>('');
   const scannedLockRef = useRef<boolean>(false);
   const pagerRef = useRef<PagerView>(null);
 
@@ -130,6 +133,36 @@ export const HomeScreen: React.FC = () => {
     }
 
     websocketService.connect(scannedUrl);
+  };
+
+  const handleAutoDiscover = async () => {
+    setIsDiscovering(true);
+    setDiscoveryMessage('Varrendo rede local (Zeroconf / mDNS)...');
+    try {
+      const subnets = ['192.168.1', '192.168.0', '10.0.0'];
+      let found = null;
+      for (const sub of subnets) {
+        setDiscoveryMessage(`Buscando em ${sub}.x:8080...`);
+        found = await scanSubnetForServer(sub);
+        if (found) break;
+      }
+
+      if (found) {
+        setDiscoveryMessage(`Servidor encontrado em ${found.ip}!`);
+        scannedLockRef.current = true;
+        setIsScanning(false);
+        setWsUrl(found.ws_url);
+        setLastAction(`Pareado via Auto-Descoberta`);
+        await AsyncStorage.setItem(STORAGE_WS_URL_KEY, found.ws_url);
+        websocketService.connect(found.ws_url);
+      } else {
+        setDiscoveryMessage('Nenhum servidor detectado. Use o QR Code.');
+      }
+    } catch {
+      setDiscoveryMessage('Erro ao varrer rede local.');
+    } finally {
+      setIsDiscovering(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -269,6 +302,33 @@ export const HomeScreen: React.FC = () => {
                 <View style={[styles.qrFrame, { borderColor: skin.highlightColor }]} />
               </View>
             )}
+          </View>
+
+          <View style={{ alignItems: 'center', marginVertical: 12, gap: 6, paddingHorizontal: 20 }}>
+            <Pressable
+              onPress={handleAutoDiscover}
+              disabled={isDiscovering}
+              style={[
+                styles.actionBtn,
+                {
+                  backgroundColor: isDiscovering ? 'rgba(255, 255, 255, 0.1)' : 'rgba(99, 102, 241, 0.25)',
+                  borderWidth: 1,
+                  borderColor: skin.highlightColor || '#6366f1',
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  marginTop: 0,
+                },
+              ]}
+            >
+              <Text style={[styles.actionBtnText, { color: skin.textColor }]}>
+                {isDiscovering ? 'Buscando na Rede...' : 'Buscar Servidor na Rede (mDNS / Zeroconf)'}
+              </Text>
+            </Pressable>
+            {discoveryMessage ? (
+              <Text style={{ fontSize: 11, color: '#a1a1aa', textAlign: 'center' }}>
+                {discoveryMessage}
+              </Text>
+            ) : null}
           </View>
 
           {wsUrl ? (

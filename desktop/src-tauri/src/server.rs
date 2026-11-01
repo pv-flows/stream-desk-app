@@ -74,14 +74,79 @@ struct ClientCommand {
     payload: Option<String>,
 }
 
+async fn health_handler() -> impl IntoResponse {
+    let local_ip = local_ip_address::local_ip()
+        .map(|ip| ip.to_string())
+        .unwrap_or_else(|_| "127.0.0.1".to_string());
+    axum::Json(serde_json::json!({
+        "status": "ok",
+        "app": "streamdesk",
+        "name": "Stream Desk Desktop",
+        "version": "1.0.0",
+        "ip": local_ip,
+        "ws_url": format!("ws://{}:8080/ws", local_ip)
+    }))
+}
+
+async fn discovery_handler() -> impl IntoResponse {
+    health_handler().await
+}
+
+async fn start_udp_discovery_beacon() {
+    let socket = match tokio::net::UdpSocket::bind("0.0.0.0:8081").await {
+        Ok(s) => {
+            let _ = s.set_broadcast(true);
+            s
+        }
+        Err(err) => {
+            eprintln!("[Discovery] Falha ao vincular porta UDP 8081: {:?}", err);
+            return;
+        }
+    };
+    println!("[Discovery] Serviço Zeroconf/UDP ativo na porta 8081");
+
+    let mut buf = [0u8; 512];
+    loop {
+        match socket.recv_from(&mut buf).await {
+            Ok((len, peer)) => {
+                let msg = String::from_utf8_lossy(&buf[..len]);
+                if msg.contains("STREAMDESK_DISCOVER") {
+                    let local_ip = local_ip_address::local_ip()
+                        .map(|ip| ip.to_string())
+                        .unwrap_or_else(|_| "127.0.0.1".to_string());
+                    let reply = serde_json::json!({
+                        "app": "streamdesk",
+                        "name": "Stream Desk Desktop",
+                        "port": 8080,
+                        "ip": local_ip,
+                        "ws_url": format!("ws://{}:8080/ws", local_ip)
+                    })
+                    .to_string();
+                    let _ = socket.send_to(reply.as_bytes(), peer).await;
+                }
+            }
+            Err(e) => {
+                eprintln!("[Discovery] Erro ao receber pacote UDP: {:?}", e);
+                break;
+            }
+        }
+    }
+}
+
 pub async fn start_server(state: ServerState) {
     let monitor_tx = state.tx.clone();
     tokio::spawn(async move {
         start_window_monitor(monitor_tx).await;
     });
 
+    tokio::spawn(async move {
+        start_udp_discovery_beacon().await;
+    });
+
     let app = Router::new()
         .route("/ws", get(ws_handler))
+        .route("/health", get(health_handler))
+        .route("/discovery", get(discovery_handler))
         .with_state(state);
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 

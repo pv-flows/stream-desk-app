@@ -13,7 +13,7 @@
 - [x] Implementar broadcast em tempo real (`tokio::sync::broadcast`) para sincronizar alterações de layout (`sync_layout`) imediatamente ao criar/remover botões no Desktop.
 - [x] Implementar descoberta de IP local nativa no Desktop (`local-ip-address`) e geração de QR Code de pareamento (`react-qr-code` em `desktop/src/App.tsx`).
 - [x] Implementar leitor de QR Code (`expo-camera`), persistência da URL (`@react-native-async-storage/async-storage`) e conexão dinâmica WebSocket no Mobile (`HomeScreen.tsx` / `websocketService.ts`).
-- [ ] Suporte a descoberta de rede (mDNS / Zeroconf).
+- [x] Suporte a descoberta de rede (mDNS / Zeroconf / UDP Beacon e endpoints /discovery).
 
 ## 3. Funcionalidades Core (Gratuitas)
 - [x] Execução de atalhos globais, macros e abertura de aplicativos no Desktop (integração Enigo para teclas multimídia e crate Open para abrir calculadora).
@@ -44,5 +44,5 @@
 - [x] **E4** Lista real de dispositivos conectados e desconexão via servidor — hoje mock em `ConnectionView.tsx`.
 - [x] **E5** Coluna `enabled` em `window_rules` com toggle real — hoje o switch apaga a regra.
 - [x] **E6** Integração OBS WebSocket v5 (primeira integração real em `IntegrationsView.tsx`).
-- [ ] **E7** Descoberta de rede mDNS/Zeroconf (item 2 acima).
+- [x] **E7** Descoberta de rede mDNS/Zeroconf (item 2 acima).
 - [x] **E8** Limpeza técnica: remover `ButtonEditorView.tsx` órfão e aplicar code-splitting (bundle > 500 kB).

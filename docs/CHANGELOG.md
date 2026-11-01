@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Épico E7 (Descoberta Automática de Rede na LAN - Zeroconf / UDP Beacon / HTTP Discovery)**:
+  - Endpoints HTTP `/discovery` e `/health` no servidor Axum (`desktop/src-tauri/src/server.rs`) retornando metadados de pareamento (`app`, `name`, `ip`, `ws_url`).
+  - Responder e beacon UDP na porta 8081 para anúncio e descoberta Zeroconf em tempo real na rede local.
+  - Serviço de descoberta no mobile (`mobile/src/services/discoveryService.ts`) com varredura assíncrona concorrente em lote de sub-redes candidatas.
+  - Botão e indicador de progresso na tela de pareamento mobile (`HomeScreen.tsx`), permitindo conexão instantânea ao Stream Desk sem necessidade de apontar a câmera para o QR Code.
 - **Épico E6 (Integração Nativa com OBS Studio WebSocket v5)**:
   - Módulo nativo `desktop/src-tauri/src/obs.rs` com suporte ao protocolo OBS WebSocket v5: autenticação por hash SHA256/Base64 (`Hello` op 0 -> `Identify` op 1 -> `Identified` op 2), envio de requisições (`Request` op 6) e leitura assíncrona de respostas (`RequestResponse` op 7).
   - Persistência das configurações OBS (`obs_host`, `obs_port`, `obs_password`, `obs_enabled`) no SQLite (`db.rs`).
