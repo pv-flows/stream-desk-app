@@ -44,6 +44,8 @@ export interface DashboardState {
   fetchTheme: () => Promise<void>;
   fetchLocalIp: () => Promise<void>;
   fetchWindowRules: () => Promise<void>;
+  addWindowRule: (processName: string, pageIndex: number) => Promise<void>;
+  deleteWindowRule: (id: number) => Promise<void>;
   init: () => Promise<void>;
 }
 
@@ -107,7 +109,6 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       }
     } catch (err) {
       console.warn("[Store] Erro ao adicionar página via IPC:", err);
-      // Fallback otimista local caso fora do runtime Tauri
       set((state) => {
         const nextId =
           state.pages.reduce((max, p) => Math.max(max, p.id), 0) + 1;
@@ -201,6 +202,39 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       }
     } catch (err) {
       console.warn("[Store] Erro ao buscar window rules via IPC:", err);
+    }
+  },
+
+  addWindowRule: async (processName: string, pageIndex: number) => {
+    const trimmed = processName.trim();
+    if (!trimmed) return;
+    try {
+      await invoke("add_window_rule", { processName: trimmed, pageIndex });
+      await get().fetchWindowRules();
+    } catch (err) {
+      console.warn("[Store] Erro ao adicionar window rule via IPC:", err);
+      set((state) => {
+        const nextId =
+          state.windowRules.reduce((max, r) => Math.max(max, r.id), 0) + 1;
+        return {
+          windowRules: [
+            ...state.windowRules,
+            { id: nextId, process_name: trimmed, page_index: pageIndex },
+          ],
+        };
+      });
+    }
+  },
+
+  deleteWindowRule: async (id: number) => {
+    try {
+      await invoke("delete_window_rule", { id });
+      await get().fetchWindowRules();
+    } catch (err) {
+      console.warn("[Store] Erro ao deletar window rule via IPC:", err);
+      set((state) => ({
+        windowRules: state.windowRules.filter((r) => r.id !== id),
+      }));
     }
   },
 
