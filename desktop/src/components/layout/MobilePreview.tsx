@@ -16,8 +16,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { getLucideIcon, getButtonColorStyles, isBase64Icon, getBase64Src } from "@/lib/buttonUtils";
+import {
+  getLucideIcon,
+  getButtonColorStyles,
+  isBase64Icon,
+  getBase64Src,
+} from "@/lib/buttonUtils";
 
 export interface MobilePreviewProps {
   activePage?: string;
@@ -55,14 +61,18 @@ export function MobilePreview({
   previewOrientation: controlledOrientation,
   onToggleOrientation,
 }: MobilePreviewProps = {}) {
-  const [internalOrientation, setInternalOrientation] = useState<"portrait" | "landscape">("portrait");
+  const [internalOrientation, setInternalOrientation] = useState<
+    "portrait" | "landscape"
+  >("portrait");
   const orientation = controlledOrientation ?? internalOrientation;
 
   const handleToggle = () => {
     if (onToggleOrientation) {
       onToggleOrientation();
     } else {
-      setInternalOrientation((prev) => (prev === "portrait" ? "landscape" : "portrait"));
+      setInternalOrientation((prev) =>
+        prev === "portrait" ? "landscape" : "portrait"
+      );
     }
   };
 
@@ -71,13 +81,32 @@ export function MobilePreview({
   const buttons = useDashboardStore((s) => s.buttons);
   const pages = useDashboardStore((s) => s.pages);
   const activePageIndex = useDashboardStore((s) => s.activePageIndex);
+  const theme = useDashboardStore((s) => s.theme);
+
+  const normalizedTheme = (theme || "escuro").toLowerCase();
+  const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
+  const isAmoled = normalizedTheme === "amoled";
 
   const activePageObject = pages.find((p) => p.id === activePageIndex);
-  const pageTitle = controlledPage ?? (activePageObject ? activePageObject.name : "Principal");
+  const pageTitle =
+    controlledPage ?? (activePageObject ? activePageObject.name : "Principal");
 
   const pageButtons = buttons
     .filter((btn) => btn.page_index === activePageIndex)
     .sort((a, b) => a.position - b.position);
+
+  // Estilos dinâmicos da tela do celular baseados no tema do Zustand
+  const screenBgClass = isLight
+    ? "bg-gradient-to-br from-slate-100 via-white to-indigo-50 text-slate-900"
+    : isAmoled
+    ? "bg-black text-white"
+    : "bg-gradient-to-br from-neutral-900 via-neutral-950 to-indigo-950/40 text-white";
+
+  const defaultCardClass = isLight
+    ? "bg-white border-slate-200/90 text-slate-800 shadow-sm"
+    : isAmoled
+    ? "bg-black border-neutral-800 text-neutral-100"
+    : "bg-neutral-900/90 border-neutral-800/90 text-neutral-200";
 
   return (
     <aside className="w-[320px] flex-shrink-0 flex flex-col border-l border-neutral-800/80 bg-neutral-900/95 backdrop-blur-md select-none">
@@ -87,38 +116,58 @@ export function MobilePreview({
           <Smartphone className="w-4 h-4 text-indigo-400" />
           <h3 className="text-sm font-medium text-neutral-300">Preview</h3>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleToggle}
-          title="Girar Orientação da Maquete"
-          className="h-7 w-7 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800"
-        >
-          <RotateCw className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Badge
+            variant="outline"
+            className="text-[9px] uppercase font-mono px-1.5 py-0 border-neutral-700 text-neutral-400"
+          >
+            {normalizedTheme}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleToggle}
+            title="Girar Orientação da Maquete"
+            className="h-7 w-7 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
 
       {/* Mockup Display Wrapper */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
-        {/* Smartphone Chassis com borda branca conforme Mockup */}
+        {/* Smartphone Chassis com transição reativa de tema */}
         <div
-          className={`transition-all duration-300 relative border-[10px] border-white rounded-[2.8rem] shadow-2xl overflow-hidden bg-black p-2.5 flex flex-col justify-between ${
-            isPortrait ? "w-[240px] h-[480px]" : "w-[300px] h-[220px]"
-          }`}
+          className={`transition-all duration-300 relative border-[10px] border-white rounded-[2.8rem] shadow-2xl overflow-hidden p-2.5 flex flex-col justify-between ${
+            isLight ? "bg-slate-200" : "bg-black"
+          } ${isPortrait ? "w-[240px] h-[480px]" : "w-[300px] h-[220px]"}`}
         >
           {/* Status Bar + Notch */}
           <div className="w-full flex items-center justify-between px-3 pt-0.5 pb-1 z-10">
-            <span className="text-[8px] font-semibold text-white">9:41</span>
+            <span
+              className={`text-[8px] font-semibold ${
+                isLight ? "text-slate-800" : "text-white"
+              }`}
+            >
+              9:41
+            </span>
             <div className="w-20 h-3.5 bg-black rounded-full flex items-center justify-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-neutral-800 inline-block" />
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-1.5 rounded-xs bg-white inline-block" />
+              <span
+                className={`w-2.5 h-1.5 rounded-xs inline-block ${
+                  isLight ? "bg-slate-800" : "bg-white"
+                }`}
+              />
             </div>
           </div>
 
           {/* Simulated Phone Screen Content */}
-          <div className="flex-1 rounded-[1.8rem] bg-neutral-950 p-2 flex flex-col justify-between overflow-hidden relative">
+          <div
+            className={`flex-1 rounded-[1.8rem] p-2 flex flex-col justify-between overflow-hidden relative transition-colors duration-300 ${screenBgClass}`}
+          >
             <div
               className={`grid ${
                 isPortrait ? "grid-cols-3" : "grid-cols-5"
@@ -134,11 +183,13 @@ export function MobilePreview({
                     return (
                       <div
                         key={btn.id}
-                        style={!isFirst ? colorStyle.style : undefined}
+                        style={!isFirst && !isLight ? colorStyle.style : undefined}
                         className={`h-16 rounded-xl border flex flex-col items-center justify-center text-center p-1 transition-all shadow-sm ${
                           isFirst
                             ? "bg-indigo-600 border-indigo-400 text-white shadow-indigo-600/30"
-                            : `bg-neutral-900 border-neutral-800 ${colorStyle.className}`
+                            : isLight
+                            ? defaultCardClass
+                            : `${defaultCardClass} ${colorStyle.className}`
                         }`}
                       >
                         {hasBase64 ? (
@@ -150,13 +201,21 @@ export function MobilePreview({
                         ) : (
                           <Icon
                             className={`w-4 h-4 mb-1 ${
-                              isFirst ? "text-white" : "text-neutral-200"
+                              isFirst
+                                ? "text-white"
+                                : isLight
+                                ? "text-indigo-600"
+                                : "text-neutral-200"
                             }`}
                           />
                         )}
                         <span
                           className={`text-[7.5px] font-medium leading-tight truncate w-full px-0.5 ${
-                            isFirst ? "text-white" : "text-neutral-300"
+                            isFirst
+                              ? "text-white"
+                              : isLight
+                              ? "text-slate-700"
+                              : "text-neutral-300"
                           }`}
                         >
                           {btn.label}
@@ -164,41 +223,55 @@ export function MobilePreview({
                       </div>
                     );
                   })
-                : DEFAULT_MOCKUP_BUTTONS.slice(0, isPortrait ? 15 : 10).map((item) => {
-                    const IconComp = item.icon;
-                    return (
-                      <div
-                        key={item.id}
-                        className={`h-16 rounded-xl border flex flex-col items-center justify-center text-center p-1 transition-all shadow-sm ${
-                          item.highlighted
-                            ? "bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/40"
-                            : "bg-neutral-900/90 border-neutral-800/90 text-neutral-200"
-                        }`}
-                      >
-                        <IconComp
-                          className={`w-4 h-4 mb-1 ${
-                            item.highlighted ? "text-white" : "text-neutral-200"
-                          }`}
-                        />
-                        <span
-                          className={`text-[7.5px] font-medium leading-tight truncate w-full px-0.5 ${
-                            item.highlighted ? "text-white" : "text-neutral-400"
+                : DEFAULT_MOCKUP_BUTTONS.slice(0, isPortrait ? 15 : 10).map(
+                    (item) => {
+                      const IconComp = item.icon;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`h-16 rounded-xl border flex flex-col items-center justify-center text-center p-1 transition-all shadow-sm ${
+                            item.highlighted
+                              ? "bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/40"
+                              : defaultCardClass
                           }`}
                         >
-                          {item.label}
-                        </span>
-                      </div>
-                    );
-                  })}
+                          <IconComp
+                            className={`w-4 h-4 mb-1 ${
+                              item.highlighted
+                                ? "text-white"
+                                : isLight
+                                ? "text-slate-700"
+                                : "text-neutral-200"
+                            }`}
+                          />
+                          <span
+                            className={`text-[7.5px] font-medium leading-tight truncate w-full px-0.5 ${
+                              item.highlighted
+                                ? "text-white"
+                                : isLight
+                                ? "text-slate-600"
+                                : "text-neutral-400"
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                      );
+                    }
+                  )}
             </div>
           </div>
 
           {/* Home Indicator Bar */}
-          <div className="self-center w-20 h-1 bg-neutral-700 rounded-full mt-1" />
+          <div
+            className={`self-center w-20 h-1 rounded-full mt-1 ${
+              isLight ? "bg-slate-400" : "bg-neutral-700"
+            }`}
+          />
         </div>
 
         <p className="mt-2.5 text-[10px] text-neutral-500 text-center font-mono">
-          {pageTitle} (320px)
+          {pageTitle} • Tema: {normalizedTheme.toUpperCase()}
         </p>
       </div>
     </aside>

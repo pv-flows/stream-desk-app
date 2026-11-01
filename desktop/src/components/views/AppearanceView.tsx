@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   Contrast,
   Palette,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 const COLOR_OPTIONS = [
   { id: "purple", bg: "bg-indigo-600", label: "Roxo" },
@@ -20,11 +22,30 @@ const COLOR_OPTIONS = [
 ];
 
 export function AppearanceView() {
-  const [selectedTheme, setSelectedTheme] = useState<"escuro" | "claro" | "amoled">("escuro");
+  const theme = useDashboardStore((s) => s.theme);
+  const setTheme = useDashboardStore((s) => s.setTheme);
+
+  const normalizedTheme = (theme || "escuro").toLowerCase();
+  const activeTheme =
+    normalizedTheme === "claro" || normalizedTheme === "light"
+      ? "claro"
+      : normalizedTheme === "amoled"
+      ? "amoled"
+      : "escuro";
+
   const [selectedColor, setSelectedColor] = useState("purple");
   const [gridSize, setGridSize] = useState([3]);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [iconStyle, setIconStyle] = useState<"linha" | "preenchido">("linha");
+
+  const handleThemeChange = async (novoTema: "escuro" | "claro" | "amoled") => {
+    await setTheme(novoTema);
+    try {
+      await invoke("set_theme", { theme: novoTema });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao sincronizar set_theme via IPC:", err);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-neutral-950/70 p-8 overflow-y-auto select-none justify-between">
@@ -38,7 +59,7 @@ export function AppearanceView() {
 
         {/* Lista Vertical de Cards de Configurações */}
         <div className="space-y-3.5">
-          {/* Card 1: Tema */}
+          {/* Card 1: Tema (Conectado ao Zustand e IPC set_theme) */}
           <div className="bg-neutral-900/50 hover:bg-neutral-900/70 border border-neutral-800/80 rounded-2xl px-6 py-4 flex items-center justify-between transition-colors shadow-sm backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-neutral-800/80 border border-neutral-700/60 flex items-center justify-center text-neutral-300">
@@ -50,9 +71,9 @@ export function AppearanceView() {
             <div className="flex items-center p-1 rounded-xl bg-neutral-950/80 border border-neutral-800">
               <button
                 type="button"
-                onClick={() => setSelectedTheme("escuro")}
+                onClick={() => handleThemeChange("escuro")}
                 className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  selectedTheme === "escuro"
+                  activeTheme === "escuro"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "text-neutral-400 hover:text-neutral-200"
                 }`}
@@ -61,9 +82,9 @@ export function AppearanceView() {
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedTheme("claro")}
+                onClick={() => handleThemeChange("claro")}
                 className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  selectedTheme === "claro"
+                  activeTheme === "claro"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "text-neutral-400 hover:text-neutral-200"
                 }`}
@@ -72,9 +93,9 @@ export function AppearanceView() {
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedTheme("amoled")}
+                onClick={() => handleThemeChange("amoled")}
                 className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  selectedTheme === "amoled"
+                  activeTheme === "amoled"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "text-neutral-400 hover:text-neutral-200"
                 }`}
@@ -204,4 +225,3 @@ export function AppearanceView() {
 }
 
 export default AppearanceView;
-

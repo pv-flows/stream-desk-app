@@ -35,7 +35,11 @@ export interface DashboardState {
   // Actions
   setActivePageIndex: (index: number) => void;
   setButtons: (buttons: DeckButton[]) => void;
+  setTheme: (theme: string) => Promise<void>;
   fetchPages: () => Promise<void>;
+  addPage: (name: string) => Promise<void>;
+  updatePage: (id: number, name: string) => Promise<void>;
+  deletePage: (id: number) => Promise<void>;
   fetchButtons: () => Promise<void>;
   fetchTheme: () => Promise<void>;
   fetchLocalIp: () => Promise<void>;
@@ -52,7 +56,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   ],
   buttons: [],
   windowRules: [],
-  theme: "default",
+  theme: "escuro",
   localIp: "127.0.0.1",
   activePageIndex: 1,
   isLoading: false,
@@ -64,6 +68,15 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   setButtons: (buttons: DeckButton[]) => {
     set({ buttons });
+  },
+
+  setTheme: async (theme: string) => {
+    set({ theme });
+    try {
+      await invoke("set_theme", { theme });
+    } catch (err) {
+      console.warn("[Store] Erro ao persistir tema via IPC:", err);
+    }
   },
 
   fetchPages: async () => {
@@ -83,6 +96,70 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     }
   },
 
+  addPage: async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const newId = await invoke<number>("add_page", { name: trimmed });
+      await get().fetchPages();
+      if (typeof newId === "number") {
+        set({ activePageIndex: newId });
+      }
+    } catch (err) {
+      console.warn("[Store] Erro ao adicionar página via IPC:", err);
+      // Fallback otimista local caso fora do runtime Tauri
+      set((state) => {
+        const nextId =
+          state.pages.reduce((max, p) => Math.max(max, p.id), 0) + 1;
+        return {
+          pages: [...state.pages, { id: nextId, name: trimmed }],
+          activePageIndex: nextId,
+        };
+      });
+    }
+  },
+
+  updatePage: async (id: number, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      await invoke("update_page", { id, name: trimmed });
+      await get().fetchPages();
+    } catch (err) {
+      console.warn("[Store] Erro ao renomear página via IPC:", err);
+      set((state) => ({
+        pages: state.pages.map((p) =>
+          p.id === id ? { ...p, name: trimmed } : p
+        ),
+      }));
+    }
+  },
+
+  deletePage: async (id: number) => {
+    if (get().pages.length <= 1) {
+      console.warn("[Store] Operação bloqueada: é necessário manter ao menos 1 página.");
+      return;
+    }
+    try {
+      await invoke("delete_page", { id });
+      await get().fetchPages();
+      await get().fetchButtons();
+    } catch (err) {
+      console.warn("[Store] Erro ao excluir página via IPC:", err);
+      set((state) => {
+        const remaining = state.pages.filter((p) => p.id !== id);
+        const nextActive =
+          state.activePageIndex === id
+            ? remaining[0]?.id ?? 1
+            : state.activePageIndex;
+        return {
+          pages: remaining,
+          activePageIndex: nextActive,
+        };
+      });
+    }
+  },
+
   fetchButtons: async () => {
     try {
       const buttons = await invoke<DeckButton[]>("get_buttons");
@@ -97,7 +174,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   fetchTheme: async () => {
     try {
       const theme = await invoke<string>("get_theme");
-      if (typeof theme === "string") {
+      if (typeof theme === "string" && theme.trim().length > 0) {
         set({ theme });
       }
     } catch (err) {
