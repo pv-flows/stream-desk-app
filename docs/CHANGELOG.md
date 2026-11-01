@@ -4,6 +4,9 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Recurso de edição completa de botões (Update CRUD) com a função `update_button` em `desktop/src-tauri/src/db.rs` e comando Tauri `update_button` em `lib.rs` com disparo de broadcast em tempo real.
+- Interface de edição no Dashboard Desktop (`desktop/src/App.tsx`, `App.css`) com botão de editar (✏️) na grade, preenchimento automático do formulário, alteração de ação para "Salvar Alteração" e botão de cancelamento.
+- Feedback Háptico tátil no Mobile via `expo-haptics` acionado no `onPressIn` de `mobile/src/components/DeckButton.tsx` (`Haptics.impactAsync(ImpactFeedbackStyle.Medium)`).
 - Suporte a ícones dinâmicos no SQLite (`buttons.icon`) com migração suave (`ALTER TABLE buttons ADD COLUMN icon TEXT DEFAULT 'zap'`) e seed atualizado com ícones contextuais (`desktop/src-tauri/src/db.rs`, `lib.rs`).
 - Seletor de ícones (`volume-2`, `volume-x`, `mic-off`, `play`, `calculator`, etc.) e visualização de badge de ícone no painel Desktop (`desktop/src/App.tsx`, `App.css`).
 - Fundo em gradiente por Skin com `expo-linear-gradient` (`backgroundGradient` adicionado a cada definição em `mobile/src/theme/skins.ts` e aplicado em `HomeScreen.tsx`).

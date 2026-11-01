@@ -64,6 +64,21 @@ fn add_button(
 }
 
 #[tauri::command]
+fn update_button(
+    id: i32,
+    label: String,
+    action_name: String,
+    color: String,
+    icon: Option<String>,
+    tx: tauri::State<'_, broadcast::Sender<String>>,
+) -> Result<(), String> {
+    let icon_name = icon.unwrap_or_else(|| "zap".to_string());
+    db::update_button(id, &label, &action_name, &color, &icon_name).map_err(|e| e.to_string())?;
+    broadcast_current_layout(&tx);
+    Ok(())
+}
+
+#[tauri::command]
 fn delete_button(
     id: i32,
     tx: tauri::State<'_, broadcast::Sender<String>>,
@@ -98,6 +113,7 @@ pub fn run() {
             get_theme,
             set_theme,
             add_button,
+            update_button,
             delete_button
         ])
         .run(tauri::generate_context!())

@@ -15,6 +15,7 @@ function App() {
   const [buttons, setButtons] = useState<DeckButton[]>([]);
   const [activeTheme, setActiveTheme] = useState<string>("default");
   const [localIp, setLocalIp] = useState<string>("127.0.0.1");
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [label, setLabel] = useState("");
   const [actionName, setActionName] = useState("vol_up");
   const [color, setColor] = useState("#38bdf8");
@@ -66,7 +67,7 @@ function App() {
     }
   };
 
-  const handleAddButton = async (e: FormEvent) => {
+  const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!label.trim() || !actionName.trim()) {
       setStatusMsg("Preencha o Label e a Action do botão.");
@@ -74,19 +75,53 @@ function App() {
     }
 
     try {
-      await invoke("add_button", {
-        label: label.trim(),
-        actionName: actionName.trim(),
-        color: color.trim() || "#38bdf8",
-        icon: icon.trim() || "zap",
-      });
+      if (editingId !== null) {
+        await invoke("update_button", {
+          id: editingId,
+          label: label.trim(),
+          actionName: actionName.trim(),
+          color: color.trim() || "#38bdf8",
+          icon: icon.trim() || "zap",
+        });
+        setStatusMsg(`Botão "${label.trim()}" atualizado com sucesso!`);
+        setEditingId(null);
+      } else {
+        await invoke("add_button", {
+          label: label.trim(),
+          actionName: actionName.trim(),
+          color: color.trim() || "#38bdf8",
+          icon: icon.trim() || "zap",
+        });
+        setStatusMsg(`Botão "${label.trim()}" adicionado com sucesso!`);
+      }
+
       setLabel("");
-      setStatusMsg(`Botão "${label.trim()}" adicionado com sucesso!`);
+      setActionName("vol_up");
+      setColor("#38bdf8");
+      setIcon("zap");
       await loadButtons();
     } catch (error) {
-      console.error("Erro ao adicionar botão:", error);
+      console.error("Erro ao salvar botão:", error);
       setStatusMsg("Erro ao salvar botão no banco de dados.");
     }
+  };
+
+  const handleEditClick = (btn: DeckButton) => {
+    setEditingId(btn.id);
+    setLabel(btn.label);
+    setActionName(btn.action_name);
+    setColor(btn.color || "#38bdf8");
+    setIcon(btn.icon || "zap");
+    setStatusMsg(`Editando botão "${btn.label}" (ID ${btn.id}).`);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setLabel("");
+    setActionName("vol_up");
+    setColor("#38bdf8");
+    setIcon("zap");
+    setStatusMsg("Edição cancelada.");
   };
 
   const handleDeleteButton = async (id: number, btnLabel: string) => {
@@ -138,8 +173,8 @@ function App() {
       </header>
 
       <section className="card">
-        <h2>Novo Botão</h2>
-        <form className="crud-form" onSubmit={handleAddButton}>
+        <h2>{editingId !== null ? "Editar Botão" : "Novo Botão"}</h2>
+        <form className="crud-form" onSubmit={handleFormSubmit}>
           <div className="field">
             <label htmlFor="label-input">Label (Nome no Botão)</label>
             <input
@@ -207,9 +242,20 @@ function App() {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary">
-            + Adicionar Botão
-          </button>
+          <div className="form-actions">
+            <button type="submit" className="btn-primary">
+              {editingId !== null ? "Salvar Alteração" : "+ Adicionar Botão"}
+            </button>
+            {editingId !== null && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleCancelEdit}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
         {statusMsg && <p className="status-msg">{statusMsg}</p>}
       </section>
@@ -232,14 +278,24 @@ function App() {
                 className="deck-item"
                 style={{ borderColor: btn.color || "#38bdf8" }}
               >
-                <button
-                  type="button"
-                  className="delete-btn"
-                  title="Excluir botão"
-                  onClick={() => handleDeleteButton(btn.id, btn.label)}
-                >
-                  ✕
-                </button>
+                <div className="item-actions">
+                  <button
+                    type="button"
+                    className="edit-btn"
+                    title="Editar botão"
+                    onClick={() => handleEditClick(btn)}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    title="Excluir botão"
+                    onClick={() => handleDeleteButton(btn.id, btn.label)}
+                  >
+                    ✕
+                  </button>
+                </div>
                 <span
                   className="color-dot"
                   style={{ backgroundColor: btn.color || "#38bdf8" }}

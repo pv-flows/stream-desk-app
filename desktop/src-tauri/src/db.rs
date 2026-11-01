@@ -94,6 +94,14 @@ pub fn add_button(label: &str, action_name: &str, color: &str, icon: &str) -> Re
     )
 }
 
+pub fn update_button(id: i32, label: &str, action_name: &str, color: &str, icon: &str) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute(
+        "UPDATE buttons SET label = ?1, action_name = ?2, color = ?3, icon = ?4 WHERE id = ?5",
+        params![label, action_name, color, icon, id],
+    )
+}
+
 pub fn delete_button(id: i32) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute("DELETE FROM buttons WHERE id = ?1", params![id])

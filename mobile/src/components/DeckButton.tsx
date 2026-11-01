@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -48,6 +49,9 @@ export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
   const isFeatherIcon = FEATHER_ICONS.has(rawIcon);
 
   const handlePressIn = () => {
+    // Feedback háptico tátil ao pressionar
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+
     if (theme === 'apple' || theme === 'windows' || theme === 'ios') {
       // Física de mola na escala para temas glass (Apple / Windows)
       scale.value = withSpring(0.92, {

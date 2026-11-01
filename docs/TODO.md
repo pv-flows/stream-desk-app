@@ -19,8 +19,9 @@
 - [x] Execução de atalhos globais, macros e abertura de aplicativos no Desktop (integração Enigo para teclas multimídia e crate Open para abrir calculadora).
 - [x] Renderização de grade de botões interativos no Mobile (`DeckGrid` e `DeckButton`) mapeados para macros do sistema.
 - [x] Persistência de perfis e botões em SQLite (`streamdesk.db` com seed automático e sincronização dinâmica via WebSocket).
-- [x] Interface CRUD no cliente React do Desktop (`get_buttons`, `add_button`, `delete_button`) integrada via Tauri Commands ao SQLite.
-- [x] Suporte a ícones dinâmicos no SQLite (`icon` em `buttons`) e seleção na criação de botões no Desktop.
+- [x] Interface CRUD completa no cliente React do Desktop (`get_buttons`, `add_button`, `update_button`, `delete_button`) integrada via Tauri Commands ao SQLite.
+- [x] Suporte a ícones dinâmicos no SQLite (`icon` em `buttons`) e seleção na criação/edição de botões no Desktop.
+- [x] Feedback Háptico físico no Mobile com `expo-haptics` (`Haptics.impactAsync(Medium)`) ao pressionar botões.
 
 ## 4. Recursos Pro (Freemium) & Futuros
 - [x] Motor de temas base (`default`, `apple`, `windows`, `steam`, `oneui`, `chromebook`) com Zustand (`themeStore`) no Mobile e seletor sincronizado no Desktop (`App.tsx`).
