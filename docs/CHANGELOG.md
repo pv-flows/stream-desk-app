@@ -3,6 +3,9 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Fixed
+- Correção no container e renderização do `<PagerView>` em `mobile/src/screens/HomeScreen.tsx` para mapear de forma fixa as 3 páginas (`PAGES = [0, 1, 2]`) com `flex: 1`, filtragem `(b.page_index || 0) === pageIndex` e feedback visual de dots, corrigindo o deslizamento lateral por swipe.
+
 ### Added
 - Motor de Ações Avançadas no Desktop (`desktop/src-tauri/src/server.rs`): suporte dinâmico a prefixos `open_url:<link>` (abertura de links no navegador via `open::that`) e `open_app:<app>` (abertura de executáveis e scripts com fallback via `std::process::Command`), e novas teclas de multimídia (`mute`, `media_play`, `media_next`, `media_prev`).
 - Seletor avançado de macros com campo de parâmetros condicionais no Dashboard Desktop (`desktop/src/App.tsx`), permitindo configurar sites, apps, scripts e atalhos multimídia de forma visual.

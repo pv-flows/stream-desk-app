@@ -11,6 +11,7 @@ import { useThemeStore } from '../store/themeStore';
 import { getSkin } from '../theme/skins';
 
 const STORAGE_WS_URL_KEY = '@streamdesk_ws_url';
+const PAGES = [0, 1, 2];
 
 export const HomeScreen: React.FC = () => {
   const { theme, palette, buttons } = useThemeStore();
@@ -239,13 +240,6 @@ export const HomeScreen: React.FC = () => {
     );
   }
 
-  const maxPageIndex = buttons.reduce(
-    (max, b) => Math.max(max, b.page_index ?? 0),
-    0
-  );
-  const totalPages = Math.max(3, maxPageIndex + 1);
-  const pages = Array.from({ length: totalPages }, (_, i) => i);
-
   return (
     <LinearGradient
       colors={skin.backgroundGradient || ['#0f172a', '#1e293b']}
@@ -260,10 +254,10 @@ export const HomeScreen: React.FC = () => {
             initialPage={0}
             onPageSelected={(e) => setCurrentPage(e.nativeEvent.position)}
           >
-            {pages.map((pIndex) => {
-              const pageButtons = buttons.filter((b) => (b.page_index ?? 0) === pIndex);
+            {PAGES.map((pageIndex) => {
+              const pageButtons = buttons.filter((b) => (b.page_index || 0) === pageIndex);
               return (
-                <View key={`page-${pIndex}`} style={styles.pageSlide}>
+                <View key={pageIndex} style={styles.pageSlide}>
                   {pageButtons.length > 0 ? (
                     <View style={styles.grid}>
                       {pageButtons.map((item) => (
@@ -277,7 +271,7 @@ export const HomeScreen: React.FC = () => {
                   ) : (
                     <View style={styles.emptyPageContainer}>
                       <Text style={[styles.emptyText, { color: skin.textColor }]}>
-                        Página {pIndex + 1} vazia.
+                        Página {pageIndex + 1} vazia.
                       </Text>
                       <Text style={[styles.emptySubText, { color: skin.highlightColor }]}>
                         Adicione botões nesta página pelo painel Desktop!
@@ -290,15 +284,15 @@ export const HomeScreen: React.FC = () => {
           </PagerView>
 
           <View style={styles.dotsRow}>
-            {pages.map((pIndex) => (
+            {PAGES.map((pageIndex) => (
               <View
-                key={`dot-${pIndex}`}
+                key={`dot-${pageIndex}`}
                 style={[
                   styles.dot,
                   {
                     backgroundColor:
-                      currentPage === pIndex ? skin.highlightColor : skin.borderColor,
-                    width: currentPage === pIndex ? 20 : 8,
+                      currentPage === pageIndex ? skin.highlightColor : skin.borderColor,
+                    width: currentPage === pageIndex ? 20 : 8,
                   },
                 ]}
               />
@@ -447,13 +441,13 @@ const styles = StyleSheet.create({
   },
   pagerContainer: {
     flex: 1,
-    justifyContent: 'space-between',
   },
   pagerView: {
     flex: 1,
   },
   pageSlide: {
     flex: 1,
+    padding: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
