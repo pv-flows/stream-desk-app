@@ -33,6 +33,7 @@ import {
   Music,
   Code,
   Sliders,
+  Video,
   type LucideIcon,
 } from 'lucide-react-native';
 
@@ -97,6 +98,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   info: Info,
   sobre: Info,
   check: Check,
+  video: Video,
+  obs: Video,
 };
 
 export const MobileIcon: React.FC<MobileIconProps> = ({

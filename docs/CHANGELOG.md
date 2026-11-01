@@ -4,6 +4,13 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Épico E6 (Integração Nativa com OBS Studio WebSocket v5)**:
+  - Módulo nativo `desktop/src-tauri/src/obs.rs` com suporte ao protocolo OBS WebSocket v5: autenticação por hash SHA256/Base64 (`Hello` op 0 -> `Identify` op 1 -> `Identified` op 2), envio de requisições (`Request` op 6) e leitura assíncrona de respostas (`RequestResponse` op 7).
+  - Persistência das configurações OBS (`obs_host`, `obs_port`, `obs_password`, `obs_enabled`) no SQLite (`db.rs`).
+  - Comandos IPC Tauri `get_obs_settings`, `set_obs_settings`, `test_obs_connection` e `execute_obs_action`.
+  - Execução de comandos OBS via macros de botões (`obs:toggle_record`, `obs:toggle_stream`, `obs:switch_scene:<cena>`, `obs:toggle_mute:<fonte>`) tanto a partir da interface Desktop quanto pelo celular via WebSocket.
+  - Interface do usuário em `IntegrationsView.tsx` com gaveta lateral (`Sheet`) para teste imediato de conexão, configuração de credenciais e alternância de estado ativo/inativo.
+  - Inclusão do tipo de ação `obs` e ícone `video` no `ButtonEditorSheet.tsx` e `MobileIcon.tsx`.
 - **Épico E8 (Limpeza Técnica e Otimização de Bundling com Code-Splitting)**:
   - Remoção de componente obsoleto e órfão `ButtonEditorView.tsx` (edição de botões já unificada no `ButtonEditorSheet`).
   - Configuração de `manualChunks` no Rollup/Vite (`desktop/vite.config.ts`) separando `vendor-react`, `vendor-dnd`, `vendor-lucide`, `vendor-radix` e `vendor-tauri`.

@@ -15,6 +15,7 @@ import {
   Play,
   Calculator,
   Laptop,
+  Video,
 } from "lucide-react";
 import {
   Sheet,
@@ -73,6 +74,7 @@ const LUCIDE_ICON_OPTIONS = [
   { id: "folder", label: "Pasta", icon: FolderOpen },
   { id: "volume-2", label: "Volume", icon: Volume2 },
   { id: "play", label: "Play/Pause", icon: Play },
+  { id: "video", label: "OBS / Vídeo", icon: Video },
   { id: "sparkles", label: "Brilho", icon: Sparkles },
 ];
 
@@ -87,7 +89,7 @@ export function ButtonEditorSheet({
   const buttons = useDashboardStore((s) => s.buttons);
 
   const [label, setLabel] = useState("");
-  const [actionType, setActionType] = useState<"open_app" | "open_url" | "hotkey" | "webhook">("open_app");
+  const [actionType, setActionType] = useState<"open_app" | "open_url" | "hotkey" | "webhook" | "obs">("open_app");
   const [command, setCommand] = useState("");
   const [color, setColor] = useState("sky");
   const [icon, setIcon] = useState("zap");
@@ -122,6 +124,9 @@ export function ButtonEditorSheet({
       } else if (act.startsWith("webhook:")) {
         setActionType("webhook");
         setCommand(act.slice("webhook:".length));
+      } else if (act.startsWith("obs:")) {
+        setActionType("obs");
+        setCommand(act.slice("obs:".length));
       } else {
         setActionType("open_app");
         setCommand(act);
@@ -181,6 +186,8 @@ export function ButtonEditorSheet({
         finalAction = `hotkey:${finalAction}`;
       } else if (actionType === "webhook" && !finalAction.startsWith("webhook:")) {
         finalAction = `webhook:${finalAction}`;
+      } else if (actionType === "obs" && !finalAction.startsWith("obs:")) {
+        finalAction = `obs:${finalAction}`;
       }
 
       const currentPage = targetPageIndex ?? buttonToEdit?.page_index ?? activePageIndex;
@@ -247,6 +254,8 @@ export function ButtonEditorSheet({
         return "Ex: ctrl+shift+m, alt+tab, f11, win+d";
       case "webhook":
         return "Ex: http://192.168.1.100:8123/api/webhook/...";
+      case "obs":
+        return "Ex: toggle_record, toggle_stream, switch_scene:Cena, toggle_mute:Mic";
     }
   };
 
@@ -303,7 +312,7 @@ export function ButtonEditorSheet({
 
               <Select
                 value={actionType}
-                onValueChange={(val: "open_app" | "open_url" | "hotkey" | "webhook") => setActionType(val)}
+                onValueChange={(val: "open_app" | "open_url" | "hotkey" | "webhook" | "obs") => setActionType(val)}
               >
                 <SelectTrigger className="bg-neutral-950/80 border-neutral-800 text-neutral-200 text-xs h-9">
                   <SelectValue placeholder="Selecione o tipo de ação" />
@@ -313,6 +322,7 @@ export function ButtonEditorSheet({
                   <SelectItem value="open_url">Abrir Link / URL (open_url)</SelectItem>
                   <SelectItem value="hotkey">Atalho do Teclado (hotkey)</SelectItem>
                   <SelectItem value="webhook">Webhook HTTP (webhook)</SelectItem>
+                  <SelectItem value="obs">OBS Studio WebSocket v5 (obs)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

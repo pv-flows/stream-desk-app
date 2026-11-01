@@ -406,6 +406,28 @@ fn execute_macro(action: &str) {
         return;
     }
 
+    if action.starts_with("obs:") {
+        let action_str = action.to_string();
+        tokio::spawn(async move {
+            match db::get_obs_settings() {
+                Ok(settings) => {
+                    if !settings.enabled {
+                        println!("[OBS] Comando '{}' ignorado pois a integração OBS está desativada", action_str);
+                        return;
+                    }
+                    println!("[OBS] Executando comando OBS: {}", action_str);
+                    if let Err(e) = crate::obs::obs_dispatch(&settings, &action_str).await {
+                        eprintln!("[OBS] Erro ao executar comando '{}': {}", action_str, e);
+                    }
+                }
+                Err(err) => {
+                    eprintln!("[OBS] Erro ao carregar configurações OBS: {:?}", err);
+                }
+            }
+        });
+        return;
+    }
+
     match action {
         "vol_up" => {
             println!("[Macro] Executando Volume Up");

@@ -14,6 +14,7 @@ import {
   Sparkles,
   Command,
   FileText,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 
@@ -78,6 +79,10 @@ export function getLucideIcon(iconName?: string): LucideIcon {
     case "file":
     case "filetext":
       return FileText;
+    case "video":
+    case "obs":
+    case "camera":
+      return Video;
     case "zap":
     default:
       return Zap;

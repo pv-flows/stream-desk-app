@@ -1094,6 +1094,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "enigo",
+ "futures-util",
  "lnk",
  "local-ip-address",
  "open",
@@ -1101,10 +1102,12 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
  "tokio",
+ "tokio-tungstenite",
  "windows-icons",
 ]
 

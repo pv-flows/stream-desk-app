@@ -57,6 +57,10 @@ Sistema cliente-servidor para operação em rede local (LAN), projetado para aut
 | `set_system_settings` | `{ settings: SystemSettings }` | `()` | Persiste configurações no SQLite e aplica chave de registro no Windows (`HKCU\...\Run`). |
 | `get_connected_devices` | Nenhuma | `Vec<ConnectedDevice>` | Lista os clientes WebSocket atualmente conectados (id, nome, ip, horário). |
 | `disconnect_device` | `{ id: String }` | `()` | Encerra a conexão WebSocket do dispositivo indicado pelo servidor. |
+| `get_obs_settings` | Nenhuma | `ObsSettings` | Retorna configurações de conexão com o OBS Studio WebSocket v5 (host, port, senha, enabled). |
+| `set_obs_settings` | `{ settings: ObsSettings }` | `()` | Salva configurações de conexão do OBS Studio no SQLite `settings`. |
+| `test_obs_connection` | `{ settings: ObsSettings }` | `String` | Realiza handshake de teste com o OBS Studio e retorna mensagem com a versão conectada. |
+| `execute_obs_action` | `{ action: String }` | `Value` | Despacha comando OBS (ToggleRecord, ToggleStream, SetCurrentProgramScene, ToggleInputMute). |
 
 ### 5.2 Eventos WebSocket (`/ws`)
 

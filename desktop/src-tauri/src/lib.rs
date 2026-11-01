@@ -1,5 +1,6 @@
 pub mod db;
 pub mod app_scanner;
+pub mod obs;
 mod server;
 
 use tauri::menu::{Menu, MenuItem};
@@ -284,6 +285,27 @@ async fn disconnect_device(
     }
 }
 
+#[tauri::command]
+fn get_obs_settings() -> Result<obs::ObsSettings, String> {
+    db::get_obs_settings().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_obs_settings(settings: obs::ObsSettings) -> Result<(), String> {
+    db::set_obs_settings(&settings).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn test_obs_connection(settings: obs::ObsSettings) -> Result<String, String> {
+    obs::test_obs_connection(&settings).await
+}
+
+#[tauri::command]
+async fn execute_obs_action(action: String) -> Result<serde_json::Value, String> {
+    let settings = db::get_obs_settings().map_err(|e| e.to_string())?;
+    obs::obs_dispatch(&settings, &action).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if let Err(err) = db::init_db() {
@@ -385,7 +407,11 @@ pub fn run() {
             get_system_settings,
             set_system_settings,
             get_connected_devices,
-            disconnect_device
+            disconnect_device,
+            get_obs_settings,
+            set_obs_settings,
+            test_obs_connection,
+            execute_obs_action
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

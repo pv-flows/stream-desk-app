@@ -651,3 +651,51 @@ pub fn restore_backup(data: BackupData) -> Result<()> {
     tx.commit()?;
     Ok(())
 }
+
+pub fn get_obs_settings() -> Result<crate::obs::ObsSettings> {
+    let conn = Connection::open(DB_PATH)?;
+    let host: String = conn
+        .query_row("SELECT value FROM settings WHERE key = 'obs_host'", [], |r| r.get(0))
+        .unwrap_or_else(|_| "localhost".to_string());
+    let port: u16 = conn
+        .query_row("SELECT value FROM settings WHERE key = 'obs_port'", [], |r| r.get(0))
+        .map(|v: String| v.parse().unwrap_or(4455))
+        .unwrap_or(4455);
+    let password: Option<String> = conn
+        .query_row("SELECT value FROM settings WHERE key = 'obs_password'", [], |r| r.get(0))
+        .ok()
+        .filter(|s: &String| !s.is_empty());
+    let enabled: bool = conn
+        .query_row("SELECT value FROM settings WHERE key = 'obs_enabled'", [], |r| r.get(0))
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+
+    Ok(crate::obs::ObsSettings {
+        host,
+        port,
+        password,
+        enabled,
+    })
+}
+
+pub fn set_obs_settings(settings: &crate::obs::ObsSettings) -> Result<()> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('obs_host', ?1)",
+        params![settings.host],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('obs_port', ?1)",
+        params![settings.port.to_string()],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('obs_password', ?1)",
+        params![settings.password.as_deref().unwrap_or("")],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('obs_enabled', ?1)",
+        params![if settings.enabled { "1" } else { "0" }],
+    )?;
+    Ok(())
+}
+

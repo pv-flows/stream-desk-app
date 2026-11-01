@@ -43,6 +43,13 @@ export interface ConnectedDevice {
   connected_at: string;
 }
 
+export interface ObsSettings {
+  host: string;
+  port: number;
+  password?: string | null;
+  enabled: boolean;
+}
+
 export interface DashboardState {
   pages: Page[];
   buttons: DeckButton[];
@@ -50,6 +57,7 @@ export interface DashboardState {
   theme: string;
   appearance: AppearanceSettings;
   systemSettings: SystemSettings;
+  obsSettings: ObsSettings;
   connectedDevices: ConnectedDevice[];
   localIp: string;
   activePageIndex: number;
@@ -64,6 +72,9 @@ export interface DashboardState {
   setAppearance: (settings: Partial<AppearanceSettings>) => Promise<void>;
   fetchSystemSettings: () => Promise<void>;
   setSystemSettings: (settings: Partial<SystemSettings>) => Promise<void>;
+  fetchObsSettings: () => Promise<void>;
+  setObsSettings: (settings: Partial<ObsSettings>) => Promise<void>;
+  testObsConnection: (settings: ObsSettings) => Promise<string>;
   fetchConnectedDevices: () => Promise<void>;
   disconnectDevice: (id: string) => Promise<void>;
   fetchPages: () => Promise<void>;
@@ -101,6 +112,12 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   systemSettings: {
     start_with_windows: false,
     minimize_to_tray: true,
+  },
+  obsSettings: {
+    host: "localhost",
+    port: 4455,
+    password: "",
+    enabled: false,
   },
   connectedDevices: [],
   localIp: "127.0.0.1",
@@ -167,6 +184,32 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     } catch (err) {
       console.warn("[Store] Erro ao salvar system settings via IPC:", err);
     }
+  },
+
+  fetchObsSettings: async () => {
+    try {
+      const s = await invoke<ObsSettings>("get_obs_settings");
+      if (s && typeof s === "object") {
+        set({ obsSettings: s });
+      }
+    } catch (err) {
+      console.warn("[Store] Erro ao buscar obs settings via IPC:", err);
+    }
+  },
+
+  setObsSettings: async (settings: Partial<ObsSettings>) => {
+    const current = get().obsSettings;
+    const updated: ObsSettings = { ...current, ...settings };
+    set({ obsSettings: updated });
+    try {
+      await invoke("set_obs_settings", { settings: updated });
+    } catch (err) {
+      console.warn("[Store] Erro ao salvar obs settings via IPC:", err);
+    }
+  },
+
+  testObsConnection: async (settings: ObsSettings) => {
+    return await invoke<string>("test_obs_connection", { settings });
   },
 
   fetchConnectedDevices: async () => {
@@ -385,6 +428,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         get().fetchButtons(),
         get().fetchAppearance(),
         get().fetchSystemSettings(),
+        get().fetchObsSettings(),
         get().fetchConnectedDevices(),
         get().fetchTheme(),
         get().fetchLocalIp(),
