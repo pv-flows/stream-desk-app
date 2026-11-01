@@ -55,6 +55,8 @@ Sistema cliente-servidor para operação em rede local (LAN), projetado para aut
 | `import_backup` | `{ backup: BackupData }` | `()` | Executa transação atômica no SQLite para restauração de layout, botões, regras e temas, disparando broadcast WS. |
 | `get_system_settings` | Nenhuma | `SystemSettings` | Obtém configurações de inicialização com Windows e minimizar para bandeja. |
 | `set_system_settings` | `{ settings: SystemSettings }` | `()` | Persiste configurações no SQLite e aplica chave de registro no Windows (`HKCU\...\Run`). |
+| `get_connected_devices` | Nenhuma | `Vec<ConnectedDevice>` | Lista os clientes WebSocket atualmente conectados (id, nome, ip, horário). |
+| `disconnect_device` | `{ id: String }` | `()` | Encerra a conexão WebSocket do dispositivo indicado pelo servidor. |
 
 ### 5.2 Eventos WebSocket (`/ws`)
 
@@ -94,3 +96,12 @@ Disparado pelo rastreador de janelas ativas (`active_win_pos_rs`) quando um proc
   "process_name": "chrome.exe"
 }
 ```
+
+### 5.3 Comandos do Cliente para o Servidor (`/ws`)
+
+| Ação | Payload | Descrição |
+| :-- | :-- | :-- |
+| `identify` | `"Stream Desk (Android)"` | Notifica o servidor do nome amigável/plataforma do dispositivo cliente. |
+| `get_layout` | Nenhuma | Solicita envio imediato do layout de botões, páginas e aparência (`sync_layout`). |
+| `ping` | Nenhuma | Mensagem periódica de keepalive (responde com `pong`). |
+| `press_button` | `"Ctrl+C"` | Dispara a execução da macro/atalho associado no Windows. |

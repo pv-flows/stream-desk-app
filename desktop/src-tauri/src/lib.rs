@@ -265,6 +265,25 @@ fn set_system_settings(settings: db::SystemSettings) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn get_connected_devices(
+    state: tauri::State<'_, server::ServerState>,
+) -> Result<Vec<server::ConnectedDevice>, String> {
+    Ok(server::get_connected_clients(&state).await)
+}
+
+#[tauri::command]
+async fn disconnect_device(
+    id: String,
+    state: tauri::State<'_, server::ServerState>,
+) -> Result<(), String> {
+    if server::disconnect_client(&state, &id).await {
+        Ok(())
+    } else {
+        Err("Dispositivo não encontrado ou já desconectado".to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if let Err(err) = db::init_db() {
@@ -272,15 +291,19 @@ pub fn run() {
     }
 
     let (tx, _rx) = broadcast::channel::<String>(100);
+    let server_state = server::ServerState::new(tx.clone());
+
+    let state_for_setup = server_state.clone();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
             app.manage(tx.clone());
+            app.manage(state_for_setup.clone());
 
-            let server_tx = tx.clone();
+            let server_state_clone = state_for_setup.clone();
             tauri::async_runtime::spawn(async move {
-                server::start_server(server_tx).await;
+                server::start_server(server_state_clone).await;
             });
 
             // Configuração do Tray Icon (Bandeja do Sistema)
@@ -360,7 +383,9 @@ pub fn run() {
             get_installed_apps,
             import_backup,
             get_system_settings,
-            set_system_settings
+            set_system_settings,
+            get_connected_devices,
+            disconnect_device
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

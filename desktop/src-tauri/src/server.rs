@@ -2,6 +2,7 @@ use crate::db;
 use active_win_pos_rs::get_active_window;
 use axum::{
     extract::{
+        connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
     },
@@ -13,10 +14,58 @@ use enigo::{
     Direction::{Click, Press, Release},
     Enigo, Key, Keyboard as KeyboardControllable, Settings,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, RwLock};
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ConnectedDevice {
+    pub id: String,
+    pub name: String,
+    pub ip: String,
+    pub connected_at: String,
+}
+
+pub struct ClientSession {
+    pub device: ConnectedDevice,
+    pub disconnect_tx: tokio::sync::mpsc::Sender<()>,
+}
+
+#[derive(Clone)]
+pub struct ServerState {
+    pub tx: broadcast::Sender<String>,
+    pub clients: Arc<RwLock<HashMap<String, ClientSession>>>,
+    pub counter: Arc<AtomicU64>,
+}
+
+impl ServerState {
+    pub fn new(tx: broadcast::Sender<String>) -> Self {
+        Self {
+            tx,
+            clients: Arc::new(RwLock::new(HashMap::new())),
+            counter: Arc::new(AtomicU64::new(1)),
+        }
+    }
+}
+
+pub async fn get_connected_clients(state: &ServerState) -> Vec<ConnectedDevice> {
+    let map = state.clients.read().await;
+    map.values().map(|s| s.device.clone()).collect()
+}
+
+pub async fn disconnect_client(state: &ServerState, id: &str) -> bool {
+    let mut map = state.clients.write().await;
+    if let Some(session) = map.remove(id) {
+        let _ = session.disconnect_tx.send(()).await;
+        true
+    } else {
+        false
+    }
+}
 
 #[derive(Deserialize, Debug)]
 struct ClientCommand {
@@ -25,22 +74,27 @@ struct ClientCommand {
     payload: Option<String>,
 }
 
-pub async fn start_server(tx: broadcast::Sender<String>) {
-    let monitor_tx = tx.clone();
+pub async fn start_server(state: ServerState) {
+    let monitor_tx = state.tx.clone();
     tokio::spawn(async move {
         start_window_monitor(monitor_tx).await;
     });
 
     let app = Router::new()
         .route("/ws", get(ws_handler))
-        .with_state(tx);
+        .with_state(state);
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 
     println!("[Server] Servidor WebSocket iniciando em http://{}", addr);
 
     match tokio::net::TcpListener::bind(addr).await {
         Ok(listener) => {
-            if let Err(err) = axum::serve(listener, app).await {
+            if let Err(err) = axum::serve(
+                listener,
+                app.into_make_service_with_connect_info::<SocketAddr>(),
+            )
+            .await
+            {
                 eprintln!("[Server] Erro na execução do servidor: {:?}", err);
             }
         }
@@ -52,17 +106,55 @@ pub async fn start_server(tx: broadcast::Sender<String>) {
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    State(tx): State<broadcast::Sender<String>>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    State(state): State<ServerState>,
 ) -> impl IntoResponse {
-    let rx = tx.subscribe();
-    ws.on_upgrade(move |socket| handle_socket(socket, rx))
+    let rx = state.tx.subscribe();
+    ws.on_upgrade(move |socket| handle_socket(socket, rx, addr, state))
 }
 
-async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String>) {
-    println!("[Server] Cliente conectado via WebSocket!");
+async fn handle_socket(
+    mut socket: WebSocket,
+    mut rx: broadcast::Receiver<String>,
+    addr: SocketAddr,
+    state: ServerState,
+) {
+    let id_num = state.counter.fetch_add(1, Ordering::SeqCst);
+    let client_id = format!("device_{}", id_num);
+    let ip_str = addr.ip().to_string();
+    let client_name = format!("Cliente Mobile ({})", ip_str);
+
+    let (disconnect_tx, mut disconnect_rx) = tokio::sync::mpsc::channel::<()>(1);
+    let now_ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs().to_string())
+        .unwrap_or_default();
+
+    {
+        let mut map = state.clients.write().await;
+        map.insert(
+            client_id.clone(),
+            ClientSession {
+                device: ConnectedDevice {
+                    id: client_id.clone(),
+                    name: client_name.clone(),
+                    ip: ip_str,
+                    connected_at: now_ts,
+                },
+                disconnect_tx,
+            },
+        );
+    }
+
+    println!("[Server] Cliente '{}' conectado via WebSocket de {}", client_id, addr);
 
     loop {
         tokio::select! {
+            _ = disconnect_rx.recv() => {
+                println!("[Server] Desconexão forçada pelo servidor para cliente '{}'", client_id);
+                let _ = socket.send(Message::Close(None)).await;
+                break;
+            }
             msg_option = socket.recv() => {
                 match msg_option {
                     Some(Ok(Message::Text(text))) => {
@@ -122,6 +214,18 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
                             continue;
                         }
 
+                        if action_name == "identify" {
+                            if let Ok(cmd) = serde_json::from_str::<ClientCommand>(&text) {
+                                if let Some(p) = cmd.payload {
+                                    let mut map = state.clients.write().await;
+                                    if let Some(session) = map.get_mut(&client_id) {
+                                        session.device.name = p;
+                                    }
+                                }
+                            }
+                            continue;
+                        }
+
                         execute_macro(&action_name);
 
                         let response = serde_json::json!({
@@ -164,6 +268,12 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
             }
         }
     }
+
+    {
+        let mut map = state.clients.write().await;
+        map.remove(&client_id);
+    }
+    println!("[Server] Sessão encerrada e dispositivo removido: '{}'", client_id);
 }
 
 fn parse_key(key_str: &str) -> Option<Key> {

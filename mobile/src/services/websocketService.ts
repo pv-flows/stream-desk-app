@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { DeckButtonItem, PageItem, useDeckStore } from '../store/deckStore';
 import { AppearanceSettings, useThemeStore } from '../store/themeStore';
 import { ThemeName } from '../theme/colors';
@@ -102,6 +103,10 @@ class WebSocketService {
         this.heartbeatTimer = setInterval(() => {
           this.sendCommand('ping');
         }, 30000);
+
+        // Identifica o dispositivo para o desktop
+        const deviceName = Platform.OS === 'ios' ? 'Stream Desk (iOS)' : Platform.OS === 'android' ? 'Stream Desk (Android)' : 'Stream Desk Mobile';
+        this.sendCommand('identify', deviceName);
 
         // Solicita automaticamente o layout de botões persistido no SQLite do PC
         this.sendCommand('get_layout');

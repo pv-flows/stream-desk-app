@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Épico E4 (Lista Real de Dispositivos Conectados e Desconexão pelo Servidor)**:
+  - Gerenciamento de sessões ativas no servidor Axum WebSocket (`ServerState`, `ClientSession`, `ConnectedDevice` em `desktop/src-tauri/src/server.rs`) com rastreamento de IP remoto, horário de conexão e canais individuais de desconexão.
+  - Suporte ao comando de identificação de dispositivo (`identify`) do cliente mobile enviando plataforma amigável ("Stream Desk (iOS)", "Stream Desk (Android)").
+  - Comandos IPC Tauri `get_connected_devices` e `disconnect_device(id)` para consulta em tempo real e terminação remota de conexões indesejadas.
+  - Integração no Zustand do Desktop (`fetchConnectedDevices`, `disconnectDevice`) e atualização da `ConnectionView.tsx` com polling a cada 2.5s, substituindo a lista estática mockada por clientes reais.
 - **Épico E2 (Iniciar com o Windows e Minimizar para a Bandeja)**:
   - Integração nativa com a bandeja do sistema (`TrayIconBuilder`, menu de contexto com "Abrir Stream Desk" e "Sair") e restauração rápida ao clicar com o botão esquerdo.
   - Interceptação de evento `CloseRequested` da janela principal para ocultar em background na bandeja (`minimize_to_tray`) quando configurado.

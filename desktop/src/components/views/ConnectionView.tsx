@@ -1,40 +1,34 @@
-import { useState } from "react";
-import { Wifi, Signal } from "lucide-react";
+import { useEffect } from "react";
+import { Wifi } from "lucide-react";
 import QRCode from "react-qr-code";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { useDashboardStore } from "@/store/useDashboardStore";
-
-export interface ConnectedDevice {
-  id: string;
-  name: string;
-  signalType: "wifi" | "bars" | "dbm";
-  dbmValue?: string;
-}
-
-const INITIAL_CONNECTED_DEVICES: ConnectedDevice[] = [
-  { id: "1", name: "iPhone de João", signalType: "bars" },
-  { id: "2", name: "Galaxy S21 da Maria", signalType: "wifi" },
-  { id: "3", name: "Galaxy S21 da Maria", signalType: "bars" },
-  { id: "4", name: "iPhone de João", signalType: "wifi" },
-  { id: "5", name: "Galaxy S21 da Maria", signalType: "bars" },
-  { id: "6", name: "Galaxy S21 da Maria", signalType: "dbm", dbmValue: "- dbm" },
-];
+import { useDashboardStore, type ConnectedDevice } from "@/store/useDashboardStore";
 
 export function ConnectionView() {
   const { toast } = useToast();
   const localIp = useDashboardStore((s) => s.localIp);
+  const connectedDevices = useDashboardStore((s) => s.connectedDevices);
+  const fetchConnectedDevices = useDashboardStore((s) => s.fetchConnectedDevices);
+  const disconnectDevice = useDashboardStore((s) => s.disconnectDevice);
+
   const displayIp = localIp && localIp !== "0.0.0.0" ? localIp : "192.168.1.15";
   const qrValue = `http://${displayIp}:8080/ws`;
 
-  const [devices, setDevices] = useState<ConnectedDevice[]>(INITIAL_CONNECTED_DEVICES);
+  useEffect(() => {
+    fetchConnectedDevices();
+    const interval = setInterval(() => {
+      fetchConnectedDevices();
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [fetchConnectedDevices]);
 
-  const handleDisconnectDevice = (device: ConnectedDevice) => {
-    setDevices((prev) => prev.filter((d) => d.id !== device.id));
+  const handleDisconnectDevice = async (device: ConnectedDevice) => {
+    await disconnectDevice(device.id);
     toast({
       title: "Dispositivo Desconectado",
-      description: `A conexão com ${device.name} foi finalizada.`,
+      description: `A conexão com ${device.name} (${device.ip}) foi finalizada.`,
     });
   };
 
@@ -74,7 +68,7 @@ export function ConnectionView() {
             Escaneie com o celular
           </p>
 
-          {/* Placeholder / QR Code quadrado branco */}
+          {/* QR Code */}
           <div className="bg-white p-3.5 rounded-2xl shadow-2xl flex items-center justify-center">
             <QRCode
               value={qrValue}
@@ -90,49 +84,45 @@ export function ConnectionView() {
           </p>
         </Card>
 
-        {/* Coluna Direita: Dispositivos conectados */}
+        {/* Coluna Direita: Dispositivos conectados reais */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-neutral-300">
               Dispositivos conectados
             </h2>
             <span className="text-xs font-mono text-neutral-500">
-              {devices.length} ativo{devices.length === 1 ? "" : "s"}
+              {connectedDevices.length} ativo{connectedDevices.length === 1 ? "" : "s"}
             </span>
           </div>
 
           <ScrollArea className="h-[380px] pr-2">
             <div className="space-y-2.5">
-              {devices.length > 0 ? (
-                devices.map((device, idx) => (
+              {connectedDevices.length > 0 ? (
+                connectedDevices.map((device) => (
                   <div
-                    key={`${device.id}-${idx}`}
+                    key={device.id}
                     className="bg-neutral-900/60 hover:bg-neutral-900/90 border border-neutral-800/70 rounded-xl px-4 py-3 flex items-center justify-between transition-colors shadow-sm"
                   >
                     {/* Status e Nome do Dispositivo */}
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
-                      <span className="text-xs font-medium text-neutral-200 truncate">
-                        {device.name}
-                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-medium text-neutral-200 truncate">
+                          {device.name}
+                        </span>
+                        <span className="text-[10px] font-mono text-neutral-500 truncate">
+                          {device.ip}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Sinal e Ação Desconectar */}
                     <div className="flex items-center gap-3.5 flex-shrink-0">
-                      {device.signalType === "wifi" ? (
-                        <Wifi className="w-4 h-4 text-neutral-400" />
-                      ) : device.signalType === "bars" ? (
-                        <Signal className="w-4 h-4 text-neutral-400" />
-                      ) : (
-                        <span className="text-[11px] font-mono text-neutral-500">
-                          {device.dbmValue}
-                        </span>
-                      )}
-
+                      <Wifi className="w-4 h-4 text-neutral-400" />
                       <button
                         type="button"
                         onClick={() => handleDisconnectDevice(device)}
-                        className="text-xs font-medium text-violet-400 hover:text-violet-300 hover:underline transition-colors"
+                        className="text-xs font-medium text-rose-400 hover:text-rose-300 hover:underline transition-colors"
                       >
                         Desconectar
                       </button>

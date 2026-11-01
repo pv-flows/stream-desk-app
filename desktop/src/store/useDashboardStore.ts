@@ -36,6 +36,13 @@ export interface SystemSettings {
   minimize_to_tray: boolean;
 }
 
+export interface ConnectedDevice {
+  id: string;
+  name: string;
+  ip: string;
+  connected_at: string;
+}
+
 export interface DashboardState {
   pages: Page[];
   buttons: DeckButton[];
@@ -43,6 +50,7 @@ export interface DashboardState {
   theme: string;
   appearance: AppearanceSettings;
   systemSettings: SystemSettings;
+  connectedDevices: ConnectedDevice[];
   localIp: string;
   activePageIndex: number;
   isLoading: boolean;
@@ -56,6 +64,8 @@ export interface DashboardState {
   setAppearance: (settings: Partial<AppearanceSettings>) => Promise<void>;
   fetchSystemSettings: () => Promise<void>;
   setSystemSettings: (settings: Partial<SystemSettings>) => Promise<void>;
+  fetchConnectedDevices: () => Promise<void>;
+  disconnectDevice: (id: string) => Promise<void>;
   fetchPages: () => Promise<void>;
   addPage: (name: string) => Promise<void>;
   updatePage: (id: number, name: string) => Promise<void>;
@@ -92,6 +102,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     start_with_windows: false,
     minimize_to_tray: true,
   },
+  connectedDevices: [],
   localIp: "127.0.0.1",
   activePageIndex: 1,
   isLoading: false,
@@ -155,6 +166,28 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       await invoke("set_system_settings", { settings: updated });
     } catch (err) {
       console.warn("[Store] Erro ao salvar system settings via IPC:", err);
+    }
+  },
+
+  fetchConnectedDevices: async () => {
+    try {
+      const devices = await invoke<ConnectedDevice[]>("get_connected_devices");
+      if (Array.isArray(devices)) {
+        set({ connectedDevices: devices });
+      }
+    } catch (err) {
+      console.warn("[Store] Erro ao buscar dispositivos conectados via IPC:", err);
+    }
+  },
+
+  disconnectDevice: async (id: string) => {
+    try {
+      await invoke("disconnect_device", { id });
+      set((state) => ({
+        connectedDevices: state.connectedDevices.filter((d) => d.id !== id),
+      }));
+    } catch (err) {
+      console.warn("[Store] Erro ao desconectar dispositivo via IPC:", err);
     }
   },
 
@@ -352,6 +385,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         get().fetchButtons(),
         get().fetchAppearance(),
         get().fetchSystemSettings(),
+        get().fetchConnectedDevices(),
         get().fetchTheme(),
         get().fetchLocalIp(),
         get().fetchWindowRules(),
