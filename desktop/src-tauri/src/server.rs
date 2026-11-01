@@ -1,4 +1,5 @@
 use crate::db;
+use active_win_pos_rs::get_active_window;
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -14,6 +15,7 @@ use enigo::{
 };
 use serde::Deserialize;
 use std::net::SocketAddr;
+use std::time::Duration;
 use tokio::sync::broadcast;
 
 #[derive(Deserialize, Debug)]
@@ -24,6 +26,11 @@ struct ClientCommand {
 }
 
 pub async fn start_server(tx: broadcast::Sender<String>) {
+    let monitor_tx = tx.clone();
+    tokio::spawn(async move {
+        start_window_monitor(monitor_tx).await;
+    });
+
     let app = Router::new()
         .route("/ws", get(ws_handler))
         .with_state(tx);
@@ -279,6 +286,70 @@ fn execute_macro(action: &str) {
         }
         other => {
             println!("[Macro] Comando não mapeado: {}", other);
+        }
+    }
+}
+
+async fn start_window_monitor(tx: broadcast::Sender<String>) {
+    println!("[Auto-Profile] Monitor de Janela Ativa iniciado (intervalo: 1000ms)");
+    let mut last_window_key: Option<String> = None;
+
+    loop {
+        tokio::time::sleep(Duration::from_millis(1000)).await;
+
+        let active_win = match get_active_window() {
+            Ok(w) => w,
+            Err(_) => continue,
+        };
+
+        let exe_name = active_win
+            .process_path
+            .file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or(&active_win.app_name)
+            .to_string();
+
+        let current_key = format!("{}:{}", active_win.process_id, exe_name.to_lowercase());
+
+        // Se a janela/processo ativo for igual à iteração anterior, ignora
+        if last_window_key.as_ref() == Some(&current_key) {
+            continue;
+        }
+        last_window_key = Some(current_key);
+
+        let rules = match db::get_window_rules() {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+
+        let exe_lower = exe_name.to_lowercase();
+        let app_lower = active_win.app_name.to_lowercase();
+
+        let matched_rule = rules.into_iter().find(|rule| {
+            let target = rule.process_name.trim().to_lowercase();
+            if target.is_empty() {
+                return false;
+            }
+            exe_lower == target
+                || exe_lower == format!("{}.exe", target)
+                || target == format!("{}.exe", exe_lower)
+                || app_lower == target
+                || exe_lower.starts_with(&target)
+        });
+
+        if let Some(rule) = matched_rule {
+            println!(
+                "[Auto-Profile] Match de janela: '{}' ({}) -> Página {}",
+                exe_name, active_win.app_name, rule.page_index
+            );
+
+            let event_payload = serde_json::json!({
+                "event": "page_change",
+                "page_index": rule.page_index
+            })
+            .to_string();
+
+            let _ = tx.send(event_payload);
         }
     }
 }

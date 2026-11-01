@@ -379,3 +379,57 @@ button {
   text-align: center;
   padding: 20px 0;
 }
+
+.rules-list-container {
+  margin-top: 10px;
+}
+
+.rules-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rule-badge-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: border-color 0.2s;
+}
+
+.rule-badge-card:hover {
+  border-color: #38bdf8;
+}
+
+.rule-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rule-process {
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.rule-arrow {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.rule-page-tag {
+  font-size: 0.85rem;
+  color: #a855f7;
+  background-color: rgba(168, 85, 247, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}

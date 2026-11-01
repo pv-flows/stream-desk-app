@@ -4,6 +4,14 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Rastreamento de Janela Ativa (Auto-Profile) com a crate `active-win-pos-rs` no Backend Desktop (`desktop/src-tauri/Cargo.toml`, `server.rs`):
+  - Task assíncrona periódica (1000ms) monitorando o aplicativo/processo em foco no Windows e efetuando broadcast do evento de troca de página `{"event": "page_change", "page_index": X}` via WebSocket para os dispositivos conectados.
+  - Tabela `window_rules` no SQLite (`desktop/src-tauri/src/db.rs`) com funções CRUD `get_window_rules`, `add_window_rule` e `delete_window_rule`.
+  - Exposição dos comandos Tauri `get_window_rules`, `add_window_rule` e `delete_window_rule` em `desktop/src-tauri/src/lib.rs`.
+- Seção visual "Auto-Profile (Troca Automática)" no Dashboard Desktop (`desktop/src/App.tsx`, `App.css`) com formulário para cadastro de regras por nome de executável/processo e página de destino, além de listagem com exclusão.
+- Parser e ouvinte de eventos `page_change` no serviço WebSocket do Mobile (`mobile/src/services/websocketService.ts`), acionando deslizamento visual imediato via `pagerRef.current?.setPage(novaPagina)` no `<PagerView>` de `mobile/src/screens/HomeScreen.tsx`.
+
+### Added
 - Suporte a Combinações de Teclas Complexas (Hotkeys) no motor de automação (`desktop/src-tauri/src/server.rs`): prefixo `hotkey:` com suporte a múltiplos modificadores (`Ctrl`, `Alt`, `Shift`, `Win`) e teclas de função/alfanuméricas via `enigo` (`Direction::Press`, `Click` e `Release`).
 - Reorganização do seed inicial padrão no SQLite (`desktop/src-tauri/src/db.rs`) dividindo atalhos por finalidade: Página 1 (Apps e Sistema: Calculadora, Navegador, Terminal, Tarefas) e Página 2 (Mídia e Áudio: Volume +, Volume -, Mute, Play/Pause, Próxima, Anterior).
 - Opção "Atalho de Teclado (Hotkey)" no formulário do painel Desktop (`desktop/src/App.tsx`) com input específico de combinações (ex: `Ctrl+Shift+Escape`, `Alt+F4`, `Ctrl+C`).

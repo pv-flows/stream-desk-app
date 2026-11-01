@@ -12,6 +12,12 @@ interface DeckButton {
   page_index?: number;
 }
 
+interface WindowRule {
+  id: number;
+  process_name: string;
+  page_index: number;
+}
+
 function App() {
   const [buttons, setButtons] = useState<DeckButton[]>([]);
   const [activeTheme, setActiveTheme] = useState<string>("default");
@@ -24,6 +30,10 @@ function App() {
   const [color, setColor] = useState("#38bdf8");
   const [icon, setIcon] = useState("zap");
   const [statusMsg, setStatusMsg] = useState<string>("");
+
+  const [rules, setRules] = useState<WindowRule[]>([]);
+  const [newRuleProcess, setNewRuleProcess] = useState("");
+  const [newRulePage, setNewRulePage] = useState<number>(0);
 
   const loadButtons = async () => {
     try {
@@ -53,10 +63,20 @@ function App() {
     }
   };
 
+  const loadRules = async () => {
+    try {
+      const data = await invoke<WindowRule[]>("get_window_rules");
+      setRules(data);
+    } catch (error) {
+      console.error("Erro ao carregar regras de janela:", error);
+    }
+  };
+
   useEffect(() => {
     loadButtons();
     loadTheme();
     loadLocalIp();
+    loadRules();
   }, []);
 
   const handleThemeChange = async (theme: string) => {
@@ -181,6 +201,37 @@ function App() {
     } catch (error) {
       console.error("Erro ao remover botão:", error);
       setStatusMsg("Erro ao remover botão.");
+    }
+  };
+
+  const handleAddRule = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newRuleProcess.trim()) {
+      setStatusMsg("Informe o nome do executável ou processo (ex: chrome.exe).");
+      return;
+    }
+    try {
+      await invoke("add_window_rule", {
+        processName: newRuleProcess.trim(),
+        pageIndex: Number(newRulePage),
+      });
+      setStatusMsg(`Regra para "${newRuleProcess.trim()}" -> Página ${newRulePage + 1} adicionada!`);
+      setNewRuleProcess("");
+      await loadRules();
+    } catch (error) {
+      console.error("Erro ao adicionar regra:", error);
+      setStatusMsg("Erro ao salvar regra no banco de dados.");
+    }
+  };
+
+  const handleDeleteRule = async (id: number, procName: string) => {
+    try {
+      await invoke("delete_window_rule", { id });
+      setStatusMsg(`Regra para "${procName}" removida.`);
+      await loadRules();
+    } catch (error) {
+      console.error("Erro ao remover regra:", error);
+      setStatusMsg("Erro ao remover regra.");
     }
   };
 
@@ -414,6 +465,78 @@ function App() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="card">
+        <div className="section-header">
+          <h2>Auto-Profile (Troca Automática)</h2>
+        </div>
+        <p className="subtitle" style={{ marginBottom: "16px", textAlign: "left" }}>
+          Monitora o aplicativo ativo no Windows e força o celular a deslizar para a página correspondente.
+        </p>
+
+        <form className="crud-form" onSubmit={handleAddRule}>
+          <div className="field">
+            <label htmlFor="process-name-input">Nome do Processo (ex: chrome.exe, Spotify.exe)</label>
+            <input
+              id="process-name-input"
+              type="text"
+              placeholder="Ex: Code.exe, chrome.exe, Spotify.exe..."
+              value={newRuleProcess}
+              onChange={(e) => setNewRuleProcess(e.currentTarget.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="rule-page-select">Página de Destino (0, 1, 2)</label>
+            <select
+              id="rule-page-select"
+              value={newRulePage}
+              onChange={(e) => setNewRulePage(Number(e.currentTarget.value))}
+            >
+              <option value={0}>Página 1 (0)</option>
+              <option value={1}>Página 2 (1)</option>
+              <option value={2}>Página 3 (2)</option>
+            </select>
+          </div>
+
+          <div className="form-actions">
+            <button type="submit" className="btn-primary">
+              + Adicionar Regra
+            </button>
+          </div>
+        </form>
+
+        <div className="rules-list-container">
+          <h3 style={{ fontSize: "1rem", marginTop: "20px", marginBottom: "10px", color: "#e2e8f0" }}>
+            Regras de Troca Ativas ({rules.length})
+          </h3>
+          {rules.length === 0 ? (
+            <p className="empty-state">
+              Nenhuma regra de Auto-Profile cadastrada. Adicione uma regra acima para sincronização automática.
+            </p>
+          ) : (
+            <div className="rules-grid">
+              {rules.map((rule) => (
+                <div key={rule.id} className="rule-badge-card">
+                  <div className="rule-info">
+                    <span className="rule-process">{rule.process_name}</span>
+                    <span className="rule-arrow">➔</span>
+                    <span className="rule-page-tag">Página {rule.page_index + 1} (Índice {rule.page_index})</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    title="Excluir regra"
+                    onClick={() => handleDeleteRule(rule.id, rule.process_name)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );

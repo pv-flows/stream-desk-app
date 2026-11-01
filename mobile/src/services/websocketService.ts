@@ -17,6 +17,8 @@ export interface ServerResponse {
   action?: string;
   payload?: SyncLayoutPayload | DeckButtonItem[] | string;
   message?: string;
+  event?: string;
+  page_index?: number;
 }
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -25,6 +27,7 @@ class WebSocketService {
   private socket: WebSocket | null = null;
   private statusListeners: Array<(status: ConnectionStatus) => void> = [];
   private messageListeners: Array<(data: ServerResponse) => void> = [];
+  private pageChangeListeners: Array<(pageIndex: number) => void> = [];
   private currentStatus: ConnectionStatus = 'disconnected';
 
   public connect(url: string): void {
@@ -63,6 +66,12 @@ class WebSocketService {
         try {
           const parsed: ServerResponse = JSON.parse(event.data);
           console.log('[WebSocket] Resposta do servidor recebida:', parsed);
+
+          // Trata evento de Auto-Profile (troca de página disparada pelo PC)
+          if (parsed.event === 'page_change' && typeof parsed.page_index === 'number') {
+            console.log('[WebSocket] Evento page_change recebido:', parsed.page_index);
+            this.pageChangeListeners.forEach((listener) => listener(parsed.page_index!));
+          }
 
           if (parsed.action === 'sync_layout' && parsed.payload) {
             const payload =
@@ -144,6 +153,13 @@ class WebSocketService {
     this.messageListeners.push(callback);
     return () => {
       this.messageListeners = this.messageListeners.filter((cb) => cb !== callback);
+    };
+  }
+
+  public onPageChange(callback: (pageIndex: number) => void): () => void {
+    this.pageChangeListeners.push(callback);
+    return () => {
+      this.pageChangeListeners = this.pageChangeListeners.filter((cb) => cb !== callback);
     };
   }
 

@@ -93,6 +93,23 @@ fn delete_button(
     Ok(())
 }
 
+#[tauri::command]
+fn get_window_rules() -> Result<Vec<db::WindowRule>, String> {
+    db::get_window_rules().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn add_window_rule(process_name: String, page_index: i32) -> Result<(), String> {
+    db::add_window_rule(&process_name, page_index).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn delete_window_rule(id: i32) -> Result<(), String> {
+    db::delete_window_rule(id).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if let Err(err) = db::init_db() {
@@ -119,7 +136,10 @@ pub fn run() {
             set_theme,
             add_button,
             update_button,
-            delete_button
+            delete_button,
+            get_window_rules,
+            add_window_rule,
+            delete_window_rule
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

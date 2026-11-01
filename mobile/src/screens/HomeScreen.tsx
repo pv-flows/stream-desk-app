@@ -25,6 +25,7 @@ export const HomeScreen: React.FC = () => {
   const [lastAction, setLastAction] = useState<string>('Aguardando comando...');
   const [serverReply, setServerReply] = useState<string>('');
   const scannedLockRef = useRef<boolean>(false);
+  const pagerRef = useRef<PagerView>(null);
 
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -49,6 +50,13 @@ export const HomeScreen: React.FC = () => {
       }
     });
 
+    const unsubscribePageChange = websocketService.onPageChange((pageIndex) => {
+      console.log(`[HomeScreen] Auto-Profile: mudando para página ${pageIndex}`);
+      setCurrentPage(pageIndex);
+      pagerRef.current?.setPage(pageIndex);
+      setLastAction(`Auto-Profile: Página ${pageIndex + 1}`);
+    });
+
     const initializeConnection = async () => {
       try {
         const storedUrl = await AsyncStorage.getItem(STORAGE_WS_URL_KEY);
@@ -70,6 +78,7 @@ export const HomeScreen: React.FC = () => {
     return () => {
       unsubscribeStatus();
       unsubscribeMessage();
+      unsubscribePageChange();
       websocketService.disconnect();
     };
   }, []);
@@ -269,6 +278,7 @@ export const HomeScreen: React.FC = () => {
 
         <View style={styles.pagerContainer}>
           <PagerView
+            ref={pagerRef}
             style={styles.pagerView}
             initialPage={0}
             onPageSelected={(e) => setCurrentPage(e.nativeEvent.position)}

@@ -13,6 +13,13 @@ pub struct Button {
     pub page_index: i32,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WindowRule {
+    pub id: i32,
+    pub process_name: String,
+    pub page_index: i32,
+}
+
 pub fn init_db() -> Result<()> {
     let conn = Connection::open(DB_PATH)?;
 
@@ -24,6 +31,15 @@ pub fn init_db() -> Result<()> {
             color TEXT NOT NULL,
             icon TEXT DEFAULT 'zap',
             page_index INTEGER DEFAULT 0
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS window_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            process_name TEXT NOT NULL,
+            page_index INTEGER NOT NULL
         )",
         [],
     )?;
@@ -193,4 +209,39 @@ pub fn set_active_theme(theme: &str) -> Result<()> {
         params![theme],
     )?;
     Ok(())
+}
+
+pub fn get_window_rules() -> Result<Vec<WindowRule>> {
+    let conn = Connection::open(DB_PATH)?;
+    let mut stmt = conn.prepare(
+        "SELECT id, process_name, page_index FROM window_rules ORDER BY id ASC",
+    )?;
+
+    let rule_iter = stmt.query_map([], |row| {
+        Ok(WindowRule {
+            id: row.get(0)?,
+            process_name: row.get(1)?,
+            page_index: row.get(2)?,
+        })
+    })?;
+
+    let mut rules = Vec::new();
+    for rule in rule_iter {
+        rules.push(rule?);
+    }
+
+    Ok(rules)
+}
+
+pub fn add_window_rule(process_name: &str, page_index: i32) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute(
+        "INSERT INTO window_rules (process_name, page_index) VALUES (?1, ?2)",
+        params![process_name, page_index],
+    )
+}
+
+pub fn delete_window_rule(id: i32) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute("DELETE FROM window_rules WHERE id = ?1", params![id])
 }
