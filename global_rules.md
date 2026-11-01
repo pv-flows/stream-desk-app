@@ -5,6 +5,9 @@
 3. **Protocolo de Sincronização:** Toda resposta de conclusão de tarefa DEVE terminar com o bloco "[RELATÓRIO DE SINCRONIZAÇÃO PARA O GEMINI]".
 4. **Tratamento de Erros:** Todo erro de rede ou falha de WebSocket deve emitir logs locais e acionar um fallback visual no front-end.
 5. **Idioma:** Código, variáveis e commits estritamente em Inglês. Documentação estrutural em Português.
+6. **Fonte da Verdade (Smart Server):** O Desktop (Rust/SQLite) é a única fonte da verdade. Toda a lógica de negócios, gatilhos condicionais e gerenciamento de estado residem no backend.
+7. **Client Burro (Dumb Client):** O Mobile (React Native) não deve processar lógica. Ele serve puramente para renderizar a interface baseada no payload JSON recebido e emitir eventos de interação (ex: clique no botão).
+8. **Orientação a Eventos:** Qualquer alteração no estado do Desktop (novo botão, alteração de volume) deve ser disparada (broadcast) imediatamente para atualizar a UI do Mobile em tempo real.
 
 # Regras Globais de Desenvolvimento (global_rules.md)
 

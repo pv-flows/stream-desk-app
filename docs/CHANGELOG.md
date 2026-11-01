@@ -3,6 +3,9 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Changed
+- Refinamento arquitetural das diretrizes (`global_rules.md`, `.agents/backend_desktop.md`, `.agents/frontend_mobile.md` e migração de `.agentes/` para `.agents/`) consolidando o modelo "Dumb Client / Smart Server" e sincronização orientada a eventos ("State Sync").
+
 ### Fixed
 - Atualização do `iniciar.bat` com `taskkill` para encerrar processos órfãos (`node.exe` e `desktop.exe`) antes de iniciar o Tauri e o Expo, resolvendo o erro `Port 1420 is already in use`.
 - Fixação explícita do endereço WebSocket da máquina host (`ws://192.168.1.97:8080/ws`) em `mobile/src/services/websocketService.ts`.

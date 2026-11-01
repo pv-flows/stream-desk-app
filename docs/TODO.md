@@ -1,7 +1,7 @@
 # TODO List - Stream Desk
 
 ## 1. Fundação & Configuração Inicial
-- [x] Inicializar estrutura base do repositório e regras globais.
+- [x] Inicializar estrutura base do repositório e regras globais (incluindo arquitetura Dumb Client / Smart Server e State Sync).
 - [x] Inicializar estrutura de projeto do **Desktop** (`desktop/`) com Tauri (React + TypeScript) e dependências WebSocket (`axum`, `tokio`, `serde`).
 - [x] Inicializar estrutura de projeto do **Mobile** (`mobile/`) com React Native / Expo (TypeScript).
 - [x] Configurar persistência SQLite no **Desktop** (`desktop/src-tauri/src/db.rs` com `rusqlite`).
