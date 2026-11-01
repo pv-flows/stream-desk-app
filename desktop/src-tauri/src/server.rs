@@ -84,7 +84,14 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
                                 Ok(buttons) => {
                                     let pages = db::get_all_pages().unwrap_or_default();
                                     let theme = db::get_active_theme()
-                                        .unwrap_or_else(|_| "default".to_string());
+                                        .unwrap_or_else(|_| "escuro".to_string());
+                                    let appearance = db::get_appearance_settings().unwrap_or(db::AppearanceSettings {
+                                        theme: theme.clone(),
+                                        accent_color: "purple".to_string(),
+                                        grid_columns: 3,
+                                        vibration_enabled: true,
+                                        icon_style: "linha".to_string(),
+                                    });
                                     let response = serde_json::json!({
                                         "status": "ok",
                                         "action": "sync_layout",
@@ -92,10 +99,12 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
                                         "pages": pages,
                                         "buttons": buttons,
                                         "theme": theme,
+                                        "appearance": appearance,
                                         "payload": {
                                             "theme": theme,
                                             "pages": pages,
-                                            "buttons": buttons
+                                            "buttons": buttons,
+                                            "appearance": appearance
                                         },
                                         "message": "Layout sincronizado com sucesso"
                                     })

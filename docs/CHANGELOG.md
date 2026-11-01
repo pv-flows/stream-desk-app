@@ -3,6 +3,12 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Added
+- **Épico E1 (Persistência e Sincronização de Aparência)**:
+  - Persistência das configurações de aparência (`active_theme`, `accent_color`, `grid_columns`, `vibration_enabled`, `icon_style`) na tabela `settings` do SQLite (`desktop/src-tauri/src/db.rs`).
+  - Comandos IPC no Tauri (`get_appearance_settings`, `set_appearance_settings`) com broadcast em tempo real via WebSocket (`broadcast_current_layout`).
+  - Sincronização bidirecional no Zustand do Desktop (`AppearanceView.tsx` e `useDashboardStore.ts`).
+  - Consumo completo no Mobile (`themeStore.ts`, `websocketService.ts`, `HomeScreen.tsx`, `DeckButton.tsx`, `MobileIcon.tsx`): grade adaptativa configurável de 2 a 6 colunas, controle real de vibração ao tocar (feedback háptico ativado/desativado), estilo de ícones (linha vs preenchido) e propagação da cor de destaque.
 ### Changed
 - Início da Fase 3: o fluxo agêntico passa a ser interno no Antigravity:
   - **Fim do modelo duplo agêntico:** removido o handoff para o Gemini web como PM externo. O `[RELATÓRIO DE SINCRONIZAÇÃO PARA O GEMINI]` foi substituído pelo `[RELATÓRIO DE ENTREGA]` (`GEMINI.md`).

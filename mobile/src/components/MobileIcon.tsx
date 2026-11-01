@@ -40,6 +40,7 @@ interface MobileIconProps {
   iconName?: string;
   size?: number;
   color?: string;
+  iconStyle?: 'linha' | 'preenchido' | string;
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -102,9 +103,12 @@ export const MobileIcon: React.FC<MobileIconProps> = ({
   iconName,
   size = 24,
   color = '#ffffff',
+  iconStyle = 'linha',
 }) => {
+  const strokeWidth = iconStyle === 'preenchido' ? 2.8 : 1.8;
+
   if (!iconName) {
-    return <Zap size={size} color={color} strokeWidth={2} />;
+    return <Zap size={size} color={color} strokeWidth={strokeWidth} />;
   }
 
   // Se for ícone base64 extraído do Windows
@@ -124,7 +128,7 @@ export const MobileIcon: React.FC<MobileIconProps> = ({
   const normalized = iconName.toLowerCase().replace(/[-_\s]/g, '');
   const IconComponent = ICON_MAP[normalized] || Zap;
 
-  return <IconComponent size={size} color={color} strokeWidth={2} />;
+  return <IconComponent size={size} color={color} strokeWidth={strokeWidth} />;
 };
 
 const styles = StyleSheet.create({

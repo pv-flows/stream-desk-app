@@ -22,7 +22,7 @@ const STORAGE_WS_URL_KEY = '@streamdesk_ws_url';
 
 export const HomeScreen: React.FC = () => {
   useKeepAwake();
-  const { theme, buttons, pages } = useThemeStore();
+  const { theme, buttons, pages, appearance } = useThemeStore();
   const dynamicPages = pages && pages.length > 0 ? pages : [{ id: 1, name: 'Principal' }];
   const skin = getSkin(theme);
 
@@ -292,8 +292,9 @@ export const HomeScreen: React.FC = () => {
     );
   }
 
-  // Recalibragem da grade responsiva Dark Premium
-  const COLUMNS = isLandscape ? 5 : 3;
+  // Recalibragem da grade responsiva baseada nas configurações de aparência
+  const configuredCols = Math.max(2, Math.min(6, appearance?.grid_columns || 3));
+  const COLUMNS = isLandscape ? Math.max(4, configuredCols + 1) : configuredCols;
   const buttonWidth = Math.floor((width - 32) / COLUMNS - 10);
   const maxLandscapeHeight = Math.floor((height - 110) / 2 - 10);
   const buttonHeight = isLandscape

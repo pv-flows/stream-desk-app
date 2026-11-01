@@ -1,5 +1,5 @@
 import { DeckButtonItem, PageItem, useDeckStore } from '../store/deckStore';
-import { useThemeStore } from '../store/themeStore';
+import { AppearanceSettings, useThemeStore } from '../store/themeStore';
 import { ThemeName } from '../theme/colors';
 
 export interface CommandMessage {
@@ -11,6 +11,7 @@ export interface SyncLayoutPayload {
   theme?: ThemeName;
   buttons?: DeckButtonItem[];
   pages?: PageItem[];
+  appearance?: AppearanceSettings;
 }
 
 export interface ServerResponse {
@@ -19,6 +20,7 @@ export interface ServerResponse {
   payload?: SyncLayoutPayload | DeckButtonItem[] | string;
   pages?: PageItem[];
   buttons?: DeckButtonItem[];
+  appearance?: AppearanceSettings;
   message?: string;
   event?: string;
   page_index?: number;
@@ -123,6 +125,9 @@ class WebSocketService {
             if (Array.isArray(parsed.buttons)) {
               useDeckStore.getState().setButtons(parsed.buttons);
             }
+            if (parsed.appearance) {
+              useThemeStore.getState().setAppearance(parsed.appearance);
+            }
 
             if (parsed.payload) {
               const payload =
@@ -136,6 +141,9 @@ class WebSocketService {
                 }
                 if (Array.isArray(payload.pages)) {
                   useThemeStore.getState().setPages(payload.pages);
+                }
+                if (payload.appearance) {
+                  useThemeStore.getState().setAppearance(payload.appearance);
                 }
                 if (payload.theme) {
                   useThemeStore.getState().setTheme(payload.theme);

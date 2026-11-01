@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useState, useEffect } from "react";
 import {
   Contrast,
   Palette,
@@ -25,9 +24,10 @@ const COLOR_OPTIONS = [
 export function AppearanceView() {
   const { toast } = useToast();
   const theme = useDashboardStore((s) => s.theme);
-  const setTheme = useDashboardStore((s) => s.setTheme);
+  const appearance = useDashboardStore((s) => s.appearance);
+  const setAppearance = useDashboardStore((s) => s.setAppearance);
 
-  const normalizedTheme = (theme || "escuro").toLowerCase();
+  const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
   const activeTheme =
     normalizedTheme === "claro" || normalizedTheme === "light"
       ? "claro"
@@ -35,60 +35,77 @@ export function AppearanceView() {
       ? "amoled"
       : "escuro";
 
-  const [selectedColor, setSelectedColor] = useState("purple");
-  const [gridSize, setGridSize] = useState([3]);
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
-  const [iconStyle, setIconStyle] = useState<"linha" | "preenchido">("linha");
+  const selectedColor = appearance?.accent_color || "purple";
+  const [sliderValue, setSliderValue] = useState<number[]>([appearance?.grid_columns || 3]);
+  const vibrationEnabled = appearance?.vibration_enabled ?? true;
+  const iconStyle = appearance?.icon_style === "preenchido" ? "preenchido" : "linha";
+
+  useEffect(() => {
+    if (appearance?.grid_columns) {
+      setSliderValue([appearance.grid_columns]);
+    }
+  }, [appearance?.grid_columns]);
 
   const handleThemeChange = async (novoTema: "escuro" | "claro" | "amoled") => {
-    await setTheme(novoTema);
     try {
-      await invoke("set_theme", { theme: novoTema });
+      await setAppearance({ theme: novoTema });
       toast({
         title: "Tema Atualizado",
         description: `Tema alterado para "${novoTema.toUpperCase()}" e sincronizado via WebSocket.`,
       });
     } catch (err) {
-      console.warn("[AppearanceView] Erro ao sincronizar set_theme via IPC:", err);
-      toast({
-        title: "Tema Atualizado Localmente",
-        description: `Tema alterado para "${novoTema.toUpperCase()}".`,
-      });
+      console.warn("[AppearanceView] Erro ao sincronizar tema:", err);
     }
   };
 
-  const handleSelectColor = (col: typeof COLOR_OPTIONS[0]) => {
-    setSelectedColor(col.id);
-    toast({
-      title: "Cor de Destaque",
-      description: `Paleta "${col.label}" definida para botões e acentos.`,
-    });
+  const handleSelectColor = async (col: typeof COLOR_OPTIONS[0]) => {
+    try {
+      await setAppearance({ accent_color: col.id });
+      toast({
+        title: "Cor de Destaque",
+        description: `Paleta "${col.label}" definida para botões e acentos.`,
+      });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao sincronizar cor:", err);
+    }
   };
 
-  const handleGridSizeCommit = (val: number[]) => {
-    setGridSize(val);
-    toast({
-      title: "Tamanho da Grade",
-      description: `Layout móvel configurado para grade ${val[0]} colunas.`,
-    });
+  const handleGridSizeCommit = async (val: number[]) => {
+    try {
+      await setAppearance({ grid_columns: val[0] });
+      toast({
+        title: "Tamanho da Grade",
+        description: `Layout móvel configurado para grade ${val[0]} colunas.`,
+      });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao sincronizar tamanho da grade:", err);
+    }
   };
 
-  const handleToggleVibration = (checked: boolean) => {
-    setVibrationEnabled(checked);
-    toast({
-      title: "Vibração ao Tocar",
-      description: checked
-        ? "Feedback háptico habilitado no aplicativo mobile."
-        : "Vibração ao pressionar desabilitada.",
-    });
+  const handleToggleVibration = async (checked: boolean) => {
+    try {
+      await setAppearance({ vibration_enabled: checked });
+      toast({
+        title: "Vibração ao Tocar",
+        description: checked
+          ? "Feedback háptico habilitado no aplicativo mobile."
+          : "Vibração ao pressionar desabilitada.",
+      });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao alternar vibração:", err);
+    }
   };
 
-  const handleSelectIconStyle = (style: "linha" | "preenchido") => {
-    setIconStyle(style);
-    toast({
-      title: "Estilo de Ícones",
-      description: `Ícones definidos como "${style === "linha" ? "Linha / Outline" : "Preenchido / Solid"}".`,
-    });
+  const handleSelectIconStyle = async (style: "linha" | "preenchido") => {
+    try {
+      await setAppearance({ icon_style: style });
+      toast({
+        title: "Estilo de Ícones",
+        description: `Ícones definidos como "${style === "linha" ? "Linha / Outline" : "Preenchido / Solid"}".`,
+      });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao alternar estilo de ícones:", err);
+    }
   };
 
   return (
@@ -190,8 +207,8 @@ export function AppearanceView() {
             <div className="flex items-center gap-3 w-64">
               <span className="text-xs font-mono text-neutral-400">2</span>
               <Slider
-                value={gridSize}
-                onValueChange={setGridSize}
+                value={sliderValue}
+                onValueChange={setSliderValue}
                 onValueCommit={handleGridSizeCommit}
                 min={2}
                 max={6}

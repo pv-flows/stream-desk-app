@@ -28,6 +28,15 @@ pub struct ButtonPositionUpdate {
     pub page_index: Option<i32>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct AppearanceSettings {
+    pub theme: String,
+    pub accent_color: String,
+    pub grid_columns: i32,
+    pub vibration_enabled: bool,
+    pub icon_style: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WindowRule {
     pub id: i32,
@@ -111,7 +120,23 @@ pub fn init_db() -> Result<()> {
     )?;
 
     conn.execute(
-        "INSERT OR IGNORE INTO settings (key, value) VALUES ('active_theme', 'default')",
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('active_theme', 'escuro')",
+        [],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('accent_color', 'purple')",
+        [],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('grid_columns', '3')",
+        [],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('vibration_enabled', '1')",
+        [],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('icon_style', 'linha')",
         [],
     )?;
 
@@ -325,6 +350,80 @@ pub fn set_active_theme(theme: &str) -> Result<()> {
     conn.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('active_theme', ?1)",
         params![theme],
+    )?;
+    Ok(())
+}
+
+pub fn get_appearance_settings() -> Result<AppearanceSettings> {
+    let conn = Connection::open(DB_PATH)?;
+    let theme: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'active_theme'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "escuro".to_string());
+    let accent_color: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'accent_color'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "purple".to_string());
+    let grid_columns: i32 = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'grid_columns'",
+            [],
+            |row| row.get(0),
+        )
+        .map(|v: String| v.parse().unwrap_or(3))
+        .unwrap_or(3);
+    let vibration_enabled: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'vibration_enabled'",
+            [],
+            |row| row.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(true);
+    let icon_style: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'icon_style'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "linha".to_string());
+
+    Ok(AppearanceSettings {
+        theme,
+        accent_color,
+        grid_columns,
+        vibration_enabled,
+        icon_style,
+    })
+}
+
+pub fn set_appearance_settings(settings: &AppearanceSettings) -> Result<()> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('active_theme', ?1)",
+        params![settings.theme],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('accent_color', ?1)",
+        params![settings.accent_color],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('grid_columns', ?1)",
+        params![settings.grid_columns.to_string()],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('vibration_enabled', ?1)",
+        params![if settings.vibration_enabled { "1" } else { "0" }],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('icon_style', ?1)",
+        params![settings.icon_style],
     )?;
     Ok(())
 }

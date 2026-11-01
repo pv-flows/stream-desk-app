@@ -42,12 +42,22 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
   buttonHeight,
 }) => {
   const theme = useThemeStore((state) => state.theme);
+  const appearance = useThemeStore((state) => state.appearance);
   const skin = getSkin(theme);
 
   const scale = useSharedValue(1);
   const pressProgress = useSharedValue(0);
 
-  const activeAccentColor = resolveAccentColor(item.color, skin.highlightColor);
+  const ACCENT_MAP: Record<string, string> = {
+    purple: '#818cf8',
+    green: '#10b981',
+    red: '#f43f5e',
+    yellow: '#f59e0b',
+    blue: '#3b82f6',
+    teal: '#0d9488',
+  };
+  const themeAccent = ACCENT_MAP[appearance?.accent_color] || skin.highlightColor;
+  const activeAccentColor = resolveAccentColor(item.color, themeAccent);
   const baseBorderColor = item.color ? `${activeAccentColor}44` : skin.borderColor;
 
   // Tamanho adaptativo do ícone de acordo com o espaço disponível do botão
@@ -57,8 +67,10 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
       : 26;
 
   const handlePressIn = () => {
-    // Feedback háptico intacto ao toque
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    // Feedback háptico condicionado à configuração de vibração
+    if (appearance?.vibration_enabled ?? true) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
 
     scale.value = withSpring(0.93, {
       damping: 14,
@@ -140,6 +152,7 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
               iconName={item.icon}
               size={iconSize}
               color={activeAccentColor}
+              iconStyle={appearance?.icon_style}
             />
           </View>
           <Text

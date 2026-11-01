@@ -8,7 +8,14 @@ use tokio::sync::broadcast;
 fn broadcast_current_layout(tx: &broadcast::Sender<String>) {
     if let Ok(buttons) = db::get_all_buttons() {
         let pages = db::get_all_pages().unwrap_or_default();
-        let theme = db::get_active_theme().unwrap_or_else(|_| "default".to_string());
+        let theme = db::get_active_theme().unwrap_or_else(|_| "escuro".to_string());
+        let appearance = db::get_appearance_settings().unwrap_or(db::AppearanceSettings {
+            theme: theme.clone(),
+            accent_color: "purple".to_string(),
+            grid_columns: 3,
+            vibration_enabled: true,
+            icon_style: "linha".to_string(),
+        });
         let json_string = serde_json::json!({
             "status": "ok",
             "action": "sync_layout",
@@ -16,10 +23,12 @@ fn broadcast_current_layout(tx: &broadcast::Sender<String>) {
             "pages": pages,
             "buttons": buttons,
             "theme": theme,
+            "appearance": appearance,
             "payload": {
                 "theme": theme,
                 "pages": pages,
-                "buttons": buttons
+                "buttons": buttons,
+                "appearance": appearance
             },
             "message": "Layout atualizado em tempo real pelo PC"
         })
@@ -27,6 +36,21 @@ fn broadcast_current_layout(tx: &broadcast::Sender<String>) {
 
         let _ = tx.send(json_string);
     }
+}
+
+#[tauri::command]
+fn get_appearance_settings() -> Result<db::AppearanceSettings, String> {
+    db::get_appearance_settings().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_appearance_settings(
+    settings: db::AppearanceSettings,
+    tx: tauri::State<'_, broadcast::Sender<String>>,
+) -> Result<(), String> {
+    db::set_appearance_settings(&settings).map_err(|e| e.to_string())?;
+    broadcast_current_layout(&tx);
+    Ok(())
 }
 
 #[tauri::command]
@@ -199,6 +223,8 @@ pub fn run() {
             get_local_ip,
             get_theme,
             set_theme,
+            get_appearance_settings,
+            set_appearance_settings,
             add_button,
             update_button,
             delete_button,

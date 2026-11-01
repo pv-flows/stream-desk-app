@@ -22,11 +22,20 @@ export interface WindowRule {
   page_index: number;
 }
 
+export interface AppearanceSettings {
+  theme: string;
+  accent_color: string;
+  grid_columns: number;
+  vibration_enabled: boolean;
+  icon_style: "linha" | "preenchido";
+}
+
 export interface DashboardState {
   pages: Page[];
   buttons: DeckButton[];
   windowRules: WindowRule[];
   theme: string;
+  appearance: AppearanceSettings;
   localIp: string;
   activePageIndex: number;
   isLoading: boolean;
@@ -36,6 +45,8 @@ export interface DashboardState {
   setActivePageIndex: (index: number) => void;
   setButtons: (buttons: DeckButton[]) => void;
   setTheme: (theme: string) => Promise<void>;
+  fetchAppearance: () => Promise<void>;
+  setAppearance: (settings: Partial<AppearanceSettings>) => Promise<void>;
   fetchPages: () => Promise<void>;
   addPage: (name: string) => Promise<void>;
   updatePage: (id: number, name: string) => Promise<void>;
@@ -59,6 +70,13 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   buttons: [],
   windowRules: [],
   theme: "escuro",
+  appearance: {
+    theme: "escuro",
+    accent_color: "purple",
+    grid_columns: 3,
+    vibration_enabled: true,
+    icon_style: "linha",
+  },
   localIp: "127.0.0.1",
   activePageIndex: 1,
   isLoading: false,
@@ -72,13 +90,39 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     set({ buttons });
   },
 
-  setTheme: async (theme: string) => {
-    set({ theme });
+  fetchAppearance: async () => {
     try {
-      await invoke("set_theme", { theme });
+      const appearance = await invoke<AppearanceSettings>("get_appearance_settings");
+      if (appearance && typeof appearance === "object") {
+        set({
+          appearance,
+          theme: appearance.theme || "escuro",
+        });
+      }
     } catch (err) {
-      console.warn("[Store] Erro ao persistir tema via IPC:", err);
+      console.warn("[Store] Erro ao buscar appearance via IPC:", err);
     }
+  },
+
+  setAppearance: async (settings: Partial<AppearanceSettings>) => {
+    const current = get().appearance;
+    const updated: AppearanceSettings = {
+      ...current,
+      ...settings,
+    };
+    set({
+      appearance: updated,
+      theme: updated.theme,
+    });
+    try {
+      await invoke("set_appearance_settings", { settings: updated });
+    } catch (err) {
+      console.warn("[Store] Erro ao persistir appearance via IPC:", err);
+    }
+  },
+
+  setTheme: async (theme: string) => {
+    await get().setAppearance({ theme });
   },
 
   fetchPages: async () => {
@@ -244,6 +288,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       await Promise.allSettled([
         get().fetchPages(),
         get().fetchButtons(),
+        get().fetchAppearance(),
         get().fetchTheme(),
         get().fetchLocalIp(),
         get().fetchWindowRules(),
