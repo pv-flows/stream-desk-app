@@ -15,6 +15,7 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 - Refinamento arquitetural das diretrizes (`global_rules.md`, `.agents/backend_desktop.md`, `.agents/frontend_mobile.md` e migração de `.agentes/` para `.agents/`) consolidando o modelo "Dumb Client / Smart Server" e sincronização orientada a eventos ("State Sync").
 
 ### Fixed
+- Alinhamento das opções do seletor de temas (`<select>`) no Dashboard Desktop (`desktop/src/App.tsx`) para refletir estritamente o dicionário de Skins do Mobile (`default`, `apple`, `windows`, `steam`, `oneui`, `chromebook`).
 - Atualização do `iniciar.bat` com `taskkill` para encerrar processos órfãos (`node.exe` e `desktop.exe`) antes de iniciar o Tauri e o Expo, resolvendo o erro `Port 1420 is already in use`.
 - Fixação explícita do endereço WebSocket da máquina host (`ws://192.168.1.97:8080/ws`) em `mobile/src/services/websocketService.ts`.
 

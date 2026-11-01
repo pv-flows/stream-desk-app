@@ -211,3 +211,4 @@ export const getSkin = (theme?: string): SkinDefinition => {
   }
   return skins.default;
 };
+

@@ -99,10 +99,12 @@ function App() {
             value={activeTheme}
             onChange={(e) => handleThemeChange(e.currentTarget.value)}
           >
-            <option value="default">Default</option>
+            <option value="default">Padrão</option>
             <option value="apple">Apple</option>
+            <option value="windows">Windows</option>
             <option value="steam">Steam</option>
-            <option value="gamer">Gamer</option>
+            <option value="oneui">One UI</option>
+            <option value="chromebook">Chromebook</option>
           </select>
         </div>
       </header>
