@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import QRCode from "react-qr-code";
 import {
@@ -6,6 +6,8 @@ import {
   Droppable,
   Draggable,
   DropResult,
+  DragStart,
+  DragUpdate,
 } from "@hello-pangea/dnd";
 import "./App.css";
 
@@ -48,6 +50,18 @@ function App() {
   const [rules, setRules] = useState<WindowRule[]>([]);
   const [newRuleProcess, setNewRuleProcess] = useState("");
   const [newRulePage, setNewRulePage] = useState<number>(1);
+
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragSourcePageRef = useRef<number | null>(null);
+  const draggingButtonIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, []);
 
   const loadButtons = async () => {
     try {
@@ -314,43 +328,235 @@ function App() {
     }
   };
 
+  const handleDragStart = (start: DragStart) => {
+    dragSourcePageRef.current = activePageId;
+    draggingButtonIdRef.current = Number(start.draggableId);
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  };
+
+  const handleDragUpdate = (update: DragUpdate) => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+
+    if (!update.destination) return;
+
+    const destId = update.destination.droppableId;
+    if (destId.startsWith("tab-")) {
+      const targetPageId = Number(destId.replace("tab-", ""));
+      if (targetPageId !== activePageId) {
+        hoverTimerRef.current = setTimeout(() => {
+          setActivePageId(targetPageId);
+          setSelectedPageForForm(targetPageId);
+          const pName =
+            pages.find((p) => p.id === targetPageId)?.name || `ID ${targetPageId}`;
+          setStatusMsg(`Alternando para página "${pName}" (arraste)...`);
+        }, 500);
+      }
+    }
+  };
+
   const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
-    if (result.destination.index === result.source.index) return;
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
 
-    const pageButtons = buttons
-      .filter((b) => (b.page_index ?? 0) === activePageId)
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const draggedId = draggingButtonIdRef.current;
+    const sourcePageId = dragSourcePageRef.current ?? activePageId;
+    draggingButtonIdRef.current = null;
+    dragSourcePageRef.current = null;
 
-    const reordered = Array.from(pageButtons);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
+    if (!result.destination || draggedId === null) {
+      return;
+    }
 
-    const updatedWithPosition = reordered.map((btn, idx) => ({
-      ...btn,
-      position: idx,
-    }));
+    const destId = result.destination.droppableId;
+    const destIndex = result.destination.index;
 
-    setButtons((prev) => {
-      const otherButtons = prev.filter(
-        (b) => (b.page_index ?? 0) !== activePageId
+    // Caso 1: Soltou diretamente em uma Aba de Página (Droppable "tab-ID")
+    if (destId.startsWith("tab-")) {
+      const targetPageId = Number(destId.replace("tab-", ""));
+      if (targetPageId === sourcePageId) {
+        return;
+      }
+
+      const draggedBtn = buttons.find((b) => b.id === draggedId);
+      if (!draggedBtn) return;
+
+      const targetPageButtons = buttons
+        .filter((b) => (b.page_index ?? 0) === targetPageId)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+      const movedBtn: DeckButton = {
+        ...draggedBtn,
+        page_index: targetPageId,
+        position: targetPageButtons.length,
+      };
+
+      const remainingSource = buttons
+        .filter((b) => (b.page_index ?? 0) === sourcePageId && b.id !== draggedId)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .map((b, idx) => ({ ...b, position: idx }));
+
+      const otherButtons = buttons.filter(
+        (b) =>
+          (b.page_index ?? 0) !== sourcePageId &&
+          (b.page_index ?? 0) !== targetPageId
       );
-      return [...otherButtons, ...updatedWithPosition];
-    });
 
-    const updates = updatedWithPosition.map((btn) => ({
-      id: btn.id,
-      position: btn.position,
-      page_index: activePageId,
-    }));
+      const allNewButtons = [
+        ...otherButtons,
+        ...remainingSource,
+        ...targetPageButtons,
+        movedBtn,
+      ];
 
-    try {
-      await invoke("update_button_positions", { updates });
-      setStatusMsg("Ordem dos botões atualizada!");
-    } catch (error) {
-      console.error("Erro ao salvar posições dos botões:", error);
-      setStatusMsg("Erro ao salvar nova ordenação no banco.");
-      await loadButtons();
+      setButtons(allNewButtons);
+      setActivePageId(targetPageId);
+      setSelectedPageForForm(targetPageId);
+
+      const updates = [
+        ...remainingSource.map((b) => ({
+          id: b.id,
+          position: b.position,
+          page_index: sourcePageId,
+        })),
+        {
+          id: movedBtn.id,
+          position: movedBtn.position,
+          page_index: targetPageId,
+        },
+      ];
+
+      const targetPageName =
+        pages.find((p) => p.id === targetPageId)?.name || `ID ${targetPageId}`;
+      setStatusMsg(
+        `Botão "${movedBtn.label}" movido para a página "${targetPageName}"!`
+      );
+
+      try {
+        await invoke("update_button_positions", { updates });
+      } catch (error) {
+        console.error("Erro ao mover botão entre abas:", error);
+        setStatusMsg("Erro ao salvar migração de página no banco.");
+        await loadButtons();
+      }
+      return;
+    }
+
+    // Caso 2: Soltou na grade ("deck-grid")
+    if (destId === "deck-grid") {
+      // Subcaso 2A: Página foi alterada durante o arrasto (cross-page via hover)
+      if (sourcePageId !== activePageId) {
+        const draggedBtn = buttons.find((b) => b.id === draggedId);
+        if (!draggedBtn) return;
+
+        const targetPageButtons = buttons
+          .filter(
+            (b) => (b.page_index ?? 0) === activePageId && b.id !== draggedId
+          )
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+        const movedBtn: DeckButton = {
+          ...draggedBtn,
+          page_index: activePageId,
+        };
+
+        const reorderedTarget = Array.from(targetPageButtons);
+        reorderedTarget.splice(destIndex, 0, movedBtn);
+
+        const updatedTarget = reorderedTarget.map((b, idx) => ({
+          ...b,
+          position: idx,
+        }));
+
+        const remainingSource = buttons
+          .filter(
+            (b) => (b.page_index ?? 0) === sourcePageId && b.id !== draggedId
+          )
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .map((b, idx) => ({ ...b, position: idx }));
+
+        const otherButtons = buttons.filter(
+          (b) =>
+            (b.page_index ?? 0) !== sourcePageId &&
+            (b.page_index ?? 0) !== activePageId
+        );
+
+        setButtons([...otherButtons, ...remainingSource, ...updatedTarget]);
+
+        const updates = [
+          ...remainingSource.map((b) => ({
+            id: b.id,
+            position: b.position,
+            page_index: sourcePageId,
+          })),
+          ...updatedTarget.map((b) => ({
+            id: b.id,
+            position: b.position,
+            page_index: activePageId,
+          })),
+        ];
+
+        const targetPageName =
+          pages.find((p) => p.id === activePageId)?.name ||
+          `ID ${activePageId}`;
+        setStatusMsg(
+          `Botão "${movedBtn.label}" reposicionado na página "${targetPageName}"!`
+        );
+
+        try {
+          await invoke("update_button_positions", { updates });
+        } catch (error) {
+          console.error("Erro ao salvar posições entre páginas:", error);
+          setStatusMsg("Erro ao salvar nova ordenação no banco.");
+          await loadButtons();
+        }
+        return;
+      }
+
+      // Subcaso 2B: Reordenação na mesma página
+      if (result.source.index === destIndex) return;
+
+      const pageButtons = buttons
+        .filter((b) => (b.page_index ?? 0) === activePageId)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+      const reordered = Array.from(pageButtons);
+      const [moved] = reordered.splice(result.source.index, 1);
+      reordered.splice(destIndex, 0, moved);
+
+      const updatedWithPosition = reordered.map((btn, idx) => ({
+        ...btn,
+        position: idx,
+      }));
+
+      setButtons((prev) => {
+        const otherButtons = prev.filter(
+          (b) => (b.page_index ?? 0) !== activePageId
+        );
+        return [...otherButtons, ...updatedWithPosition];
+      });
+
+      const updates = updatedWithPosition.map((btn) => ({
+        id: btn.id,
+        position: btn.position,
+        page_index: activePageId,
+      }));
+
+      try {
+        await invoke("update_button_positions", { updates });
+        setStatusMsg("Ordem dos botões atualizada!");
+      } catch (error) {
+        console.error("Erro ao salvar posições dos botões:", error);
+        setStatusMsg("Erro ao salvar nova ordenação no banco.");
+        await loadButtons();
+      }
     }
   };
 
@@ -393,9 +599,25 @@ function App() {
   };
 
   const activePageObj = pages.find((p) => p.id === activePageId);
-  const currentPageButtons = buttons
-    .filter((b) => (b.page_index ?? 0) === activePageId)
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const currentPageButtons = useMemo(() => {
+    let list = buttons
+      .filter((b) => (b.page_index ?? 0) === activePageId)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+    // Mantém o botão montado durante o arrasto entre páginas para evitar unmount do Draggable
+    if (
+      draggingButtonIdRef.current !== null &&
+      dragSourcePageRef.current !== null &&
+      dragSourcePageRef.current !== activePageId
+    ) {
+      const draggedBtn = buttons.find((b) => b.id === draggingButtonIdRef.current);
+      if (draggedBtn && !list.some((b) => b.id === draggedBtn.id)) {
+        list = [...list, { ...draggedBtn, page_index: activePageId }];
+      }
+    }
+
+    return list;
+  }, [buttons, activePageId]);
 
   return (
     <main className="container">
@@ -578,95 +800,111 @@ function App() {
       </section>
 
       <section className="card deck-card">
-        <div className="section-header">
-          <h2>
-            Grade de Botões - {activePageObj?.name || "Página"} (
-            {currentPageButtons.length} botões)
-          </h2>
-          <button type="button" className="btn-secondary" onClick={loadButtons}>
-            Atualizar Lista
-          </button>
-        </div>
-
-        <div className="page-tabs-bar">
-          <div className="page-tabs-list">
-            {pages.map((p) => {
-              const countOnPage = buttons.filter(
-                (b) => (b.page_index ?? 0) === p.id
-              ).length;
-              const isActive = activePageId === p.id;
-              return (
-                <div
-                  key={p.id}
-                  className={`page-tab-wrapper ${isActive ? "active" : ""}`}
-                >
-                  <button
-                    type="button"
-                    className="page-tab-btn"
-                    onClick={() => {
-                      setActivePageId(p.id);
-                      setSelectedPageForForm(p.id);
-                      setEditingId(null);
-                    }}
-                  >
-                    {p.name} ({countOnPage})
-                  </button>
-                  <div className="tab-actions">
-                    <button
-                      type="button"
-                      className="tab-action-btn edit-tab-btn"
-                      title="Renomear página"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRenamePage(p);
-                      }}
-                    >
-                      ✏️
-                    </button>
-                    {pages.length > 1 && (
-                      <button
-                        type="button"
-                        className="tab-action-btn delete-tab-btn"
-                        title="Excluir página"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePage(p);
-                        }}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        <DragDropContext
+          onDragStart={handleDragStart}
+          onDragUpdate={handleDragUpdate}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="section-header">
+            <h2>
+              Grade de Botões - {activePageObj?.name || "Página"} (
+              {currentPageButtons.length} botões)
+            </h2>
+            <button type="button" className="btn-secondary" onClick={loadButtons}>
+              Atualizar Lista
+            </button>
           </div>
 
-          <button
-            type="button"
-            className="btn-add-page"
-            onClick={handleAddPage}
-            title="Criar nova página dinâmica"
-          >
-            + Nova Página
-          </button>
-        </div>
+          <div className="page-tabs-bar">
+            <div className="page-tabs-list">
+              {pages.map((p) => {
+                const countOnPage = buttons.filter(
+                  (b) => (b.page_index ?? 0) === p.id
+                ).length;
+                const isActive = activePageId === p.id;
+                return (
+                  <Droppable key={p.id} droppableId={`tab-${p.id}`} type="BUTTON">
+                    {(dropProvided, dropSnapshot) => (
+                      <div
+                        ref={dropProvided.innerRef}
+                        {...dropProvided.droppableProps}
+                        className={`page-tab-wrapper ${isActive ? "active" : ""} ${
+                          dropSnapshot.isDraggingOver ? "drop-target" : ""
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          className="page-tab-btn"
+                          onClick={() => {
+                            setActivePageId(p.id);
+                            setSelectedPageForForm(p.id);
+                            setEditingId(null);
+                          }}
+                        >
+                          {p.name} ({countOnPage})
+                        </button>
+                        <div className="tab-actions">
+                          <button
+                            type="button"
+                            className="tab-action-btn edit-tab-btn"
+                            title="Renomear página"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRenamePage(p);
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          {pages.length > 1 && (
+                            <button
+                              type="button"
+                              className="tab-action-btn delete-tab-btn"
+                              title="Excluir página"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePage(p);
+                              }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                        <div style={{ display: "none" }}>
+                          {dropProvided.placeholder}
+                        </div>
+                      </div>
+                    )}
+                  </Droppable>
+                );
+              })}
+            </div>
 
-        {currentPageButtons.length === 0 ? (
-          <p className="empty-state">
-            Nenhum botão cadastrado na página "{activePageObj?.name || 'Atual'}". Adicione acima!
-          </p>
-        ) : (
+            <button
+              type="button"
+              className="btn-add-page"
+              onClick={handleAddPage}
+              title="Criar nova página dinâmica"
+            >
+              + Nova Página
+            </button>
+          </div>
+
           <div className="deck-grid-container">
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="deck-grid" direction="horizontal">
-                {(provided) => (
-                  <div
-                    className="deck-grid"
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                  >
-                    {currentPageButtons.map((btn, index) => (
+            <Droppable droppableId="deck-grid" type="BUTTON" direction="horizontal">
+              {(provided) => (
+                <div
+                  className={`deck-grid ${
+                    currentPageButtons.length === 0 ? "empty" : ""
+                  }`}
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {currentPageButtons.length === 0 ? (
+                    <p className="empty-state">
+                      Nenhum botão na página "{activePageObj?.name || 'Atual'}". Arraste um botão aqui ou adicione acima!
+                    </p>
+                  ) : (
+                    currentPageButtons.map((btn, index) => (
                       <Draggable
                         key={String(btn.id)}
                         draggableId={String(btn.id)}
@@ -688,7 +926,7 @@ function App() {
                             <div className="item-actions">
                               <span
                                 className="drag-handle-hint"
-                                title="Arraste para reordenar"
+                                title="Arraste para reordenar ou migrar de página"
                               >
                                 ⋮⋮
                               </span>
@@ -721,14 +959,14 @@ function App() {
                           </div>
                         )}
                       </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+                    ))
+                  )}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
           </div>
-        )}
+        </DragDropContext>
       </section>
 
       <section className="card">

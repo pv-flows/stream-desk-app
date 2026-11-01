@@ -268,7 +268,18 @@ button {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 14px;
   width: 100%;
+  min-height: 140px;
   box-sizing: border-box;
+}
+
+.deck-grid.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border: 2px dashed #334155;
+  border-radius: 12px;
+  background-color: rgba(15, 23, 42, 0.4);
 }
 
 .deck-item {
@@ -371,6 +382,18 @@ button {
 .page-tab-wrapper.active {
   background-color: #0284c7;
   border-color: #38bdf8;
+}
+
+.page-tab-wrapper.drop-target {
+  background-color: rgba(56, 189, 248, 0.25) !important;
+  border: 2px dashed #38bdf8 !important;
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+}
+
+.page-tab-wrapper.drop-target .page-tab-btn {
+  color: #38bdf8 !important;
+  font-weight: 700;
 }
 
 .page-tab-btn {

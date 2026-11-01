@@ -24,6 +24,7 @@ pub struct Page {
 pub struct ButtonPositionUpdate {
     pub id: i32,
     pub position: i32,
+    #[serde(alias = "pageIndex")]
     pub page_index: Option<i32>,
 }
 

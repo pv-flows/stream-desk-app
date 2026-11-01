@@ -3,6 +3,12 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Added
+- Drag-and-Drop Cruzado entre Páginas (Cross-Page DND):
+  - **Abas como Zonas de Drop (Droppable Tabs):** Cada aba de página (`Tabs`) agora opera como um alvo `<Droppable droppableId={`tab-${id}`}>`, permitindo soltar botões diretamente sobre a aba de destino com destaque visual pulsante (`.drop-target`).
+  - **Alternância Automática de Página por Hover:** Implementado `onDragUpdate` com timer de 500ms no `<DragDropContext>`. Ao pairar o botão sobre qualquer aba durante o arrasto, a visualização da grade alterna automaticamente para a nova página sem soltar o clique, permitindo posicionar o botão em qualquer índice da nova página.
+  - **Prevenção de Unmount do Draggable:** Memoização com `useMemo` em `currentPageButtons` retendo temporariamente o botão em trânsito montado no DOM para evitar quebras de sessão no `@hello-pangea/dnd`.
+  - **Persistência Atômica de Migração e Posições:** Envio em lote das novas posições e do novo `page_index` para o comando Tauri `update_button_positions` (`UPDATE buttons SET position = ?1, page_index = ?2 WHERE id = ?3`), disparando broadcast imediato via WebSocket para os dispositivos Mobile conectados.
 ### Fixed
 - Correções do Auto-Profile e Contenção de Drag-and-Drop:
   - **Exclusão de Regras de Auto-Profile no Desktop:** Corrigido CSS onde `.delete-btn` dentro de `.rule-badge-card` herdava posicionamento absoluto do container global, tornando o botão invisível e inalcançável; adicionado `position: static !important;`, cursor explícito e atualização otimista imediata na UI (`App.tsx`, `App.css`).
