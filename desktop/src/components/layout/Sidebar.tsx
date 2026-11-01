@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Grid,
   Layers,
@@ -11,18 +11,12 @@ import {
   Wifi,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export interface NavItem {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-}
-
-export interface SidebarProps {
-  activeTab: string;
-  onSelectTab: (tabId: string) => void;
-  activePage: string;
-  onSelectPage: (page: string) => void;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -32,19 +26,32 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "pairing", label: "Pareamento QR", icon: QrCode },
 ];
 
-export const MOCK_PAGES = [
-  { name: "Principal", count: 6 },
-  { name: "Mídia & Áudio", count: 4 },
-  { name: "Dev & Terminal", count: 2 },
-  { name: "Produtividade", count: 3 },
-];
+export interface SidebarProps {
+  activeTab?: string;
+  onSelectTab?: (tabId: string) => void;
+}
 
 export function Sidebar({
-  activeTab,
+  activeTab: controlledTab,
   onSelectTab,
-  activePage,
-  onSelectPage,
-}: SidebarProps) {
+}: SidebarProps = {}) {
+  const [internalTab, setInternalTab] = useState("buttons");
+  const activeTab = controlledTab ?? internalTab;
+
+  const handleSelectTab = (tabId: string) => {
+    if (onSelectTab) {
+      onSelectTab(tabId);
+    } else {
+      setInternalTab(tabId);
+    }
+  };
+
+  const pages = useDashboardStore((s) => s.pages);
+  const buttons = useDashboardStore((s) => s.buttons);
+  const localIp = useDashboardStore((s) => s.localIp);
+  const activePageIndex = useDashboardStore((s) => s.activePageIndex);
+  const setActivePageIndex = useDashboardStore((s) => s.setActivePageIndex);
+
   return (
     <aside className="w-[240px] flex-shrink-0 flex flex-col border-r border-neutral-800/80 bg-neutral-900/95 backdrop-blur-md select-none">
       {/* Brand Header */}
@@ -82,7 +89,7 @@ export function Sidebar({
               Smart Server Ativo
             </span>
             <span className="text-[9px] font-mono text-neutral-400 truncate">
-              0.0.0.0:8080/ws
+              {localIp || "0.0.0.0"}:8080/ws
             </span>
           </div>
         </div>
@@ -101,7 +108,7 @@ export function Sidebar({
               return (
                 <button
                   key={item.id}
-                  onClick={() => onSelectTab(item.id)}
+                  onClick={() => handleSelectTab(item.id)}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
                     isActive
                       ? "bg-sky-500/15 text-sky-400 border border-sky-500/30 shadow-sm"
@@ -129,34 +136,38 @@ export function Sidebar({
             </button>
           </div>
           <div className="mt-1 space-y-0.5">
-            {MOCK_PAGES.map((page) => (
-              <button
-                key={page.name}
-                onClick={() => onSelectPage(page.name)}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                  activePage === page.name
-                    ? "bg-neutral-800 text-neutral-100 font-medium"
-                    : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40"
-                }`}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Layers className="w-3 h-3 text-neutral-400" />
-                  <span className="truncate">{page.name}</span>
-                </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-neutral-950/40 text-neutral-400">
-                  {page.count}
-                </span>
-              </button>
-            ))}
+            {pages.map((page) => {
+              const count = buttons.filter((b) => b.page_index === page.id).length;
+              const isActive = activePageIndex === page.id;
+              return (
+                <button
+                  key={page.id}
+                  onClick={() => setActivePageIndex(page.id)}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                    isActive
+                      ? "bg-neutral-800 text-neutral-100 font-medium border border-neutral-700/60"
+                      : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Layers className="w-3 h-3 text-neutral-400" />
+                    <span className="truncate">{page.name}</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-neutral-950/40 text-neutral-400">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Sidebar Footer */}
+      {/* Sidebar Footer com IP Real */}
       <div className="p-3 border-t border-neutral-800/80 bg-neutral-950/40 flex items-center justify-between text-xs text-neutral-400">
         <div className="flex items-center gap-1.5 text-[11px]">
           <Wifi className="w-3.5 h-3.5 text-sky-400" />
-          <span className="font-mono">LAN 192.168.1.97</span>
+          <span className="font-mono">LAN {localIp || "127.0.0.1"}</span>
         </div>
         <button
           title="Configurações do Servidor"
