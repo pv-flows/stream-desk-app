@@ -1,4 +1,4 @@
-import { DeckButtonItem, useDeckStore } from '../store/deckStore';
+import { DeckButtonItem, PageItem, useDeckStore } from '../store/deckStore';
 import { useThemeStore } from '../store/themeStore';
 import { ThemeName } from '../theme/colors';
 
@@ -10,12 +10,15 @@ export interface CommandMessage {
 export interface SyncLayoutPayload {
   theme?: ThemeName;
   buttons?: DeckButtonItem[];
+  pages?: PageItem[];
 }
 
 export interface ServerResponse {
   status?: string;
   action?: string;
   payload?: SyncLayoutPayload | DeckButtonItem[] | string;
+  pages?: PageItem[];
+  buttons?: DeckButtonItem[];
   message?: string;
   event?: string;
   page_index?: number;
@@ -73,18 +76,30 @@ class WebSocketService {
             this.pageChangeListeners.forEach((listener) => listener(parsed.page_index!));
           }
 
-          if (parsed.action === 'sync_layout' && parsed.payload) {
-            const payload =
-              typeof parsed.payload === 'string' ? JSON.parse(parsed.payload) : parsed.payload;
+          if (parsed.action === 'sync_layout' || parsed.event === 'sync_layout') {
+            if (Array.isArray(parsed.pages)) {
+              useThemeStore.getState().setPages(parsed.pages);
+            }
+            if (Array.isArray(parsed.buttons)) {
+              useDeckStore.getState().setButtons(parsed.buttons);
+            }
 
-            if (Array.isArray(payload)) {
-              useDeckStore.getState().setButtons(payload);
-            } else {
-              if (Array.isArray(payload.buttons)) {
-                useDeckStore.getState().setButtons(payload.buttons);
-              }
-              if (payload.theme) {
-                useThemeStore.getState().setTheme(payload.theme);
+            if (parsed.payload) {
+              const payload =
+                typeof parsed.payload === 'string' ? JSON.parse(parsed.payload) : parsed.payload;
+
+              if (Array.isArray(payload)) {
+                useDeckStore.getState().setButtons(payload);
+              } else {
+                if (Array.isArray(payload.buttons)) {
+                  useDeckStore.getState().setButtons(payload.buttons);
+                }
+                if (Array.isArray(payload.pages)) {
+                  useThemeStore.getState().setPages(payload.pages);
+                }
+                if (payload.theme) {
+                  useThemeStore.getState().setTheme(payload.theme);
+                }
               }
             }
           }

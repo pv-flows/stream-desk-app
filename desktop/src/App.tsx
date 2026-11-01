@@ -1,6 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import QRCode from "react-qr-code";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 import "./App.css";
 
 interface DeckButton {
@@ -10,6 +16,12 @@ interface DeckButton {
   color: string;
   icon?: string;
   page_index?: number;
+  position?: number;
+}
+
+interface Page {
+  id: number;
+  name: string;
 }
 
 interface WindowRule {
@@ -20,20 +32,22 @@ interface WindowRule {
 
 function App() {
   const [buttons, setButtons] = useState<DeckButton[]>([]);
+  const [pages, setPages] = useState<Page[]>([]);
+  const [activePageId, setActivePageId] = useState<number>(1);
   const [activeTheme, setActiveTheme] = useState<string>("default");
   const [localIp, setLocalIp] = useState<string>("127.0.0.1");
-  const [activePage, setActivePage] = useState<number>(0);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [label, setLabel] = useState("");
   const [actionType, setActionType] = useState("vol_up");
   const [actionCustomParam, setActionCustomParam] = useState("");
   const [color, setColor] = useState("#38bdf8");
   const [icon, setIcon] = useState("zap");
+  const [selectedPageForForm, setSelectedPageForForm] = useState<number>(1);
   const [statusMsg, setStatusMsg] = useState<string>("");
 
   const [rules, setRules] = useState<WindowRule[]>([]);
   const [newRuleProcess, setNewRuleProcess] = useState("");
-  const [newRulePage, setNewRulePage] = useState<number>(0);
+  const [newRulePage, setNewRulePage] = useState<number>(1);
 
   const loadButtons = async () => {
     try {
@@ -42,6 +56,26 @@ function App() {
     } catch (error) {
       console.error("Erro ao carregar botões:", error);
       setStatusMsg("Erro ao carregar botões do SQLite.");
+    }
+  };
+
+  const loadPages = async () => {
+    try {
+      const data = await invoke<Page[]>("get_pages");
+      setPages(data);
+      if (data.length > 0) {
+        setActivePageId((current) => {
+          return data.some((p) => p.id === current) ? current : data[0].id;
+        });
+        setSelectedPageForForm((current) => {
+          return data.some((p) => p.id === current) ? current : data[0].id;
+        });
+        setNewRulePage((current) => {
+          return data.some((p) => p.id === current) ? current : data[0].id;
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar páginas:", error);
     }
   };
 
@@ -74,6 +108,7 @@ function App() {
 
   useEffect(() => {
     loadButtons();
+    loadPages();
     loadTheme();
     loadLocalIp();
     loadRules();
@@ -87,6 +122,60 @@ function App() {
     } catch (error) {
       console.error("Erro ao alterar tema:", error);
       setStatusMsg("Erro ao salvar tema no banco de dados.");
+    }
+  };
+
+  const handleAddPage = async () => {
+    const pageName = window.prompt("Nome da nova página:")?.trim();
+    if (!pageName) return;
+
+    try {
+      const newId = await invoke<number>("add_page", { name: pageName });
+      await loadPages();
+      setActivePageId(newId);
+      setSelectedPageForForm(newId);
+      setNewRulePage(newId);
+      setStatusMsg(`Página "${pageName}" criada com sucesso!`);
+    } catch (error) {
+      console.error("Erro ao criar página:", error);
+      setStatusMsg("Erro ao criar nova página.");
+    }
+  };
+
+  const handleRenamePage = async (page: Page) => {
+    const newName = window
+      .prompt(`Novo nome para a página "${page.name}":`, page.name)
+      ?.trim();
+    if (!newName || newName === page.name) return;
+
+    try {
+      await invoke("update_page", { id: page.id, name: newName });
+      await loadPages();
+      setStatusMsg(`Página renomeada para "${newName}".`);
+    } catch (error) {
+      console.error("Erro ao renomear página:", error);
+      setStatusMsg("Erro ao renomear página.");
+    }
+  };
+
+  const handleDeletePage = async (page: Page) => {
+    if (pages.length <= 1) {
+      window.alert("Você deve manter pelo menos uma página.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Deseja realmente excluir a página "${page.name}"? Todos os botões vinculados a ela serão removidos.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await invoke("delete_page", { id: page.id });
+      await loadPages();
+      await loadButtons();
+      setStatusMsg(`Página "${page.name}" removida.`);
+    } catch (error) {
+      console.error("Erro ao excluir página:", error);
+      setStatusMsg("Erro ao excluir página.");
     }
   };
 
@@ -129,34 +218,47 @@ function App() {
     }
 
     if (
-      (actionType === "open_url" || actionType === "open_app" || actionType === "hotkey") &&
+      (actionType === "open_url" ||
+        actionType === "open_app" ||
+        actionType === "hotkey") &&
       !actionCustomParam.trim()
     ) {
-      setStatusMsg("Informe os parâmetros da ação selecionada (URL, Aplicativo ou Atalho).");
+      setStatusMsg(
+        "Informe os parâmetros da ação selecionada (URL, Aplicativo ou Atalho)."
+      );
       return;
     }
 
     try {
+      const pageTarget = selectedPageForForm;
+      const targetPageButtons = buttons.filter(
+        (b) => (b.page_index ?? 0) === pageTarget
+      );
+
       if (editingId !== null) {
+        const existingBtn = buttons.find((b) => b.id === editingId);
         await invoke("update_button", {
           id: editingId,
           label: label.trim(),
           actionName: finalAction,
           color: color.trim() || "#38bdf8",
           icon: icon.trim() || "zap",
-          pageIndex: activePage,
+          pageIndex: pageTarget,
+          position: existingBtn?.position ?? 0,
         });
-        setStatusMsg(`Botão "${label.trim()}" atualizado na Página ${activePage + 1}!`);
+        setStatusMsg(`Botão "${label.trim()}" atualizado!`);
         setEditingId(null);
       } else {
+        const nextPosition = targetPageButtons.length;
         await invoke("add_button", {
           label: label.trim(),
           actionName: finalAction,
           color: color.trim() || "#38bdf8",
           icon: icon.trim() || "zap",
-          pageIndex: activePage,
+          pageIndex: pageTarget,
+          position: nextPosition,
         });
-        setStatusMsg(`Botão "${label.trim()}" adicionado à Página ${activePage + 1}!`);
+        setStatusMsg(`Botão "${label.trim()}" adicionado com sucesso!`);
       }
 
       setLabel("");
@@ -178,7 +280,8 @@ function App() {
     setColor(btn.color || "#38bdf8");
     setIcon(btn.icon || "zap");
     if (btn.page_index !== undefined) {
-      setActivePage(btn.page_index);
+      setSelectedPageForForm(btn.page_index);
+      setActivePageId(btn.page_index);
     }
     setStatusMsg(`Editando botão "${btn.label}" (ID ${btn.id}).`);
   };
@@ -204,6 +307,46 @@ function App() {
     }
   };
 
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+    if (result.destination.index === result.source.index) return;
+
+    const pageButtons = buttons
+      .filter((b) => (b.page_index ?? 0) === activePageId)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+    const reordered = Array.from(pageButtons);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+
+    const updatedWithPosition = reordered.map((btn, idx) => ({
+      ...btn,
+      position: idx,
+    }));
+
+    setButtons((prev) => {
+      const otherButtons = prev.filter(
+        (b) => (b.page_index ?? 0) !== activePageId
+      );
+      return [...otherButtons, ...updatedWithPosition];
+    });
+
+    const updates = updatedWithPosition.map((btn) => ({
+      id: btn.id,
+      position: btn.position,
+      page_index: activePageId,
+    }));
+
+    try {
+      await invoke("update_button_positions", { updates });
+      setStatusMsg("Ordem dos botões atualizada!");
+    } catch (error) {
+      console.error("Erro ao salvar posições dos botões:", error);
+      setStatusMsg("Erro ao salvar nova ordenação no banco.");
+      await loadButtons();
+    }
+  };
+
   const handleAddRule = async (e: FormEvent) => {
     e.preventDefault();
     if (!newRuleProcess.trim()) {
@@ -215,7 +358,12 @@ function App() {
         processName: newRuleProcess.trim(),
         pageIndex: Number(newRulePage),
       });
-      setStatusMsg(`Regra para "${newRuleProcess.trim()}" -> Página ${newRulePage + 1} adicionada!`);
+      const targetPageName =
+        pages.find((p) => p.id === Number(newRulePage))?.name ||
+        `ID ${newRulePage}`;
+      setStatusMsg(
+        `Regra para "${newRuleProcess.trim()}" -> Página "${targetPageName}" adicionada!`
+      );
       setNewRuleProcess("");
       await loadRules();
     } catch (error) {
@@ -235,12 +383,18 @@ function App() {
     }
   };
 
+  const activePageObj = pages.find((p) => p.id === activePageId);
+  const currentPageButtons = buttons
+    .filter((b) => (b.page_index ?? 0) === activePageId)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
   return (
     <main className="container">
       <header className="header">
         <h1>Stream Desk - Gerenciador de Botões</h1>
         <p className="subtitle">
-          Servidor WebSocket ativo na porta <code>8080/ws</code> | Banco SQLite (<code>streamdesk.db</code>)
+          Servidor WebSocket ativo na porta <code>8080/ws</code> | Banco SQLite (
+          <code>streamdesk.db</code>)
         </p>
 
         <div className="connection-panel">
@@ -287,6 +441,21 @@ function App() {
           </div>
 
           <div className="field">
+            <label htmlFor="button-page-select">Página do Botão</label>
+            <select
+              id="button-page-select"
+              value={selectedPageForForm}
+              onChange={(e) => setSelectedPageForForm(Number(e.currentTarget.value))}
+            >
+              {pages.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (ID {p.id})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field">
             <label htmlFor="action-select">Action (Macro)</label>
             <select
               id="action-select"
@@ -310,7 +479,9 @@ function App() {
             </select>
           </div>
 
-          {(actionType === "open_url" || actionType === "open_app" || actionType === "hotkey") && (
+          {(actionType === "open_url" ||
+            actionType === "open_app" ||
+            actionType === "hotkey") && (
             <div className="field">
               <label htmlFor="custom-param-input">
                 {actionType === "open_url"
@@ -394,8 +565,8 @@ function App() {
       <section className="card">
         <div className="section-header">
           <h2>
-            Grade Atual - Página {activePage + 1} (
-            {buttons.filter((b) => (b.page_index ?? 0) === activePage).length} botões)
+            Grade de Botões - {activePageObj?.name || "Página"} (
+            {currentPageButtons.length} botões)
           </h2>
           <button type="button" className="btn-secondary" onClick={loadButtons}>
             Atualizar Lista
@@ -403,67 +574,143 @@ function App() {
         </div>
 
         <div className="page-tabs-bar">
-          {[0, 1, 2].map((pIndex) => {
-            const countOnPage = buttons.filter((b) => (b.page_index ?? 0) === pIndex).length;
-            const isActive = activePage === pIndex;
-            return (
-              <button
-                key={pIndex}
-                type="button"
-                className={`page-tab-btn ${isActive ? "active" : ""}`}
-                onClick={() => {
-                  setActivePage(pIndex);
-                  setEditingId(null);
-                }}
-              >
-                Página {pIndex + 1} ({countOnPage})
-              </button>
-            );
-          })}
+          <div className="page-tabs-list">
+            {pages.map((p) => {
+              const countOnPage = buttons.filter(
+                (b) => (b.page_index ?? 0) === p.id
+              ).length;
+              const isActive = activePageId === p.id;
+              return (
+                <div
+                  key={p.id}
+                  className={`page-tab-wrapper ${isActive ? "active" : ""}`}
+                >
+                  <button
+                    type="button"
+                    className="page-tab-btn"
+                    onClick={() => {
+                      setActivePageId(p.id);
+                      setSelectedPageForForm(p.id);
+                      setEditingId(null);
+                    }}
+                  >
+                    {p.name} ({countOnPage})
+                  </button>
+                  <div className="tab-actions">
+                    <button
+                      type="button"
+                      className="tab-action-btn edit-tab-btn"
+                      title="Renomear página"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRenamePage(p);
+                      }}
+                    >
+                      ✏️
+                    </button>
+                    {pages.length > 1 && (
+                      <button
+                        type="button"
+                        className="tab-action-btn delete-tab-btn"
+                        title="Excluir página"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePage(p);
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            className="btn-add-page"
+            onClick={handleAddPage}
+            title="Criar nova página dinâmica"
+          >
+            + Nova Página
+          </button>
         </div>
 
-        {buttons.filter((b) => (b.page_index ?? 0) === activePage).length === 0 ? (
+        {currentPageButtons.length === 0 ? (
           <p className="empty-state">
-            Nenhum botão cadastrado na Página {activePage + 1}. Adicione acima!
+            Nenhum botão cadastrado na página "{activePageObj?.name || 'Atual'}". Adicione acima!
           </p>
         ) : (
-          <div className="deck-grid">
-            {buttons
-              .filter((b) => (b.page_index ?? 0) === activePage)
-              .map((btn) => (
-              <div
-                key={btn.id}
-                className="deck-item"
-                style={{ borderColor: btn.color || "#38bdf8" }}
-              >
-                <div className="item-actions">
-                  <button
-                    type="button"
-                    className="edit-btn"
-                    title="Editar botão"
-                    onClick={() => handleEditClick(btn)}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    type="button"
-                    className="delete-btn"
-                    title="Excluir botão"
-                    onClick={() => handleDeleteButton(btn.id, btn.label)}
-                  >
-                    ✕
-                  </button>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="deck-grid" direction="horizontal">
+              {(provided) => (
+                <div
+                  className="deck-grid"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {currentPageButtons.map((btn, index) => (
+                    <Draggable
+                      key={String(btn.id)}
+                      draggableId={String(btn.id)}
+                      index={index}
+                    >
+                      {(dragProvided, dragSnapshot) => (
+                        <div
+                          ref={dragProvided.innerRef}
+                          {...dragProvided.draggableProps}
+                          {...dragProvided.dragHandleProps}
+                          className={`deck-item ${
+                            dragSnapshot.isDragging ? "dragging" : ""
+                          }`}
+                          style={{
+                            borderColor: btn.color || "#38bdf8",
+                            ...dragProvided.draggableProps.style,
+                          }}
+                        >
+                          <div className="item-actions">
+                            <span
+                              className="drag-handle-hint"
+                              title="Arraste para reordenar"
+                            >
+                              ⋮⋮
+                            </span>
+                            <button
+                              type="button"
+                              className="edit-btn"
+                              title="Editar botão"
+                              onClick={() => handleEditClick(btn)}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              type="button"
+                              className="delete-btn"
+                              title="Excluir botão"
+                              onClick={() => handleDeleteButton(btn.id, btn.label)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <span
+                            className="color-dot"
+                            style={{ backgroundColor: btn.color || "#38bdf8" }}
+                          />
+                          <strong className="deck-label">{btn.label}</strong>
+                          <span className="deck-icon-badge">
+                            icon: {btn.icon || "zap"}
+                          </span>
+                          <code className="deck-action">{btn.action_name}</code>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
                 </div>
-                <span
-                  className="color-dot"
-                  style={{ backgroundColor: btn.color || "#38bdf8" }}
-                />
-                <strong className="deck-label">{btn.label}</strong>
-                <span className="deck-icon-badge">icon: {btn.icon || "zap"}</span>
-                <code className="deck-action">{btn.action_name}</code>
-              </div>
-            ))}
-          </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         )}
       </section>
 
@@ -471,13 +718,18 @@ function App() {
         <div className="section-header">
           <h2>Auto-Profile (Troca Automática)</h2>
         </div>
-        <p className="subtitle" style={{ marginBottom: "16px", textAlign: "left" }}>
+        <p
+          className="subtitle"
+          style={{ marginBottom: "16px", textAlign: "left" }}
+        >
           Monitora o aplicativo ativo no Windows e força o celular a deslizar para a página correspondente.
         </p>
 
         <form className="crud-form" onSubmit={handleAddRule}>
           <div className="field">
-            <label htmlFor="process-name-input">Nome do Processo (ex: chrome.exe, Spotify.exe)</label>
+            <label htmlFor="process-name-input">
+              Nome do Processo (ex: chrome.exe, Spotify.exe)
+            </label>
             <input
               id="process-name-input"
               type="text"
@@ -488,15 +740,17 @@ function App() {
           </div>
 
           <div className="field">
-            <label htmlFor="rule-page-select">Página de Destino (0, 1, 2)</label>
+            <label htmlFor="rule-page-select">Página de Destino</label>
             <select
               id="rule-page-select"
               value={newRulePage}
               onChange={(e) => setNewRulePage(Number(e.currentTarget.value))}
             >
-              <option value={0}>Página 1 (0)</option>
-              <option value={1}>Página 2 (1)</option>
-              <option value={2}>Página 3 (2)</option>
+              {pages.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (ID {p.id})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -508,7 +762,14 @@ function App() {
         </form>
 
         <div className="rules-list-container">
-          <h3 style={{ fontSize: "1rem", marginTop: "20px", marginBottom: "10px", color: "#e2e8f0" }}>
+          <h3
+            style={{
+              fontSize: "1rem",
+              marginTop: "20px",
+              marginBottom: "10px",
+              color: "#e2e8f0",
+            }}
+          >
             Regras de Troca Ativas ({rules.length})
           </h3>
           {rules.length === 0 ? (
@@ -517,23 +778,28 @@ function App() {
             </p>
           ) : (
             <div className="rules-grid">
-              {rules.map((rule) => (
-                <div key={rule.id} className="rule-badge-card">
-                  <div className="rule-info">
-                    <span className="rule-process">{rule.process_name}</span>
-                    <span className="rule-arrow">➔</span>
-                    <span className="rule-page-tag">Página {rule.page_index + 1} (Índice {rule.page_index})</span>
+              {rules.map((rule) => {
+                const targetPage = pages.find((p) => p.id === rule.page_index);
+                return (
+                  <div key={rule.id} className="rule-badge-card">
+                    <div className="rule-info">
+                      <span className="rule-process">{rule.process_name}</span>
+                      <span className="rule-arrow">➔</span>
+                      <span className="rule-page-tag">
+                        {targetPage ? targetPage.name : `Página ID ${rule.page_index}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      title="Excluir regra"
+                      onClick={() => handleDeleteRule(rule.id, rule.process_name)}
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="delete-btn"
-                    title="Excluir regra"
-                    onClick={() => handleDeleteRule(rule.id, rule.process_name)}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

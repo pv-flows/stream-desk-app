@@ -318,33 +318,123 @@ button {
 
 .page-tabs-bar {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
   border-bottom: 1px solid #334155;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.page-tabs-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-tab-wrapper {
+  display: inline-flex;
+  align-items: center;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.page-tab-wrapper:hover {
+  border-color: #475569;
+}
+
+.page-tab-wrapper.active {
+  background-color: #0284c7;
+  border-color: #38bdf8;
 }
 
 .page-tab-btn {
-  background-color: #0f172a;
-  border: 1px solid #334155;
+  background: transparent;
+  border: none;
   color: #94a3b8;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 8px 14px;
   font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.page-tab-wrapper:hover .page-tab-btn {
+  color: #f8fafc;
+}
+
+.page-tab-wrapper.active .page-tab-btn {
+  color: #ffffff;
+}
+
+.tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+}
+
+.tab-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 0.72rem;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.tab-action-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.delete-tab-btn:hover {
+  color: #f87171;
+}
+
+.btn-add-page {
+  background-color: rgba(56, 189, 248, 0.12);
+  border: 1px dashed #38bdf8;
+  color: #38bdf8;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.page-tab-btn:hover {
-  background-color: #1e293b;
-  color: #f8fafc;
+.btn-add-page:hover {
+  background-color: #0284c7;
+  color: #ffffff;
+  border-style: solid;
 }
 
-.page-tab-btn.active {
-  background-color: #0284c7;
-  border-color: #38bdf8;
-  color: #ffffff;
+.drag-handle-hint {
+  font-size: 0.9rem;
+  color: #64748b;
+  cursor: grab;
+  padding: 0 4px;
+  user-select: none;
+}
+
+.drag-handle-hint:active {
+  cursor: grabbing;
+}
+
+.deck-item.dragging {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transform: scale(1.03);
+  z-index: 1000;
+  opacity: 0.95;
+  border-width: 2px;
 }
 
 .color-dot {

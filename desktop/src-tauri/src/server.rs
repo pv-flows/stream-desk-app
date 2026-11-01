@@ -77,13 +77,19 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
                         if action_name == "get_layout" {
                             match db::get_all_buttons() {
                                 Ok(buttons) => {
+                                    let pages = db::get_all_pages().unwrap_or_default();
                                     let theme = db::get_active_theme()
                                         .unwrap_or_else(|_| "default".to_string());
                                     let response = serde_json::json!({
                                         "status": "ok",
                                         "action": "sync_layout",
+                                        "event": "sync_layout",
+                                        "pages": pages,
+                                        "buttons": buttons,
+                                        "theme": theme,
                                         "payload": {
                                             "theme": theme,
+                                            "pages": pages,
                                             "buttons": buttons
                                         },
                                         "message": "Layout sincronizado com sucesso"

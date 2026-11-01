@@ -11,6 +11,20 @@ pub struct Button {
     pub color: String,
     pub icon: String,
     pub page_index: i32,
+    pub position: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Page {
+    pub id: i32,
+    pub name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ButtonPositionUpdate {
+    pub id: i32,
+    pub position: i32,
+    pub page_index: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -44,9 +58,48 @@ pub fn init_db() -> Result<()> {
         [],
     )?;
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS pages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL
+        )",
+        [],
+    )?;
+
     // Migrações seguras caso a tabela já exista
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN icon TEXT DEFAULT 'zap'", []);
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN page_index INTEGER DEFAULT 0", []);
+    let _ = conn.execute("ALTER TABLE buttons ADD COLUMN position INTEGER DEFAULT 0", []);
+
+    // Migração de páginas dinâmicas: garante pelo menos a página "Principal"
+    let page_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM pages", [], |row| row.get(0))
+        .unwrap_or(0);
+    if page_count == 0 {
+        let _ = conn.execute("INSERT INTO pages (name) VALUES ('Principal')", []);
+        let principal_id: i32 = conn.last_insert_rowid() as i32;
+
+        let has_media_buttons: bool = conn
+            .query_row(
+                "SELECT 1 FROM buttons WHERE page_index = 1 LIMIT 1",
+                [],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+        if has_media_buttons {
+            let _ = conn.execute("INSERT INTO pages (name) VALUES ('Mídia')", []);
+            let media_id: i32 = conn.last_insert_rowid() as i32;
+            let _ = conn.execute(
+                "UPDATE buttons SET page_index = ?1 WHERE page_index = 1",
+                params![media_id],
+            );
+        }
+
+        let _ = conn.execute(
+            "UPDATE buttons SET page_index = ?1 WHERE page_index = 0",
+            params![principal_id],
+        );
+    }
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS settings (
@@ -134,7 +187,7 @@ pub fn init_db() -> Result<()> {
 pub fn get_all_buttons() -> Result<Vec<Button>> {
     let conn = Connection::open(DB_PATH)?;
     let mut stmt = conn.prepare(
-        "SELECT id, label, action_name, color, COALESCE(icon, 'zap'), COALESCE(page_index, 0) FROM buttons ORDER BY id ASC",
+        "SELECT id, label, action_name, color, COALESCE(icon, 'zap'), COALESCE(page_index, 0), COALESCE(position, 0) FROM buttons ORDER BY position ASC, id ASC",
     )?;
 
     let button_iter = stmt.query_map([], |row| {
@@ -145,6 +198,7 @@ pub fn get_all_buttons() -> Result<Vec<Button>> {
             color: row.get(3)?,
             icon: row.get(4)?,
             page_index: row.get(5)?,
+            position: row.get(6)?,
         })
     })?;
 
@@ -162,11 +216,12 @@ pub fn add_button(
     color: &str,
     icon: &str,
     page_index: i32,
+    position: i32,
 ) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute(
-        "INSERT INTO buttons (label, action_name, color, icon, page_index) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![label, action_name, color, icon, page_index],
+        "INSERT INTO buttons (label, action_name, color, icon, page_index, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![label, action_name, color, icon, page_index, position],
     )
 }
 
@@ -177,17 +232,72 @@ pub fn update_button(
     color: &str,
     icon: &str,
     page_index: i32,
+    position: i32,
 ) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute(
-        "UPDATE buttons SET label = ?1, action_name = ?2, color = ?3, icon = ?4, page_index = ?5 WHERE id = ?6",
-        params![label, action_name, color, icon, page_index, id],
+        "UPDATE buttons SET label = ?1, action_name = ?2, color = ?3, icon = ?4, page_index = ?5, position = ?6 WHERE id = ?7",
+        params![label, action_name, color, icon, page_index, position, id],
     )
 }
 
 pub fn delete_button(id: i32) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute("DELETE FROM buttons WHERE id = ?1", params![id])
+}
+
+pub fn get_all_pages() -> Result<Vec<Page>> {
+    let conn = Connection::open(DB_PATH)?;
+    let mut stmt = conn.prepare("SELECT id, name FROM pages ORDER BY id ASC")?;
+    let page_iter = stmt.query_map([], |row| {
+        Ok(Page {
+            id: row.get(0)?,
+            name: row.get(1)?,
+        })
+    })?;
+
+    let mut pages = Vec::new();
+    for page in page_iter {
+        pages.push(page?);
+    }
+    Ok(pages)
+}
+
+pub fn add_page(name: &str) -> Result<i32> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute("INSERT INTO pages (name) VALUES (?1)", params![name])?;
+    Ok(conn.last_insert_rowid() as i32)
+}
+
+pub fn update_page(id: i32, name: &str) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute("UPDATE pages SET name = ?1 WHERE id = ?2", params![name, id])
+}
+
+pub fn delete_page(id: i32) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    let _ = conn.execute("DELETE FROM buttons WHERE page_index = ?1", params![id]);
+    conn.execute("DELETE FROM pages WHERE id = ?1", params![id])
+}
+
+pub fn update_button_positions(updates: Vec<ButtonPositionUpdate>) -> Result<()> {
+    let mut conn = Connection::open(DB_PATH)?;
+    let tx = conn.transaction()?;
+    {
+        let mut stmt_with_page =
+            tx.prepare("UPDATE buttons SET position = ?1, page_index = ?2 WHERE id = ?3")?;
+        let mut stmt_pos_only = tx.prepare("UPDATE buttons SET position = ?1 WHERE id = ?2")?;
+
+        for update in updates {
+            if let Some(page_idx) = update.page_index {
+                stmt_with_page.execute(params![update.position, page_idx, update.id])?;
+            } else {
+                stmt_pos_only.execute(params![update.position, update.id])?;
+            }
+        }
+    }
+    tx.commit()?;
+    Ok(())
 }
 
 pub fn get_active_theme() -> Result<String> {

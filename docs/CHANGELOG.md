@@ -4,6 +4,17 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Páginas Dinâmicas e Reordenação livre via Drag-and-Drop:
+  - Tabela `pages` no SQLite (`desktop/src-tauri/src/db.rs`) com injeção automática da página padrão "Principal" e migração segura dos dados existentes.
+  - Coluna `position INTEGER DEFAULT 0` na tabela `buttons` com ordenação determinística (`ORDER BY position ASC, id ASC`).
+  - Comandos Tauri de CRUD de páginas (`get_pages`, `add_page`, `update_page`, `delete_page`) e salvamento em lote de posições (`update_button_positions`).
+  - Broadcast do layout atualizado enviando objeto composto com `pages` e `buttons` no WebSocket (`broadcast_current_layout` e `get_layout`).
+  - Drag-and-drop de botões no Dashboard Desktop (`desktop/src/App.tsx`, `App.css`) via `@hello-pangea/dnd` com feedback visual e atualização otimista.
+  - Gerenciador dinâmico de abas de páginas no Desktop com botões de criação rápida (`+ Nova Página`), renomeação (✏️) e exclusão (✕).
+  - Estado global mobile sincronizado (`mobile/src/store/themeStore.ts`, `websocketService.ts`) armazenando `pages: PageItem[]`.
+  - Remoção da limitação fixa de 3 páginas no Mobile (`mobile/src/screens/HomeScreen.tsx`), renderizando dinamicamente as páginas do `<PagerView>` e ordenando os botões por `position`.
+
+### Added
 - Rastreamento de Janela Ativa (Auto-Profile) com a crate `active-win-pos-rs` no Backend Desktop (`desktop/src-tauri/Cargo.toml`, `server.rs`):
   - Task assíncrona periódica (1000ms) monitorando o aplicativo/processo em foco no Windows e efetuando broadcast do evento de troca de página `{"event": "page_change", "page_index": X}` via WebSocket para os dispositivos conectados.
   - Tabela `window_rules` no SQLite (`desktop/src-tauri/src/db.rs`) com funções CRUD `get_window_rules`, `add_window_rule` e `delete_window_rule`.

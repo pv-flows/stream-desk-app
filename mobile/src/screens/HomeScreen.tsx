@@ -11,10 +11,10 @@ import { useThemeStore } from '../store/themeStore';
 import { getSkin } from '../theme/skins';
 
 const STORAGE_WS_URL_KEY = '@streamdesk_ws_url';
-const PAGES = [0, 1, 2];
 
 export const HomeScreen: React.FC = () => {
-  const { theme, palette, buttons } = useThemeStore();
+  const { theme, palette, buttons, pages } = useThemeStore();
+  const dynamicPages = pages && pages.length > 0 ? pages : [{ id: 1, name: 'Principal' }];
   const skin = getSkin(theme);
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -52,9 +52,15 @@ export const HomeScreen: React.FC = () => {
 
     const unsubscribePageChange = websocketService.onPageChange((pageIndex) => {
       console.log(`[HomeScreen] Auto-Profile: mudando para página ${pageIndex}`);
-      setCurrentPage(pageIndex);
-      pagerRef.current?.setPage(pageIndex);
-      setLastAction(`Auto-Profile: Página ${pageIndex + 1}`);
+      const targetIndex = dynamicPages.findIndex(
+        (p, idx) => p.id === pageIndex || idx === pageIndex
+      );
+      const newPageIdx =
+        targetIndex >= 0 ? targetIndex : Math.min(pageIndex, dynamicPages.length - 1);
+      setCurrentPage(newPageIdx);
+      pagerRef.current?.setPage(newPageIdx);
+      const pageName = dynamicPages[newPageIdx]?.name || `Página ${newPageIdx + 1}`;
+      setLastAction(`Auto-Profile: ${pageName}`);
     });
 
     const initializeConnection = async () => {
@@ -164,7 +170,7 @@ export const HomeScreen: React.FC = () => {
           <View style={[styles.statusBadge, isLandscape && styles.statusBadgeLandscape]}>
             <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
             <Text style={[styles.statusText, { color: skin.textColor }]}>
-              {connectionStatus.toUpperCase()} • {theme.toUpperCase()} • Pág {currentPage + 1}
+              {connectionStatus.toUpperCase()} • {theme.toUpperCase()} • {dynamicPages[currentPage]?.name || `Pág ${currentPage + 1}`} ({currentPage + 1}/{dynamicPages.length})
             </Text>
           </View>
           <Pressable
@@ -283,11 +289,18 @@ export const HomeScreen: React.FC = () => {
             initialPage={0}
             onPageSelected={(e) => setCurrentPage(e.nativeEvent.position)}
           >
-            {PAGES.map((pageIndex) => {
-              const pageButtons = buttons.filter((b) => (b.page_index || 0) === pageIndex);
+            {dynamicPages.map((page, index) => {
+              const pageButtons = buttons
+                .filter(
+                  (b) =>
+                    b.page_index === page.id ||
+                    (b.page_index === index && !dynamicPages.some((p) => p.id === b.page_index))
+                )
+                .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
               return (
                 <View
-                  key={pageIndex}
+                  key={String(page.id)}
                   style={[styles.pageSlide, isLandscape && styles.pageSlideLandscape]}
                 >
                   {pageButtons.length > 0 ? (
@@ -305,7 +318,7 @@ export const HomeScreen: React.FC = () => {
                   ) : (
                     <View style={styles.emptyPageContainer}>
                       <Text style={[styles.emptyText, { color: skin.textColor }]}>
-                        Página {pageIndex + 1} vazia.
+                        Página "{page.name}" vazia.
                       </Text>
                       <Text style={[styles.emptySubText, { color: skin.highlightColor }]}>
                         Adicione botões nesta página pelo painel Desktop!
@@ -318,9 +331,9 @@ export const HomeScreen: React.FC = () => {
           </PagerView>
 
           <View style={[styles.dotsRow, isLandscape && styles.dotsRowLandscape]}>
-            {PAGES.map((pageIndex) => (
+            {dynamicPages.map((page, pageIndex) => (
               <View
-                key={`dot-${pageIndex}`}
+                key={`dot-${page.id}`}
                 style={[
                   styles.dot,
                   {

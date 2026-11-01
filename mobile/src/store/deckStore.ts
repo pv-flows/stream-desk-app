@@ -1,2 +1,2 @@
-export { DeckButtonItem, useThemeStore as useDeckStore } from './themeStore';
+export { DeckButtonItem, PageItem, useThemeStore as useDeckStore } from './themeStore';
 
