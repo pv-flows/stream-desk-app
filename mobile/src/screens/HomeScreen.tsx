@@ -164,7 +164,7 @@ export const HomeScreen: React.FC = () => {
           ) : (
             <View style={[styles.cameraContainer, { borderColor: skin.highlightColor }]}>
               <CameraView
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
                 facing="back"
                 barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                 onBarcodeScanned={handleBarcodeScanned}
