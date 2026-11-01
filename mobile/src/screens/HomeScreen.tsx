@@ -248,13 +248,16 @@ export const HomeScreen: React.FC = () => {
     );
   }
 
-  // Cálculo dinâmico para 2 linhas no modo paisagem (landscape)
-  const availableGridHeight = Math.max(160, height - (isLandscape ? 85 : 220));
-  const landscapeButtonHeight = Math.floor((availableGridHeight - 32) / 2);
-  const landscapeButtonWidth = Math.min(
-    Math.floor((width - 80) / 4),
-    Math.floor(landscapeButtonHeight * 1.3)
-  );
+  // Recalibragem geométrica da grade responsiva
+  const COLUMNS = isLandscape ? 4 : 3;
+  // Descontando padding horizontal do slide e margem de cada botão (margin: 6px => 12px por botão)
+  const buttonWidth = Math.floor((width - 32) / COLUMNS - 12);
+
+  // No modo retrato, mantém altura quadrada. No landscape, respeita estritamente o limite de 2 linhas
+  const maxLandscapeHeight = Math.floor((height - 100) / 2 - 12);
+  const buttonHeight = isLandscape
+    ? Math.max(50, Math.min(buttonWidth, maxLandscapeHeight))
+    : buttonWidth;
 
   return (
     <LinearGradient
@@ -278,14 +281,14 @@ export const HomeScreen: React.FC = () => {
                   style={[styles.pageSlide, isLandscape && styles.pageSlideLandscape]}
                 >
                   {pageButtons.length > 0 ? (
-                    <View style={[styles.grid, isLandscape && styles.gridLandscape]}>
+                    <View style={styles.grid}>
                       {pageButtons.map((item) => (
                         <DeckButton
                           key={String(item.id)}
                           item={item}
                           onPress={handleButtonPress}
-                          buttonWidth={isLandscape ? landscapeButtonWidth : undefined}
-                          buttonHeight={isLandscape ? landscapeButtonHeight : undefined}
+                          buttonWidth={buttonWidth}
+                          buttonHeight={buttonHeight}
                         />
                       ))}
                     </View>

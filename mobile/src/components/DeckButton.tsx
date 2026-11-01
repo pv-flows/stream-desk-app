@@ -55,6 +55,9 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
   const rawIcon = item.icon?.trim() || 'zap';
   const isFeatherIcon = FEATHER_ICONS.has(rawIcon);
 
+  // Tamanho adaptativo do ícone de acordo com o espaço disponível do botão
+  const iconSize = typeof buttonHeight === 'number' ? Math.min(28, Math.max(18, Math.floor(buttonHeight * 0.32))) : 26;
+
   const handlePressIn = () => {
     // Feedback háptico tátil ao pressionar
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -152,7 +155,7 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
       style={[
         styles.pressableWrapper,
         buttonWidth !== undefined && { width: buttonWidth },
-        buttonHeight !== undefined && { height: buttonHeight, aspectRatio: undefined },
+        buttonHeight !== undefined ? { height: buttonHeight, aspectRatio: undefined } : { aspectRatio: 1 },
       ]}
     >
       <Animated.View
@@ -190,14 +193,18 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
         <View style={styles.contentContainer}>
           <View style={styles.iconWrapper}>
             {isFeatherIcon ? (
-              <Feather name={rawIcon as any} size={26} color={activeAccentColor} />
+              <Feather name={rawIcon as any} size={iconSize} color={activeAccentColor} />
             ) : (
-              <Text style={[styles.fallbackIcon, { color: activeAccentColor }]}>
+              <Text style={[styles.fallbackIcon, { color: activeAccentColor, fontSize: iconSize }]}>
                 {rawIcon}
               </Text>
             )}
           </View>
-          <Text style={[styles.label, { color: skin.textColor }]} numberOfLines={2}>
+          <Text
+            style={[styles.label, { color: skin.textColor }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
             {item.label}
           </Text>
         </View>
@@ -208,30 +215,28 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
 
 const styles = StyleSheet.create({
   pressableWrapper: {
-    width: '28%',
-    aspectRatio: 1,
-    margin: '2%',
+    margin: 6,
   },
   button: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
+    padding: 6,
     overflow: 'hidden',
   },
   contentContainer: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-    gap: 6,
+    gap: 4,
+    paddingHorizontal: 4,
   },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 28,
   },
   fallbackIcon: {
-    fontSize: 22,
     fontWeight: '700',
   },
   rippleCircle: {
@@ -245,5 +250,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
+    width: '100%',
   },
 });

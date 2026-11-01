@@ -3,13 +3,18 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Fixed
+- Recalibragem matemática completa da grade responsiva no Mobile (`mobile/src/screens/HomeScreen.tsx` e `mobile/src/components/DeckButton.tsx`):
+  - Definição precisa de colunas (`COLUMNS = isLandscape ? 4 : 3`).
+  - Cálculo de largura e altura descontando margens (`6px` por lado) e padding do container, eliminando overflow e corte de botões na horizontal.
+  - No modo landscape, limitação estrita da altura em `Math.min(buttonWidth, (height - 100) / 2 - 12)` para garantir a visualização das duas linhas completas.
+  - Ícone dinâmico escalável e rótulo do botão com `adjustsFontSizeToFit` e `numberOfLines={1}` evitando quebras e vazamento de texto.
+- Correção no container e renderização do `<PagerView>` em `mobile/src/screens/HomeScreen.tsx` para mapear de forma fixa as 3 páginas (`PAGES = [0, 1, 2]`) com `flex: 1`, filtragem `(b.page_index || 0) === pageIndex` e feedback visual de dots, corrigindo o deslizamento lateral por swipe.
+
 ### Added
 - Suporte a modo paisagem (landscape) e rotação dinâmica de tela no Mobile (`mobile/app.json` configurado para `orientation: default`).
 - Adaptação dinâmica de grade para 2 linhas de botões no modo horizontal (`useWindowDimensions` e cálculo de proporção em `mobile/src/screens/HomeScreen.tsx`), repassando `buttonWidth` e `buttonHeight` para o componente `DeckButton.tsx`.
 - Header e indicadores de página compactos para visualização e aproveitamento máximo de tela em landscape.
-
-### Fixed
-- Correção no container e renderização do `<PagerView>` em `mobile/src/screens/HomeScreen.tsx` para mapear de forma fixa as 3 páginas (`PAGES = [0, 1, 2]`) com `flex: 1`, filtragem `(b.page_index || 0) === pageIndex` e feedback visual de dots, corrigindo o deslizamento lateral por swipe.
 
 ### Added
 - Motor de Ações Avançadas no Desktop (`desktop/src-tauri/src/server.rs`): suporte dinâmico a prefixos `open_url:<link>` (abertura de links no navegador via `open::that`) e `open_app:<app>` (abertura de executáveis e scripts com fallback via `std::process::Command`), e novas teclas de multimídia (`mute`, `media_play`, `media_next`, `media_prev`).
