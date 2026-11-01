@@ -12,11 +12,99 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export function SystemView() {
+  const { toast } = useToast();
+  const pages = useDashboardStore((s) => s.pages);
+  const buttons = useDashboardStore((s) => s.buttons);
+  const windowRules = useDashboardStore((s) => s.windowRules);
+  const theme = useDashboardStore((s) => s.theme);
+
   const [startWithWindows, setStartWithWindows] = useState(true);
   const [minimizeToTray, setMinimizeToTray] = useState(false);
   const [keepPhoneAwake, setKeepPhoneAwake] = useState(true);
+
+  const handleToggleStartWithWindows = (checked: boolean) => {
+    setStartWithWindows(checked);
+    toast({
+      title: "Iniciar com o Windows",
+      description: checked
+        ? "Inicialização automática ativada (integração do Registro do Windows em breve)."
+        : "Inicialização automática desativada.",
+    });
+  };
+
+  const handleToggleMinimizeToTray = (checked: boolean) => {
+    setMinimizeToTray(checked);
+    toast({
+      title: "Minimizar para a bandeja",
+      description: checked
+        ? "Minimização para bandeja do sistema ativada (integração de Tray em breve)."
+        : "Minimização normal de janela mantida.",
+    });
+  };
+
+  const handleToggleKeepPhoneAwake = (checked: boolean) => {
+    setKeepPhoneAwake(checked);
+    toast({
+      title: "Manter tela do celular ligada",
+      description: checked
+        ? "Sinal de Wake Lock mantido ativo para dispositivos móveis conectados."
+        : "Tela do dispositivo seguirá as regras padrão de repouso.",
+    });
+  };
+
+  const handleExportBackup = () => {
+    try {
+      const backupData = {
+        version: "1.2.3",
+        exportedAt: new Date().toISOString(),
+        theme,
+        pages,
+        buttons,
+        windowRules,
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `stream-desk-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Backup Exportado com Sucesso",
+        description: `Exportados ${buttons.length} botões e ${pages.length} páginas em arquivo JSON.`,
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao exportar",
+        description: "Não foi possível gerar o arquivo de backup local.",
+      });
+    }
+  };
+
+  const handleImportBackup = () => {
+    toast({
+      title: "Importação de Backup",
+      description: "Recurso em breve: restauração automática de layout planejada para a próxima fase.",
+    });
+  };
+
+  const handleUpgrade = () => {
+    toast({
+      title: "Stream Desk Pro",
+      description: "Em breve: suporte a múltiplos decks físicos e sincronização em nuvem.",
+    });
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-neutral-950/70 p-8 overflow-y-auto select-none">
@@ -40,7 +128,7 @@ export function SystemView() {
             </div>
             <Switch
               checked={startWithWindows}
-              onCheckedChange={setStartWithWindows}
+              onCheckedChange={handleToggleStartWithWindows}
               className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700/80 border-neutral-700"
             />
           </div>
@@ -55,7 +143,7 @@ export function SystemView() {
             </div>
             <Switch
               checked={minimizeToTray}
-              onCheckedChange={setMinimizeToTray}
+              onCheckedChange={handleToggleMinimizeToTray}
               className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700/80 border-neutral-700"
             />
           </div>
@@ -70,7 +158,7 @@ export function SystemView() {
             </div>
             <Switch
               checked={keepPhoneAwake}
-              onCheckedChange={setKeepPhoneAwake}
+              onCheckedChange={handleToggleKeepPhoneAwake}
               className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700/80 border-neutral-700"
             />
           </div>
@@ -87,6 +175,7 @@ export function SystemView() {
               <Button
                 type="button"
                 variant="outline"
+                onClick={handleExportBackup}
                 className="h-11 rounded-xl border border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
               >
                 <Upload className="w-3.5 h-3.5 text-indigo-400" />
@@ -96,6 +185,7 @@ export function SystemView() {
               <Button
                 type="button"
                 variant="outline"
+                onClick={handleImportBackup}
                 className="h-11 rounded-xl border border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
               >
                 <Download className="w-3.5 h-3.5 text-indigo-400" />
@@ -132,6 +222,7 @@ export function SystemView() {
 
               <Button
                 size="sm"
+                onClick={handleUpgrade}
                 className="h-8 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-md shadow-indigo-600/30 gap-1.5 transition-all"
               >
                 <Star className="w-3.5 h-3.5 fill-white text-white" />

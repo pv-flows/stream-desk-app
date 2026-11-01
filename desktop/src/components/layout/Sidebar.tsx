@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { Page, useDashboardStore } from "@/store/useDashboardStore";
+import { useToast } from "@/hooks/use-toast";
 
 export interface NavItem {
   id: string;
@@ -43,6 +44,7 @@ export function Sidebar({
   activeTab: controlledTab,
   onSelectTab,
 }: SidebarProps = {}) {
+  const { toast } = useToast();
   const [internalTab, setInternalTab] = useState("connection");
   const activeTab = controlledTab ?? internalTab;
 
@@ -120,9 +122,39 @@ export function Sidebar({
       {/* Top Window Bar com macOS Traffic Lights */}
       <div className="p-4 flex items-center justify-between border-b border-neutral-800/60">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-red-500/90 inline-block shadow-sm" />
-          <span className="w-3 h-3 rounded-full bg-amber-500/90 inline-block shadow-sm" />
-          <span className="w-3 h-3 rounded-full bg-emerald-500/90 inline-block shadow-sm" />
+          <button
+            type="button"
+            onClick={() =>
+              toast({
+                title: "Controle de Janela",
+                description: "Fechar aplicativo (atalho Alt+F4)",
+              })
+            }
+            title="Fechar"
+            className="w-3 h-3 rounded-full bg-red-500/90 inline-block shadow-sm hover:opacity-80 transition-opacity"
+          />
+          <button
+            type="button"
+            onClick={() =>
+              toast({
+                title: "Controle de Janela",
+                description: "Minimizar para a barra de tarefas",
+              })
+            }
+            title="Minimizar"
+            className="w-3 h-3 rounded-full bg-amber-500/90 inline-block shadow-sm hover:opacity-80 transition-opacity"
+          />
+          <button
+            type="button"
+            onClick={() =>
+              toast({
+                title: "Controle de Janela",
+                description: "Maximizar / Restaurar tamanho",
+              })
+            }
+            title="Maximizar"
+            className="w-3 h-3 rounded-full bg-emerald-500/90 inline-block shadow-sm hover:opacity-80 transition-opacity"
+          />
         </div>
         <span className="text-[10px] font-mono text-neutral-500">240px</span>
       </div>
@@ -295,10 +327,22 @@ export function Sidebar({
 
       {/* Sidebar Footer com IP Real */}
       <div className="p-3 border-t border-neutral-800/80 bg-neutral-950/40 flex items-center justify-between text-xs text-neutral-400">
-        <div className="flex items-center gap-1.5 text-[11px]">
+        <button
+          type="button"
+          onClick={() => {
+            const ip = localIp || "192.168.1.15";
+            navigator.clipboard?.writeText(ip);
+            toast({
+              title: "IP Local Copiado",
+              description: `${ip} copiado para a área de transferência.`,
+            });
+          }}
+          title="Clique para copiar o IP"
+          className="flex items-center gap-1.5 text-[11px] hover:text-indigo-300 transition-colors cursor-pointer"
+        >
           <Wifi className="w-3.5 h-3.5 text-indigo-400" />
           <span className="font-mono">LAN {localIp || "192.168.1.15"}</span>
-        </div>
+        </button>
         <button
           type="button"
           onClick={() => handleSelectTab("system")}

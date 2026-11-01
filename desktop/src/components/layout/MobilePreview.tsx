@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import {
   getLucideIcon,
@@ -65,6 +66,7 @@ export function MobilePreview({
     "portrait" | "landscape"
   >("portrait");
   const orientation = controlledOrientation ?? internalOrientation;
+  const { toast } = useToast();
 
   const handleToggle = () => {
     if (onToggleOrientation) {
@@ -183,8 +185,14 @@ export function MobilePreview({
                     return (
                       <div
                         key={btn.id}
+                        onClick={() =>
+                          toast({
+                            title: `Simulador: ${btn.label}`,
+                            description: `Comando: ${btn.action_name}`,
+                          })
+                        }
                         style={!isFirst && !isLight ? colorStyle.style : undefined}
-                        className={`h-16 rounded-xl border flex flex-col items-center justify-center text-center p-1 transition-all shadow-sm ${
+                        className={`h-16 rounded-xl border flex flex-col items-center justify-center text-center p-1 transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95 ${
                           isFirst
                             ? "bg-indigo-600 border-indigo-400 text-white shadow-indigo-600/30"
                             : isLight
@@ -229,7 +237,13 @@ export function MobilePreview({
                       return (
                         <div
                           key={item.id}
-                          className={`h-16 rounded-xl border flex flex-col items-center justify-center text-center p-1 transition-all shadow-sm ${
+                          onClick={() =>
+                            toast({
+                              title: `Simulador: ${item.label}`,
+                              description: "Ação de demonstração no preview mobile.",
+                            })
+                          }
+                          className={`h-16 rounded-xl border flex flex-col items-center justify-center text-center p-1 transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95 ${
                             item.highlighted
                               ? "bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/40"
                               : defaultCardClass

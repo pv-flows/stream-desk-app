@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Video,
   Lightbulb,
@@ -10,6 +11,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 interface IntegrationItem {
   id: string;
@@ -17,15 +19,17 @@ interface IntegrationItem {
   icon: React.ComponentType<{ className?: string }>;
   isPro?: boolean;
   isConnected: boolean;
+  details: string;
 }
 
-const INTEGRATIONS: IntegrationItem[] = [
+const INITIAL_INTEGRATIONS: IntegrationItem[] = [
   {
     id: "obs",
     name: "OBS Studio",
     icon: Video,
     isPro: true,
     isConnected: true,
+    details: "OBS WebSocket v5 conectado (localhost:4455)",
   },
   {
     id: "lights",
@@ -33,6 +37,7 @@ const INTEGRATIONS: IntegrationItem[] = [
     icon: Lightbulb,
     isPro: false,
     isConnected: true,
+    details: "Ponte Philips Hue / Nanoleaf pareada",
   },
   {
     id: "webhooks",
@@ -40,6 +45,7 @@ const INTEGRATIONS: IntegrationItem[] = [
     icon: Webhook,
     isPro: true,
     isConnected: false,
+    details: "Disparadores HTTP POST/GET personalizados",
   },
   {
     id: "homeassistant",
@@ -47,6 +53,7 @@ const INTEGRATIONS: IntegrationItem[] = [
     icon: Home,
     isPro: false,
     isConnected: false,
+    details: "Entidades e automações IoT via Long-Lived Token",
   },
   {
     id: "scripts",
@@ -54,6 +61,7 @@ const INTEGRATIONS: IntegrationItem[] = [
     icon: Code2,
     isPro: false,
     isConnected: false,
+    details: "Execução de scripts PowerShell, Python e Batch",
   },
   {
     id: "automation",
@@ -61,10 +69,40 @@ const INTEGRATIONS: IntegrationItem[] = [
     icon: Clock,
     isPro: false,
     isConnected: false,
+    details: "Gatilhos por horário ou eventos de janelas",
   },
 ];
 
 export function IntegrationsView() {
+  const { toast } = useToast();
+  const [integrations, setIntegrations] = useState<IntegrationItem[]>(INITIAL_INTEGRATIONS);
+
+  const handleToggleConnection = (item: IntegrationItem) => {
+    const nextState = !item.isConnected;
+    setIntegrations((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, isConnected: nextState } : i))
+    );
+
+    if (nextState) {
+      toast({
+        title: `${item.name} Conectado`,
+        description: item.details,
+      });
+    } else {
+      toast({
+        title: `${item.name} Desconectado`,
+        description: "A integração foi pausada com sucesso.",
+      });
+    }
+  };
+
+  const handleOpenSettings = (item: IntegrationItem) => {
+    toast({
+      title: `Configurar ${item.name}`,
+      description: `Painel de credenciais e rotas para ${item.name} em breve na Fase 3.`,
+    });
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-neutral-950/70 p-8 overflow-y-auto select-none">
       <div className="space-y-6 max-w-4xl">
@@ -77,7 +115,7 @@ export function IntegrationsView() {
 
         {/* Grade 2 Colunas de Integrações */}
         <div className="grid grid-cols-2 gap-4">
-          {INTEGRATIONS.map((item) => {
+          {integrations.map((item) => {
             const Icon = item.icon;
             return (
               <Card
@@ -111,6 +149,8 @@ export function IntegrationsView() {
                 <div className="flex items-center justify-between gap-3 pt-2">
                   <Button
                     size="sm"
+                    type="button"
+                    onClick={() => handleToggleConnection(item)}
                     className={`h-9 px-4 rounded-xl text-xs font-medium transition-all ${
                       item.isConnected
                         ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30"
@@ -123,6 +163,9 @@ export function IntegrationsView() {
                   <Button
                     variant="outline"
                     size="icon"
+                    type="button"
+                    onClick={() => handleOpenSettings(item)}
+                    title={`Configurações de ${item.name}`}
                     className="h-9 w-9 rounded-xl border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors"
                   >
                     <Settings className="w-4 h-4 stroke-[1.75]" />

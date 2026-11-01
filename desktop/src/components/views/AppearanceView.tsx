@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 const COLOR_OPTIONS = [
@@ -22,6 +23,7 @@ const COLOR_OPTIONS = [
 ];
 
 export function AppearanceView() {
+  const { toast } = useToast();
   const theme = useDashboardStore((s) => s.theme);
   const setTheme = useDashboardStore((s) => s.setTheme);
 
@@ -42,9 +44,51 @@ export function AppearanceView() {
     await setTheme(novoTema);
     try {
       await invoke("set_theme", { theme: novoTema });
+      toast({
+        title: "Tema Atualizado",
+        description: `Tema alterado para "${novoTema.toUpperCase()}" e sincronizado via WebSocket.`,
+      });
     } catch (err) {
       console.warn("[AppearanceView] Erro ao sincronizar set_theme via IPC:", err);
+      toast({
+        title: "Tema Atualizado Localmente",
+        description: `Tema alterado para "${novoTema.toUpperCase()}".`,
+      });
     }
+  };
+
+  const handleSelectColor = (col: typeof COLOR_OPTIONS[0]) => {
+    setSelectedColor(col.id);
+    toast({
+      title: "Cor de Destaque",
+      description: `Paleta "${col.label}" definida para botões e acentos.`,
+    });
+  };
+
+  const handleGridSizeCommit = (val: number[]) => {
+    setGridSize(val);
+    toast({
+      title: "Tamanho da Grade",
+      description: `Layout móvel configurado para grade ${val[0]} colunas.`,
+    });
+  };
+
+  const handleToggleVibration = (checked: boolean) => {
+    setVibrationEnabled(checked);
+    toast({
+      title: "Vibração ao Tocar",
+      description: checked
+        ? "Feedback háptico habilitado no aplicativo mobile."
+        : "Vibração ao pressionar desabilitada.",
+    });
+  };
+
+  const handleSelectIconStyle = (style: "linha" | "preenchido") => {
+    setIconStyle(style);
+    toast({
+      title: "Estilo de Ícones",
+      description: `Ícones definidos como "${style === "linha" ? "Linha / Outline" : "Preenchido / Solid"}".`,
+    });
   };
 
   return (
@@ -121,7 +165,7 @@ export function AppearanceView() {
                   <button
                     key={col.id}
                     type="button"
-                    onClick={() => setSelectedColor(col.id)}
+                    onClick={() => handleSelectColor(col)}
                     title={col.label}
                     className={`w-6 h-6 rounded-full ${col.bg} flex items-center justify-center transition-transform hover:scale-110 ${
                       isSelected ? "ring-2 ring-white/60 scale-105" : "opacity-90 hover:opacity-100"
@@ -148,6 +192,7 @@ export function AppearanceView() {
               <Slider
                 value={gridSize}
                 onValueChange={setGridSize}
+                onValueCommit={handleGridSizeCommit}
                 min={2}
                 max={6}
                 step={1}
@@ -168,7 +213,7 @@ export function AppearanceView() {
 
             <Switch
               checked={vibrationEnabled}
-              onCheckedChange={setVibrationEnabled}
+              onCheckedChange={handleToggleVibration}
               className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-neutral-800 border-neutral-700"
             />
           </div>
@@ -185,7 +230,7 @@ export function AppearanceView() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIconStyle("linha")}
+                onClick={() => handleSelectIconStyle("linha")}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all ${
                   iconStyle === "linha"
                     ? "border-indigo-500/80 bg-indigo-950/30 text-indigo-300 shadow-sm"
@@ -198,7 +243,7 @@ export function AppearanceView() {
 
               <button
                 type="button"
-                onClick={() => setIconStyle("preenchido")}
+                onClick={() => handleSelectIconStyle("preenchido")}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all ${
                   iconStyle === "preenchido"
                     ? "border-indigo-500/80 bg-indigo-950/30 text-indigo-300 shadow-sm"

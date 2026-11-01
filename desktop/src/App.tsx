@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CentralArea } from "@/components/layout/CentralArea";
 import { MobilePreview } from "@/components/layout/MobilePreview";
+import { Toaster } from "@/components/ui/toaster";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import "./App.css";
 
@@ -23,6 +24,9 @@ export function App() {
 
       {/* 3. Painel de Pré-visualização Mobile (320px fixa) */}
       <MobilePreview />
+
+      {/* Notificações Toaster Global */}
+      <Toaster />
     </div>
   );
 }

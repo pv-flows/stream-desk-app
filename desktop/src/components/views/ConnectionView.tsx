@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Wifi, Signal } from "lucide-react";
 import QRCode from "react-qr-code";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 export interface ConnectedDevice {
@@ -11,7 +13,7 @@ export interface ConnectedDevice {
   dbmValue?: string;
 }
 
-const MOCK_CONNECTED_DEVICES: ConnectedDevice[] = [
+const INITIAL_CONNECTED_DEVICES: ConnectedDevice[] = [
   { id: "1", name: "iPhone de João", signalType: "bars" },
   { id: "2", name: "Galaxy S21 da Maria", signalType: "wifi" },
   { id: "3", name: "Galaxy S21 da Maria", signalType: "bars" },
@@ -21,9 +23,27 @@ const MOCK_CONNECTED_DEVICES: ConnectedDevice[] = [
 ];
 
 export function ConnectionView() {
+  const { toast } = useToast();
   const localIp = useDashboardStore((s) => s.localIp);
   const displayIp = localIp && localIp !== "0.0.0.0" ? localIp : "192.168.1.15";
   const qrValue = `http://${displayIp}:8080/ws`;
+
+  const [devices, setDevices] = useState<ConnectedDevice[]>(INITIAL_CONNECTED_DEVICES);
+
+  const handleDisconnectDevice = (device: ConnectedDevice) => {
+    setDevices((prev) => prev.filter((d) => d.id !== device.id));
+    toast({
+      title: "Dispositivo Desconectado",
+      description: `A conexão com ${device.name} foi finalizada.`,
+    });
+  };
+
+  const handleServerStatusClick = () => {
+    toast({
+      title: "Status do Servidor",
+      description: `Servidor WebSocket ativo e ouvindo conexões em ws://${displayIp}:8080/ws`,
+    });
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-neutral-950/70 p-8 overflow-y-auto select-none">
@@ -33,13 +53,17 @@ export function ConnectionView() {
           Conexão
         </h1>
 
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 border border-neutral-800 text-xs font-medium text-neutral-300 shadow-sm">
+        <button
+          type="button"
+          onClick={handleServerStatusClick}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 border border-neutral-800 text-xs font-medium text-neutral-300 shadow-sm hover:border-neutral-700 transition-colors"
+        >
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <span>Servidor ativo</span>
-        </div>
+        </button>
       </header>
 
       {/* 2. Conteúdo Central dividido em 2 Colunas */}
@@ -68,46 +92,58 @@ export function ConnectionView() {
 
         {/* Coluna Direita: Dispositivos conectados */}
         <div className="space-y-3">
-          <h2 className="text-sm font-medium text-neutral-300">
-            Dispositivos conectados
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-neutral-300">
+              Dispositivos conectados
+            </h2>
+            <span className="text-xs font-mono text-neutral-500">
+              {devices.length} ativo{devices.length === 1 ? "" : "s"}
+            </span>
+          </div>
 
           <ScrollArea className="h-[380px] pr-2">
             <div className="space-y-2.5">
-              {MOCK_CONNECTED_DEVICES.map((device, idx) => (
-                <div
-                  key={`${device.id}-${idx}`}
-                  className="bg-neutral-900/60 hover:bg-neutral-900/90 border border-neutral-800/70 rounded-xl px-4 py-3 flex items-center justify-between transition-colors shadow-sm"
-                >
-                  {/* Status e Nome do Dispositivo */}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
-                    <span className="text-xs font-medium text-neutral-200 truncate">
-                      {device.name}
-                    </span>
-                  </div>
-
-                  {/* Sinal e Ação Desconectar */}
-                  <div className="flex items-center gap-3.5 flex-shrink-0">
-                    {device.signalType === "wifi" ? (
-                      <Wifi className="w-4 h-4 text-neutral-400" />
-                    ) : device.signalType === "bars" ? (
-                      <Signal className="w-4 h-4 text-neutral-400" />
-                    ) : (
-                      <span className="text-[11px] font-mono text-neutral-500">
-                        {device.dbmValue}
+              {devices.length > 0 ? (
+                devices.map((device, idx) => (
+                  <div
+                    key={`${device.id}-${idx}`}
+                    className="bg-neutral-900/60 hover:bg-neutral-900/90 border border-neutral-800/70 rounded-xl px-4 py-3 flex items-center justify-between transition-colors shadow-sm"
+                  >
+                    {/* Status e Nome do Dispositivo */}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
+                      <span className="text-xs font-medium text-neutral-200 truncate">
+                        {device.name}
                       </span>
-                    )}
+                    </div>
 
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-violet-400 hover:text-violet-300 transition-colors"
-                    >
-                      Desconectar
-                    </button>
+                    {/* Sinal e Ação Desconectar */}
+                    <div className="flex items-center gap-3.5 flex-shrink-0">
+                      {device.signalType === "wifi" ? (
+                        <Wifi className="w-4 h-4 text-neutral-400" />
+                      ) : device.signalType === "bars" ? (
+                        <Signal className="w-4 h-4 text-neutral-400" />
+                      ) : (
+                        <span className="text-[11px] font-mono text-neutral-500">
+                          {device.dbmValue}
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleDisconnectDevice(device)}
+                        className="text-xs font-medium text-violet-400 hover:text-violet-300 hover:underline transition-colors"
+                      >
+                        Desconectar
+                      </button>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-12 border border-dashed border-neutral-800 rounded-xl text-neutral-500 text-xs">
+                  Nenhum dispositivo conectado no momento.
                 </div>
-              ))}
+              )}
             </div>
           </ScrollArea>
         </div>
@@ -117,4 +153,3 @@ export function ConnectionView() {
 }
 
 export default ConnectionView;
-
