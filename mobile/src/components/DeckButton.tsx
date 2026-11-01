@@ -1,4 +1,3 @@
-import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
@@ -12,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { DeckButtonItem, useThemeStore } from '../store/themeStore';
 import { getSkin } from '../theme/skins';
+import { MobileIcon } from './MobileIcon';
 
 export { DeckButtonItem };
 
@@ -22,18 +22,18 @@ interface DeckButtonProps {
   buttonHeight?: number | string;
 }
 
-const FEATHER_ICONS = new Set([
-  'volume-2',
-  'volume-x',
-  'mic-off',
-  'play',
-  'calculator',
-  'globe',
-  'settings',
-  'folder',
-  'terminal',
-  'zap',
-]);
+function resolveAccentColor(colorStr?: string, fallback: string = '#6366f1'): string {
+  if (!colorStr) return fallback;
+  if (colorStr.startsWith('#') || colorStr.startsWith('rgb')) return colorStr;
+  const c = colorStr.toLowerCase();
+  if (c.includes('emerald') || c.includes('green')) return '#10b981';
+  if (c.includes('amber') || c.includes('yellow') || c.includes('orange')) return '#f59e0b';
+  if (c.includes('purple') || c.includes('violet') || c.includes('indigo')) return '#818cf8';
+  if (c.includes('rose') || c.includes('red')) return '#f43f5e';
+  if (c.includes('blue')) return '#3b82f6';
+  if (c.includes('slate') || c.includes('gray')) return '#94a3b8';
+  return '#38bdf8';
+}
 
 export const DeckButton: React.FC<DeckButtonProps> = ({
   item,
@@ -46,67 +46,33 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
 
   const scale = useSharedValue(1);
   const pressProgress = useSharedValue(0);
-  const elevationAnim = useSharedValue(skin.shadow.elevation);
-  const rippleScale = useSharedValue(0);
-  const rippleOpacity = useSharedValue(0);
 
-  const baseBorderColor = item.color || skin.borderColor;
-  const activeAccentColor = item.color || skin.highlightColor;
-  const rawIcon = item.icon?.trim() || 'zap';
-  const isFeatherIcon = FEATHER_ICONS.has(rawIcon);
+  const activeAccentColor = resolveAccentColor(item.color, skin.highlightColor);
+  const baseBorderColor = item.color ? `${activeAccentColor}44` : skin.borderColor;
 
   // Tamanho adaptativo do ícone de acordo com o espaço disponível do botão
-  const iconSize = typeof buttonHeight === 'number' ? Math.min(28, Math.max(18, Math.floor(buttonHeight * 0.32))) : 26;
+  const iconSize =
+    typeof buttonHeight === 'number'
+      ? Math.min(28, Math.max(18, Math.floor(buttonHeight * 0.32)))
+      : 26;
 
   const handlePressIn = () => {
-    // Feedback háptico tátil ao pressionar
+    // Feedback háptico intacto ao toque
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
-    if (theme === 'apple' || theme === 'windows' || theme === 'ios') {
-      // Física de mola na escala para temas glass (Apple / Windows)
-      scale.value = withSpring(0.92, {
-        damping: 12,
-        stiffness: 220,
-      });
-      pressProgress.value = withTiming(1, { duration: 120 });
-    } else if (theme === 'steam') {
-      // Corte seco invertendo cor de borda/fundo sem redução de escala
-      scale.value = 1;
-      pressProgress.value = withTiming(1, { duration: 40 });
-    } else if (theme === 'oneui' || theme === 'chromebook') {
-      // Ripple suave e alteração de sombra/elevação
-      scale.value = withTiming(0.97, { duration: 130 });
-      pressProgress.value = withTiming(1, { duration: 130 });
-      elevationAnim.value = withTiming(skin.shadow.elevation + 6, { duration: 130 });
-      rippleScale.value = 0.2;
-      rippleOpacity.value = 0.85;
-      rippleScale.value = withTiming(2.4, { duration: 320 });
-    } else {
-      // Default / Gamer
-      scale.value = withSpring(0.94, { damping: 14, stiffness: 200 });
-      pressProgress.value = withTiming(1, { duration: 100 });
-    }
+    scale.value = withSpring(0.93, {
+      damping: 14,
+      stiffness: 240,
+    });
+    pressProgress.value = withTiming(1, { duration: 100 });
   };
 
   const handlePressOut = () => {
-    if (theme === 'apple' || theme === 'windows' || theme === 'ios') {
-      scale.value = withSpring(1, {
-        damping: 12,
-        stiffness: 220,
-      });
-      pressProgress.value = withTiming(0, { duration: 150 });
-    } else if (theme === 'steam') {
-      scale.value = 1;
-      pressProgress.value = withTiming(0, { duration: 40 });
-    } else if (theme === 'oneui' || theme === 'chromebook') {
-      scale.value = withTiming(1, { duration: 160 });
-      pressProgress.value = withTiming(0, { duration: 160 });
-      elevationAnim.value = withTiming(skin.shadow.elevation, { duration: 160 });
-      rippleOpacity.value = withTiming(0, { duration: 220 });
-    } else {
-      scale.value = withSpring(1, { damping: 14, stiffness: 200 });
-      pressProgress.value = withTiming(0, { duration: 140 });
-    }
+    scale.value = withSpring(1, {
+      damping: 14,
+      stiffness: 240,
+    });
+    pressProgress.value = withTiming(0, { duration: 140 });
   };
 
   const animatedContainerStyle = useAnimatedStyle(() => {
@@ -116,46 +82,33 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
         : interpolateColor(
             pressProgress.value,
             [0, 1],
-            [skin.backgroundColor, theme === 'steam' ? activeAccentColor : skin.pressedBackgroundColor]
+            [skin.backgroundColor, skin.pressedBackgroundColor]
           );
 
     const borderColor = interpolateColor(
       pressProgress.value,
       [0, 1],
-      [baseBorderColor, theme === 'steam' ? skin.backgroundColor : activeAccentColor]
+      [baseBorderColor, activeAccentColor]
     );
 
     return {
       transform: [{ scale: scale.value }],
       backgroundColor,
       borderColor,
-      elevation: elevationAnim.value,
-      shadowOpacity:
-        theme === 'oneui' || theme === 'chromebook'
-          ? skin.shadow.shadowOpacity + pressProgress.value * 0.2
-          : skin.shadow.shadowOpacity,
     };
-  }, [skin, theme, baseBorderColor, activeAccentColor]);
-
-  const animatedRippleStyle = useAnimatedStyle(() => ({
-    opacity: rippleOpacity.value,
-    transform: [{ scale: rippleScale.value }],
-  }));
-
-  const isRippleTheme = theme === 'oneui' || theme === 'chromebook';
+  }, [skin, baseBorderColor, activeAccentColor]);
 
   return (
     <Pressable
       onPress={() => onPress(item)}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      android_ripple={
-        isRippleTheme ? { color: skin.rippleColor, borderless: false } : undefined
-      }
       style={[
         styles.pressableWrapper,
         buttonWidth !== undefined && { width: buttonWidth },
-        buttonHeight !== undefined ? { height: buttonHeight, aspectRatio: undefined } : { aspectRatio: 1 },
+        buttonHeight !== undefined
+          ? { height: buttonHeight, aspectRatio: undefined }
+          : { aspectRatio: 1 },
       ]}
     >
       <Animated.View
@@ -166,7 +119,9 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
             borderWidth: skin.borderWidth,
             shadowColor: skin.shadow.shadowColor,
             shadowOffset: skin.shadow.shadowOffset,
+            shadowOpacity: skin.shadow.shadowOpacity,
             shadowRadius: skin.shadow.shadowRadius,
+            elevation: skin.shadow.elevation,
           },
           animatedContainerStyle,
         ]}
@@ -179,26 +134,13 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
           />
         ) : null}
 
-        {isRippleTheme ? (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.rippleCircle,
-              { backgroundColor: skin.rippleColor },
-              animatedRippleStyle,
-            ]}
-          />
-        ) : null}
-
         <View style={styles.contentContainer}>
           <View style={styles.iconWrapper}>
-            {isFeatherIcon ? (
-              <Feather name={rawIcon as any} size={iconSize} color={activeAccentColor} />
-            ) : (
-              <Text style={[styles.fallbackIcon, { color: activeAccentColor, fontSize: iconSize }]}>
-                {rawIcon}
-              </Text>
-            )}
+            <MobileIcon
+              iconName={item.icon}
+              size={iconSize}
+              color={activeAccentColor}
+            />
           </View>
           <Text
             style={[styles.label, { color: skin.textColor }]}
@@ -215,13 +157,13 @@ export const DeckButton: React.FC<DeckButtonProps> = ({
 
 const styles = StyleSheet.create({
   pressableWrapper: {
-    margin: 6,
+    margin: 5,
   },
   button: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 6,
+    padding: 8,
     overflow: 'hidden',
   },
   contentContainer: {
@@ -229,27 +171,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-    gap: 4,
+    gap: 6,
     paddingHorizontal: 4,
   },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fallbackIcon: {
-    fontWeight: '700',
-  },
-  rippleCircle: {
-    position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    zIndex: 1,
-  },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
     width: '100%',
+    letterSpacing: 0.2,
   },
 });

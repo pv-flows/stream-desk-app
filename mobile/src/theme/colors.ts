@@ -1,5 +1,8 @@
 export type ThemeName =
   | 'default'
+  | 'escuro'
+  | 'claro'
+  | 'amoled'
   | 'apple'
   | 'windows'
   | 'steam'
@@ -18,11 +21,32 @@ export interface ThemePalette {
 
 export const themes: Record<ThemeName, ThemePalette> = {
   default: {
-    background: '#0f172a',
-    buttonBackground: '#1e293b',
-    textColor: '#f8fafc',
-    highlight: '#38bdf8',
-    borderColor: '#334155',
+    background: '#09090b',
+    buttonBackground: 'rgba(24, 24, 27, 0.75)',
+    textColor: '#f4f4f5',
+    highlight: '#6366f1',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  escuro: {
+    background: '#09090b',
+    buttonBackground: 'rgba(24, 24, 27, 0.75)',
+    textColor: '#f4f4f5',
+    highlight: '#6366f1',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  claro: {
+    background: '#f8fafc',
+    buttonBackground: 'rgba(255, 255, 255, 0.85)',
+    textColor: '#0f172a',
+    highlight: '#4f46e5',
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  amoled: {
+    background: '#000000',
+    buttonBackground: 'rgba(12, 12, 12, 0.95)',
+    textColor: '#ffffff',
+    highlight: '#6366f1',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   apple: {
     background: '#1c1c1e',
@@ -74,4 +98,3 @@ export const themes: Record<ThemeName, ThemePalette> = {
     borderColor: '#ff007f',
   },
 };
-

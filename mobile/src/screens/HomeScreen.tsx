@@ -4,7 +4,14 @@ import { CameraView, BarcodeScanningResult, useCameraPermissions } from 'expo-ca
 import { useKeepAwake } from 'expo-keep-awake';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { DeckButton, DeckButtonItem } from '../components/DeckButton';
 import { ConnectionStatus, websocketService } from '../services/websocketService';
@@ -15,7 +22,7 @@ const STORAGE_WS_URL_KEY = '@streamdesk_ws_url';
 
 export const HomeScreen: React.FC = () => {
   useKeepAwake();
-  const { theme, palette, buttons, pages } = useThemeStore();
+  const { theme, buttons, pages } = useThemeStore();
   const dynamicPages = pages && pages.length > 0 ? pages : [{ id: 1, name: 'Principal' }];
   const skin = getSkin(theme);
 
@@ -24,7 +31,7 @@ export const HomeScreen: React.FC = () => {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
-  const [lastAction, setLastAction] = useState<string>('Aguardando comando...');
+  const [lastAction, setLastAction] = useState<string>('Pronto para tocar');
   const [serverReply, setServerReply] = useState<string>('');
   const scannedLockRef = useRef<boolean>(false);
   const pagerRef = useRef<PagerView>(null);
@@ -36,11 +43,9 @@ export const HomeScreen: React.FC = () => {
     const unsubscribeStatus = websocketService.onStatusChange((status) => {
       setConnectionStatus(status);
       if (status === 'connected') {
-        console.log('[HomeScreen] WebSocket conectado ao servidor desktop!');
         setIsScanning(false);
         scannedLockRef.current = false;
       } else if (status === 'error') {
-        console.warn('[HomeScreen] Falha crítica na conexão WebSocket. Abrindo scanner QR...');
         scannedLockRef.current = false;
         setIsScanning(true);
       }
@@ -48,14 +53,14 @@ export const HomeScreen: React.FC = () => {
 
     const unsubscribeMessage = websocketService.onMessage((data) => {
       if (data.message) {
-        setServerReply(`Resposta PC: ${data.message}`);
+        setServerReply(data.message);
       }
     });
 
     const unsubscribePageChange = websocketService.onPageChange((pageIndex) => {
-      console.log(`[HomeScreen] Auto-Profile: mudando para página ${pageIndex}`);
       const currentPages = useThemeStore.getState().pages;
-      const pagesList = currentPages && currentPages.length > 0 ? currentPages : [{ id: 1, name: 'Principal' }];
+      const pagesList =
+        currentPages && currentPages.length > 0 ? currentPages : [{ id: 1, name: 'Principal' }];
       const targetIndex = pagesList.findIndex(
         (p, idx) => p.id === pageIndex || idx === pageIndex
       );
@@ -64,7 +69,7 @@ export const HomeScreen: React.FC = () => {
       setCurrentPage(newPageIdx);
       pagerRef.current?.setPage(newPageIdx);
       const pageName = pagesList[newPageIdx]?.name || `Página ${newPageIdx + 1}`;
-      setLastAction(`Auto-Profile: ${pageName}`);
+      setLastAction(`Perfil Ativo: ${pageName}`);
     });
 
     const initializeConnection = async () => {
@@ -78,7 +83,7 @@ export const HomeScreen: React.FC = () => {
           setIsScanning(true);
         }
       } catch (err) {
-        console.error('[HomeScreen] Erro ao ler @streamdesk_ws_url do AsyncStorage:', err);
+        console.error('[HomeScreen] Erro ao ler @streamdesk_ws_url:', err);
         setIsScanning(true);
       }
     };
@@ -116,12 +121,12 @@ export const HomeScreen: React.FC = () => {
     scannedLockRef.current = true;
     setIsScanning(false);
     setWsUrl(scannedUrl);
-    setLastAction(`Pareado com ${scannedUrl}`);
+    setLastAction(`Pareado com sucesso`);
 
     try {
       await AsyncStorage.setItem(STORAGE_WS_URL_KEY, scannedUrl);
     } catch (err) {
-      console.error('[HomeScreen] Erro ao salvar URL no AsyncStorage:', err);
+      console.error('[HomeScreen] Erro ao salvar URL:', err);
     }
 
     websocketService.connect(scannedUrl);
@@ -142,29 +147,29 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleButtonPress = (item: DeckButtonItem) => {
-    setLastAction(`Comando: ${item.label} (${item.action_name})`);
-
+    setLastAction(`${item.label}`);
     const sent = websocketService.sendCommand(item.action_name, item.label);
     if (!sent) {
-      setServerReply('Aviso: WebSocket desconectado');
+      setServerReply('WebSocket offline');
     }
   };
 
   const getStatusColor = () => {
     switch (connectionStatus) {
       case 'connected':
-        return '#22c55e';
+        return '#10b981'; // emerald-500
       case 'connecting':
-        return '#eab308';
+        return '#f59e0b'; // amber-500
       case 'error':
       case 'disconnected':
       default:
-        return '#ef4444';
+        return '#f43f5e'; // rose-500
     }
   };
 
   const renderHeader = () => {
     const isGlass = skin.type === 'glass';
+    const activePageTitle = dynamicPages[currentPage]?.name || `Pág ${currentPage + 1}`;
 
     return (
       <View style={[styles.headerWrapper, isLandscape && styles.headerWrapperLandscape]}>
@@ -177,30 +182,41 @@ export const HomeScreen: React.FC = () => {
         ) : null}
 
         <View style={styles.headerTopRow}>
-          <Text style={[styles.title, isLandscape && styles.titleLandscape, { color: skin.textColor }]}>
-            Stream Desk
-          </Text>
-          <View style={[styles.statusBadge, isLandscape && styles.statusBadgeLandscape]}>
-            <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
-            <Text style={[styles.statusText, { color: skin.textColor }]}>
-              {connectionStatus.toUpperCase()} • {theme.toUpperCase()} • {dynamicPages[currentPage]?.name || `Pág ${currentPage + 1}`} ({currentPage + 1}/{dynamicPages.length})
+          <View style={styles.headerLeft}>
+            <Text style={[styles.title, isLandscape && styles.titleLandscape, { color: skin.textColor }]}>
+              Stream Desk
+            </Text>
+            <Text style={[styles.pageIndicatorTitle, { color: skin.highlightColor }]}>
+              {activePageTitle}
             </Text>
           </View>
-          <Pressable
-            onPress={handleDisconnect}
-            style={[styles.disconnectBtn, isLandscape && styles.disconnectBtnLandscape, { borderColor: skin.borderColor }]}
-          >
-            <Text style={[styles.disconnectBtnText, { color: '#f87171' }]}>Desconectar</Text>
-          </Pressable>
+
+          <View style={styles.headerRight}>
+            <View style={styles.statusBadge}>
+              <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
+              <Text style={[styles.statusText, { color: skin.textColor }]}>
+                {connectionStatus === 'connected' ? 'LIVE' : connectionStatus.toUpperCase()}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={handleDisconnect}
+              style={[styles.disconnectBtn, isLandscape && styles.disconnectBtnLandscape]}
+            >
+              <Text style={styles.disconnectBtnText}>Desconectar</Text>
+            </Pressable>
+          </View>
         </View>
 
         {!isLandscape && (
-          <>
-            <Text style={[styles.subtitle, { color: skin.highlightColor }]}>{lastAction}</Text>
+          <View style={styles.feedbackRow}>
+            <Text style={[styles.subtitle, { color: skin.textColor }]}>{lastAction}</Text>
             {serverReply ? (
-              <Text style={[styles.serverReply, { color: skin.highlightColor }]}>{serverReply}</Text>
+              <Text style={[styles.serverReply, { color: skin.highlightColor }]}>
+                {serverReply}
+              </Text>
             ) : null}
-          </>
+          </View>
         )}
       </View>
     );
@@ -209,18 +225,18 @@ export const HomeScreen: React.FC = () => {
   if (isScanning || !wsUrl) {
     return (
       <LinearGradient
-        colors={skin.backgroundGradient || ['#0f172a', '#1e293b']}
+        colors={skin.backgroundGradient || ['#09090b', '#121217', '#18181b']}
         style={styles.gradientFill}
       >
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: skin.textColor }]}>Parear Stream Desk</Text>
-            <Text style={[styles.subtitle, { color: skin.highlightColor }]}>
-              Aponte a câmera para o QR Code exibido no aplicativo Desktop
+            <Text style={[styles.subtitle, { color: '#a1a1aa' }]}>
+              Aponte a câmera para o QR Code no app Desktop
             </Text>
             {connectionStatus === 'error' && wsUrl ? (
               <Text style={styles.errorBanner}>
-                Falha ao conectar em {wsUrl}. Escaneie o QR Code novamente.
+                Falha ao conectar em {wsUrl}. Escaneie novamente.
               </Text>
             ) : null}
           </View>
@@ -228,12 +244,12 @@ export const HomeScreen: React.FC = () => {
           <View style={styles.scannerWrapper}>
             {!permission ? (
               <Text style={[styles.emptyText, { color: skin.textColor }]}>
-                Verificando permissões da câmera...
+                Verificando câmera...
               </Text>
             ) : !permission.granted ? (
               <View style={styles.permissionBox}>
                 <Text style={[styles.emptyText, { color: skin.textColor }]}>
-                  Precisamos de acesso à câmera para ler o QR Code de conexão do PC.
+                  Permita o acesso à câmera para ler o QR Code de conexão.
                 </Text>
                 <Pressable
                   onPress={requestPermission}
@@ -266,7 +282,7 @@ export const HomeScreen: React.FC = () => {
                 style={[styles.disconnectBtn, { borderColor: skin.borderColor }]}
               >
                 <Text style={[styles.disconnectBtnText, { color: skin.textColor }]}>
-                  Tentar Reconectar ({wsUrl})
+                  Reconectar ({wsUrl})
                 </Text>
               </Pressable>
             </View>
@@ -276,20 +292,17 @@ export const HomeScreen: React.FC = () => {
     );
   }
 
-  // Recalibragem geométrica da grade responsiva
-  const COLUMNS = isLandscape ? 4 : 3;
-  // Descontando padding horizontal do slide e margem de cada botão (margin: 6px => 12px por botão)
-  const buttonWidth = Math.floor((width - 32) / COLUMNS - 12);
-
-  // No modo retrato, mantém altura quadrada. No landscape, respeita estritamente o limite de 2 linhas
-  const maxLandscapeHeight = Math.floor((height - 100) / 2 - 12);
+  // Recalibragem da grade responsiva Dark Premium
+  const COLUMNS = isLandscape ? 5 : 3;
+  const buttonWidth = Math.floor((width - 32) / COLUMNS - 10);
+  const maxLandscapeHeight = Math.floor((height - 110) / 2 - 10);
   const buttonHeight = isLandscape
     ? Math.max(50, Math.min(buttonWidth, maxLandscapeHeight))
     : buttonWidth;
 
   return (
     <LinearGradient
-      colors={skin.backgroundGradient || ['#0f172a', '#1e293b']}
+      colors={skin.backgroundGradient || ['#09090b', '#121217', '#18181b']}
       style={styles.gradientFill}
     >
       <SafeAreaView style={styles.container}>
@@ -331,10 +344,10 @@ export const HomeScreen: React.FC = () => {
                   ) : (
                     <View style={styles.emptyPageContainer}>
                       <Text style={[styles.emptyText, { color: skin.textColor }]}>
-                        Página "{page.name}" vazia.
+                        Página "{page.name}" vazia
                       </Text>
-                      <Text style={[styles.emptySubText, { color: skin.highlightColor }]}>
-                        Adicione botões nesta página pelo painel Desktop!
+                      <Text style={[styles.emptySubText, { color: '#a1a1aa' }]}>
+                        Crie novos botões nesta página pelo Desktop Studio
                       </Text>
                     </View>
                   )}
@@ -343,6 +356,7 @@ export const HomeScreen: React.FC = () => {
             })}
           </PagerView>
 
+          {/* Indicadores Visuais de Paginação (Dots) */}
           <View style={[styles.dotsRow, isLandscape && styles.dotsRowLandscape]}>
             {dynamicPages.map((page, pageIndex) => (
               <View
@@ -351,8 +365,8 @@ export const HomeScreen: React.FC = () => {
                   styles.dot,
                   {
                     backgroundColor:
-                      currentPage === pageIndex ? skin.highlightColor : skin.borderColor,
-                    width: currentPage === pageIndex ? 20 : 8,
+                      currentPage === pageIndex ? skin.highlightColor : 'rgba(255, 255, 255, 0.15)',
+                    width: currentPage === pageIndex ? 22 : 6,
                   },
                 ]}
               />
@@ -379,22 +393,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerWrapper: {
-    paddingTop: 32,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 14,
+    paddingHorizontal: 18,
     marginHorizontal: 12,
     marginTop: 8,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    backgroundColor: 'rgba(24, 24, 27, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   headerWrapperLandscape: {
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     marginTop: 4,
-    borderRadius: 12,
+    borderRadius: 14,
   },
   headerBlur: {
     borderRadius: 20,
@@ -404,61 +419,78 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   titleLandscape: {
-    fontSize: 16,
+    fontSize: 15,
   },
-  statusBadgeLandscape: {
-    marginVertical: 0,
+  pageIndicatorTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    paddingHorizontal: 8,
     paddingVertical: 2,
+    borderRadius: 8,
   },
   disconnectBtnLandscape: {
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 8,
   },
   pageSlideLandscape: {
-    padding: 6,
-  },
-  gridLandscape: {
-    paddingHorizontal: 6,
+    padding: 4,
   },
   dotsRowLandscape: {
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   statusIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     marginRight: 6,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
+  feedbackRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
   subtitle: {
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: 11,
     fontWeight: '500',
-    textAlign: 'center',
+    opacity: 0.8,
   },
   serverReply: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 11,
     fontStyle: 'italic',
   },
   errorBanner: {
@@ -475,17 +507,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   cameraContainer: {
-    width: 280,
-    height: 280,
+    width: 270,
+    height: 270,
     borderRadius: 24,
     borderWidth: 2,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#000000',
   },
   qrFrame: {
-    width: 190,
-    height: 190,
+    width: 180,
+    height: 180,
     borderRadius: 16,
     borderWidth: 2,
     borderStyle: 'dashed',
@@ -498,32 +531,29 @@ const styles = StyleSheet.create({
   actionBtn: {
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 12,
   },
   actionBtnText: {
-    color: '#0f172a',
+    color: '#ffffff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
   disconnectBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 8,
+    backgroundColor: 'rgba(244, 63, 94, 0.12)',
     borderWidth: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(244, 63, 94, 0.25)',
   },
   disconnectBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    color: '#f43f5e',
   },
   footerBar: {
     paddingVertical: 20,
-    alignItems: 'center',
-  },
-  gridContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
   },
   pagerContainer: {
@@ -534,7 +564,7 @@ const styles = StyleSheet.create({
   },
   pageSlide: {
     flex: 1,
-    padding: 16,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -542,12 +572,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 14,
-    gap: 8,
+    paddingVertical: 12,
+    gap: 6,
   },
   dot: {
-    height: 8,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
   },
   emptyPageContainer: {
     justifyContent: 'center',
@@ -557,7 +587,6 @@ const styles = StyleSheet.create({
   },
   emptySubText: {
     fontSize: 12,
-    opacity: 0.8,
     textAlign: 'center',
   },
   grid: {
@@ -566,11 +595,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   emptyText: {
-    fontSize: 14,
-    opacity: 0.7,
+    fontSize: 13,
+    fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: 24,
   },
