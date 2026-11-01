@@ -34,6 +34,7 @@ export interface DashboardState {
 
   // Actions
   setActivePageIndex: (index: number) => void;
+  setButtons: (buttons: DeckButton[]) => void;
   fetchPages: () => Promise<void>;
   fetchButtons: () => Promise<void>;
   fetchTheme: () => Promise<void>;
@@ -59,6 +60,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   setActivePageIndex: (index: number) => {
     set({ activePageIndex: index });
+  },
+
+  setButtons: (buttons: DeckButton[]) => {
+    set({ buttons });
   },
 
   fetchPages: async () => {

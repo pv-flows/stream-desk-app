@@ -75,7 +75,9 @@ export function MobilePreview({
   const activePageObject = pages.find((p) => p.id === activePageIndex);
   const pageTitle = controlledPage ?? (activePageObject ? activePageObject.name : "Principal");
 
-  const pageButtons = buttons.filter((btn) => btn.page_index === activePageIndex);
+  const pageButtons = buttons
+    .filter((btn) => btn.page_index === activePageIndex)
+    .sort((a, b) => a.position - b.position);
 
   return (
     <aside className="w-[320px] flex-shrink-0 flex flex-col border-l border-neutral-800/80 bg-neutral-900/95 backdrop-blur-md select-none">
