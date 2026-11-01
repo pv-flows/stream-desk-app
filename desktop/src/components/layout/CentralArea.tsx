@@ -15,6 +15,7 @@ import { getLucideIcon, getButtonColorStyles, isBase64Icon, getBase64Src } from 
 import { ButtonEditorSheet } from "@/components/ButtonEditorSheet";
 import { ConnectionView } from "@/components/views/ConnectionView";
 import { AutoProfileView } from "@/components/views/AutoProfileView";
+import { AppearanceView } from "@/components/views/AppearanceView";
 
 export interface CentralAreaProps {
   activeTab?: string;
@@ -34,14 +35,17 @@ export function CentralArea({
   const pages = useDashboardStore((s) => s.pages);
   const activePageIndex = useDashboardStore((s) => s.activePageIndex);
 
-  // Se o usuário estiver na visualização "Conexão", renderiza ConnectionView
+  // Navegação de visualizações
   if (activeTab === "connection") {
     return <ConnectionView />;
   }
 
-  // Se o usuário estiver na visualização "Perfis automáticos", renderiza AutoProfileView
   if (activeTab === "auto-profile") {
     return <AutoProfileView />;
+  }
+
+  if (activeTab === "themes") {
+    return <AppearanceView />;
   }
 
   const activePageObject = pages.find((p) => p.id === activePageIndex);
