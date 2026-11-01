@@ -3,19 +3,28 @@ use serde::{Deserialize, Serialize};
 
 const DB_PATH: &str = "streamdesk.db";
 
+fn default_icon() -> String {
+    "zap".to_string()
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Button {
+    #[serde(default)]
     pub id: i32,
     pub label: String,
     pub action_name: String,
     pub color: String,
+    #[serde(default = "default_icon")]
     pub icon: String,
+    #[serde(default)]
     pub page_index: i32,
+    #[serde(default)]
     pub position: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Page {
+    #[serde(default)]
     pub id: i32,
     pub name: String,
 }
@@ -43,11 +52,25 @@ fn default_enabled() -> bool {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WindowRule {
+    #[serde(default)]
     pub id: i32,
     pub process_name: String,
     pub page_index: i32,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BackupData {
+    pub version: Option<String>,
+    #[serde(alias = "exportedAt")]
+    pub exported_at: Option<String>,
+    pub theme: Option<String>,
+    pub appearance: Option<AppearanceSettings>,
+    pub pages: Vec<Page>,
+    pub buttons: Vec<Button>,
+    #[serde(alias = "windowRules")]
+    pub window_rules: Option<Vec<WindowRule>>,
 }
 
 pub fn init_db() -> Result<()> {
@@ -479,4 +502,109 @@ pub fn toggle_window_rule(id: i32, enabled: bool) -> Result<usize> {
 pub fn delete_window_rule(id: i32) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute("DELETE FROM window_rules WHERE id = ?1", params![id])
+}
+
+pub fn restore_backup(data: BackupData) -> Result<()> {
+    let mut conn = Connection::open(DB_PATH)?;
+    let tx = conn.transaction()?;
+    {
+        tx.execute("DELETE FROM buttons", [])?;
+        tx.execute("DELETE FROM window_rules", [])?;
+        tx.execute("DELETE FROM pages", [])?;
+
+        let mut page_stmt_with_id = tx.prepare("INSERT INTO pages (id, name) VALUES (?1, ?2)")?;
+        let mut page_stmt_no_id = tx.prepare("INSERT INTO pages (name) VALUES (?1)")?;
+        for page in &data.pages {
+            if page.id > 0 {
+                page_stmt_with_id.execute(params![page.id, page.name])?;
+            } else {
+                page_stmt_no_id.execute(params![page.name])?;
+            }
+        }
+
+        let mut btn_stmt_with_id = tx.prepare(
+            "INSERT INTO buttons (id, label, action_name, color, icon, page_index, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        )?;
+        let mut btn_stmt_no_id = tx.prepare(
+            "INSERT INTO buttons (label, action_name, color, icon, page_index, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        )?;
+        for btn in &data.buttons {
+            if btn.id > 0 {
+                btn_stmt_with_id.execute(params![
+                    btn.id,
+                    btn.label,
+                    btn.action_name,
+                    btn.color,
+                    btn.icon,
+                    btn.page_index,
+                    btn.position
+                ])?;
+            } else {
+                btn_stmt_no_id.execute(params![
+                    btn.label,
+                    btn.action_name,
+                    btn.color,
+                    btn.icon,
+                    btn.page_index,
+                    btn.position
+                ])?;
+            }
+        }
+
+        if let Some(rules) = &data.window_rules {
+            let mut rule_stmt_with_id = tx.prepare(
+                "INSERT INTO window_rules (id, process_name, page_index, enabled) VALUES (?1, ?2, ?3, ?4)",
+            )?;
+            let mut rule_stmt_no_id = tx.prepare(
+                "INSERT INTO window_rules (process_name, page_index, enabled) VALUES (?1, ?2, ?3)",
+            )?;
+            for rule in rules {
+                let enabled_val = if rule.enabled { 1 } else { 0 };
+                if rule.id > 0 {
+                    rule_stmt_with_id.execute(params![
+                        rule.id,
+                        rule.process_name,
+                        rule.page_index,
+                        enabled_val
+                    ])?;
+                } else {
+                    rule_stmt_no_id.execute(params![
+                        rule.process_name,
+                        rule.page_index,
+                        enabled_val
+                    ])?;
+                }
+            }
+        }
+
+        if let Some(app) = &data.appearance {
+            tx.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('active_theme', ?1)",
+                params![app.theme],
+            )?;
+            tx.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('accent_color', ?1)",
+                params![app.accent_color],
+            )?;
+            tx.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('grid_columns', ?1)",
+                params![app.grid_columns.to_string()],
+            )?;
+            tx.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('vibration_enabled', ?1)",
+                params![if app.vibration_enabled { "1" } else { "0" }],
+            )?;
+            tx.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('icon_style', ?1)",
+                params![app.icon_style],
+            )?;
+        } else if let Some(th) = &data.theme {
+            tx.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('active_theme', ?1)",
+                params![th],
+            )?;
+        }
+    }
+    tx.commit()?;
+    Ok(())
 }

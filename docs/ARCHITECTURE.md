@@ -52,6 +52,7 @@ Sistema cliente-servidor para operação em rede local (LAN), projetado para aut
 | `add_window_rule` | `{ processName, pageIndex }` | `()` | Adiciona regra associando processo à página (inicia habilitada). |
 | `toggle_window_rule` | `{ id, enabled }` | `()` | Ativa ou desativa regra de troca automática sem excluí-la do banco. |
 | `delete_window_rule` | `{ id }` | `()` | Remove regra por ID. |
+| `import_backup` | `{ backup: BackupData }` | `()` | Executa transação atômica no SQLite para restauração de layout, botões, regras e temas, disparando broadcast WS. |
 
 ### 5.2 Eventos WebSocket (`/ws`)
 

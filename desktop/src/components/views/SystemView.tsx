@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Plug,
   Inbox,
@@ -14,13 +14,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { backupPayloadSchema } from "@/lib/backupSchema";
 
 export function SystemView() {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const pages = useDashboardStore((s) => s.pages);
   const buttons = useDashboardStore((s) => s.buttons);
   const windowRules = useDashboardStore((s) => s.windowRules);
   const theme = useDashboardStore((s) => s.theme);
+  const appearance = useDashboardStore((s) => s.appearance);
+  const importBackup = useDashboardStore((s) => s.importBackup);
 
   const [startWithWindows, setStartWithWindows] = useState(true);
   const [minimizeToTray, setMinimizeToTray] = useState(false);
@@ -62,6 +66,7 @@ export function SystemView() {
         version: "1.2.3",
         exportedAt: new Date().toISOString(),
         theme,
+        appearance,
         pages,
         buttons,
         windowRules,
@@ -93,10 +98,50 @@ export function SystemView() {
   };
 
   const handleImportBackup = () => {
-    toast({
-      title: "Importação de Backup",
-      description: "Recurso em breve: restauração automática de layout planejada para a próxima fase.",
-    });
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const parseResult = backupPayloadSchema.safeParse(json);
+
+      if (!parseResult.success) {
+        const errorMsg = parseResult.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .slice(0, 3)
+          .join("; ");
+        toast({
+          variant: "destructive",
+          title: "Arquivo de backup inválido",
+          description: errorMsg || "O formato do arquivo JSON não atende ao padrão do Stream Desk.",
+        });
+        return;
+      }
+
+      const validData = parseResult.data;
+      await importBackup(validData);
+
+      toast({
+        title: "Backup Restaurado com Sucesso!",
+        description: `Restauradas ${validData.pages.length} páginas e ${validData.buttons.length} botões no SQLite e sincronizado via WebSocket.`,
+      });
+    } catch (err) {
+      console.error("[SystemView] Erro ao importar backup:", err);
+      toast({
+        variant: "destructive",
+        title: "Falha na importação",
+        description: "Não foi possível ler ou restaurar o arquivo JSON selecionado.",
+      });
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const handleUpgrade = () => {
@@ -191,6 +236,14 @@ export function SystemView() {
                 <Download className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Importar</span>
               </Button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
             </div>
           </Card>
         </div>

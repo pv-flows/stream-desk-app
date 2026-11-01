@@ -205,6 +205,16 @@ async fn get_installed_apps() -> Result<Vec<app_scanner::InstalledApp>, String> 
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn import_backup(
+    backup: db::BackupData,
+    tx: tauri::State<'_, broadcast::Sender<String>>,
+) -> Result<(), String> {
+    db::restore_backup(backup).map_err(|e| e.to_string())?;
+    broadcast_current_layout(&tx);
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if let Err(err) = db::init_db() {
@@ -243,7 +253,8 @@ pub fn run() {
             update_page,
             delete_page,
             update_button_positions,
-            get_installed_apps
+            get_installed_apps,
+            import_backup
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

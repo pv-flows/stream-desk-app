@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Épico E3 (Importação e Restauração de Backup JSON)**:
+  - Validador de schema com Zod (`desktop/src/lib/backupSchema.ts`) cobrindo `pages`, `buttons`, `windowRules`, `appearance` e `theme`.
+  - Comando IPC Tauri `import_backup` com execução atômica via transação SQLite (`restore_backup` em `db.rs`), limpando com segurança as tabelas antes de popular e garantindo integridade referencial.
+  - Broadcast automático imediato via WebSocket (`sync_layout`) após a restauração do backup.
+  - Integração do botão "Importar" em `SystemView.tsx` com input de arquivo oculto, leitura assíncrona, validação com toasts de erro descritivos e atualização instantânea de toda a interface.
 - **Épico E5 (Toggle Ativo/Inativo de Regras de Auto-Profile)**:
   - Migração de banco adicionando coluna `enabled INTEGER DEFAULT 1` na tabela `window_rules` do SQLite (`desktop/src-tauri/src/db.rs`).
   - Comando IPC Tauri `toggle_window_rule` para alternar o estado de ativação de regras sem removê-las da base de dados.

@@ -59,6 +59,7 @@ export interface DashboardState {
   addWindowRule: (processName: string, pageIndex: number) => Promise<void>;
   toggleWindowRule: (id: number, enabled: boolean) => Promise<void>;
   deleteWindowRule: (id: number) => Promise<void>;
+  importBackup: (backup: unknown) => Promise<void>;
   init: () => Promise<void>;
 }
 
@@ -296,6 +297,17 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         windowRules: state.windowRules.filter((r) => r.id !== id),
       }));
     }
+  },
+
+  importBackup: async (backup: unknown) => {
+    await invoke("import_backup", { backup });
+    await Promise.allSettled([
+      get().fetchPages(),
+      get().fetchButtons(),
+      get().fetchAppearance(),
+      get().fetchTheme(),
+      get().fetchWindowRules(),
+    ]);
   },
 
   init: async () => {
