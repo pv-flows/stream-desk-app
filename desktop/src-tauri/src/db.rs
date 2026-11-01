@@ -276,7 +276,14 @@ pub fn update_page(id: i32, name: &str) -> Result<usize> {
 
 pub fn delete_page(id: i32) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM pages", [], |r| r.get(0))?;
+    if count <= 1 {
+        return Err(rusqlite::Error::InvalidParameterName(
+            "Cannot delete the last remaining page".into(),
+        ));
+    }
     let _ = conn.execute("DELETE FROM buttons WHERE page_index = ?1", params![id]);
+    let _ = conn.execute("DELETE FROM window_rules WHERE page_index = ?1", params![id]);
     conn.execute("DELETE FROM pages WHERE id = ?1", params![id])
 }
 

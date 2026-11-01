@@ -226,6 +226,8 @@ fn execute_macro(action: &str) {
             // Clica na tecla final
             if let Some(k) = final_key {
                 let _ = enigo.key(k, Click);
+            } else if let Some(last_token) = tokens.last() {
+                eprintln!("[Macro] Tecla final não reconhecida na hotkey: '{}'", last_token);
             }
 
             // Solta os modificadores na ordem inversa
@@ -246,9 +248,24 @@ fn execute_macro(action: &str) {
 
     if let Some(webhook_url) = action.strip_prefix("webhook:") {
         let url = webhook_url.trim().to_string();
+        if url.is_empty() {
+            eprintln!("[Webhook] URL de webhook inválida ou vazia.");
+            return;
+        }
         println!("[Macro] Disparando Webhook HTTP GET: {}", url);
         tokio::spawn(async move {
-            match reqwest::get(&url).await {
+            let client = match reqwest::Client::builder()
+                .timeout(Duration::from_secs(5))
+                .build()
+            {
+                Ok(c) => c,
+                Err(err) => {
+                    eprintln!("[Webhook] Erro ao instanciar cliente HTTP: {:?}", err);
+                    return;
+                }
+            };
+
+            match client.get(&url).send().await {
                 Ok(resp) => {
                     println!("[Webhook] Resposta recebida: {} para {}", resp.status(), url);
                 }
@@ -334,7 +351,12 @@ async fn start_window_monitor(tx: broadcast::Sender<String>) {
             .file_name()
             .and_then(|f| f.to_str())
             .unwrap_or(&active_win.app_name)
+            .trim()
             .to_string();
+
+        if exe_name.is_empty() {
+            continue;
+        }
 
         let current_key = format!("{}:{}", active_win.process_id, exe_name.to_lowercase());
 
@@ -350,17 +372,17 @@ async fn start_window_monitor(tx: broadcast::Sender<String>) {
         };
 
         let exe_lower = exe_name.to_lowercase();
-        let app_lower = active_win.app_name.to_lowercase();
+        let app_lower = active_win.app_name.trim().to_lowercase();
 
         let matched_rule = rules.into_iter().find(|rule| {
             let target = rule.process_name.trim().to_lowercase();
-            if target.is_empty() {
+            if target.is_empty() || exe_lower.is_empty() {
                 return false;
             }
             exe_lower == target
                 || exe_lower == format!("{}.exe", target)
                 || target == format!("{}.exe", exe_lower)
-                || app_lower == target
+                || (!app_lower.is_empty() && app_lower == target)
                 || exe_lower.starts_with(&target)
         });
 

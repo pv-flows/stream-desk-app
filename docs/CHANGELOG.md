@@ -3,6 +3,16 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Fixed
+- Auditoria Estática Inicial e Blindagem de Estabilidade (Debugger QA):
+  - **Deleção de Páginas & Integridade Referencial:** Proteção no SQLite (`desktop/src-tauri/src/db.rs`) impedindo a exclusão da última página restante e remoção em cascata de regras de `window_rules` vinculadas à página excluída.
+  - **Prevenção de Índice Órfão no Mobile:** Adicionado clamp de `currentPage` na `HomeScreen.tsx` para garantir que a exclusão da página ativa reposicione imediatamente a visualização na última página válida sem crashar o `<PagerView>`.
+  - **Correção de Stale Closure no Auto-Profile:** Resolução de closure desatualizada no listener `onPageChange` na `HomeScreen.tsx`, lendo o estado mais recente via `useThemeStore.getState().pages`.
+  - **Sanitização do Loop Auto-Profile:** Blindagem no `server.rs` contra processos com nomes nulos ou vazios no Windows, prevenindo comparações com `.exe` ou prefixos falsos.
+  - **Resiliência e Timeout em Macros:** Adição de timeout explícito de 5 segundos via `reqwest::Client` em webhooks assíncronos e validação de strings vazias, além de avisos estruturados para hotkeys com teclas finais desconhecidas no `enigo`.
+
+### Added
+- Agente Especialista de Qualidade e Diagnóstico (`.agents/debugger.md`) para triagem de bugs, auditoria estática e prevenção de regressões full-stack.
 ### Added
 - Mobile QoL: Tela Sempre Ativa e Reconexão Automática com Heartbeat:
   - Adição da biblioteca `expo-keep-awake` e integração do hook `useKeepAwake()` na `HomeScreen.tsx` para impedir o bloqueio/suspensão de tela enquanto o Stream Desk estiver em primeiro plano.

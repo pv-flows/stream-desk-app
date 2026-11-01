@@ -54,14 +54,16 @@ export const HomeScreen: React.FC = () => {
 
     const unsubscribePageChange = websocketService.onPageChange((pageIndex) => {
       console.log(`[HomeScreen] Auto-Profile: mudando para página ${pageIndex}`);
-      const targetIndex = dynamicPages.findIndex(
+      const currentPages = useThemeStore.getState().pages;
+      const pagesList = currentPages && currentPages.length > 0 ? currentPages : [{ id: 1, name: 'Principal' }];
+      const targetIndex = pagesList.findIndex(
         (p, idx) => p.id === pageIndex || idx === pageIndex
       );
       const newPageIdx =
-        targetIndex >= 0 ? targetIndex : Math.min(pageIndex, dynamicPages.length - 1);
+        targetIndex >= 0 ? targetIndex : Math.min(pageIndex, pagesList.length - 1);
       setCurrentPage(newPageIdx);
       pagerRef.current?.setPage(newPageIdx);
-      const pageName = dynamicPages[newPageIdx]?.name || `Página ${newPageIdx + 1}`;
+      const pageName = pagesList[newPageIdx]?.name || `Página ${newPageIdx + 1}`;
       setLastAction(`Auto-Profile: ${pageName}`);
     });
 
@@ -90,6 +92,15 @@ export const HomeScreen: React.FC = () => {
       websocketService.disconnect();
     };
   }, []);
+
+  // Prevenção de índice órfão caso a página ativa seja excluída no Desktop
+  useEffect(() => {
+    if (dynamicPages.length > 0 && currentPage >= dynamicPages.length) {
+      const safeIndex = Math.max(0, dynamicPages.length - 1);
+      setCurrentPage(safeIndex);
+      pagerRef.current?.setPage(safeIndex);
+    }
+  }, [dynamicPages.length, currentPage]);
 
   useEffect(() => {
     if (isScanning && permission && !permission.granted && permission.canAskAgain) {
