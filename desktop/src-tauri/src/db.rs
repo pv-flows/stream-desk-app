@@ -37,11 +37,17 @@ pub struct AppearanceSettings {
     pub icon_style: String,
 }
 
+fn default_enabled() -> bool {
+    true
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WindowRule {
     pub id: i32,
     pub process_name: String,
     pub page_index: i32,
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
 }
 
 pub fn init_db() -> Result<()> {
@@ -80,6 +86,7 @@ pub fn init_db() -> Result<()> {
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN icon TEXT DEFAULT 'zap'", []);
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN page_index INTEGER DEFAULT 0", []);
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN position INTEGER DEFAULT 0", []);
+    let _ = conn.execute("ALTER TABLE window_rules ADD COLUMN enabled INTEGER DEFAULT 1", []);
 
     // Migração de páginas dinâmicas: garante pelo menos a página "Principal"
     let page_count: i64 = conn
@@ -431,14 +438,16 @@ pub fn set_appearance_settings(settings: &AppearanceSettings) -> Result<()> {
 pub fn get_window_rules() -> Result<Vec<WindowRule>> {
     let conn = Connection::open(DB_PATH)?;
     let mut stmt = conn.prepare(
-        "SELECT id, process_name, page_index FROM window_rules ORDER BY id ASC",
+        "SELECT id, process_name, page_index, COALESCE(enabled, 1) FROM window_rules ORDER BY id ASC",
     )?;
 
     let rule_iter = stmt.query_map([], |row| {
+        let enabled_int: i32 = row.get(3)?;
         Ok(WindowRule {
             id: row.get(0)?,
             process_name: row.get(1)?,
             page_index: row.get(2)?,
+            enabled: enabled_int != 0,
         })
     })?;
 
@@ -453,8 +462,17 @@ pub fn get_window_rules() -> Result<Vec<WindowRule>> {
 pub fn add_window_rule(process_name: &str, page_index: i32) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute(
-        "INSERT INTO window_rules (process_name, page_index) VALUES (?1, ?2)",
+        "INSERT INTO window_rules (process_name, page_index, enabled) VALUES (?1, ?2, 1)",
         params![process_name, page_index],
+    )
+}
+
+pub fn toggle_window_rule(id: i32, enabled: bool) -> Result<usize> {
+    let conn = Connection::open(DB_PATH)?;
+    let enabled_val = if enabled { 1 } else { 0 };
+    conn.execute(
+        "UPDATE window_rules SET enabled = ?1 WHERE id = ?2",
+        params![enabled_val, id],
     )
 }
 

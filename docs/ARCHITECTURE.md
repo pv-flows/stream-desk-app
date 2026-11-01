@@ -48,8 +48,9 @@ Sistema cliente-servidor para operação em rede local (LAN), projetado para aut
 | `add_page` | `{ name }` | `i32` | Cria nova página e emite broadcast. |
 | `update_page` | `{ id, name }` | `()` | Renomeia página e emite broadcast. |
 | `delete_page` | `{ id }` | `()` | Remove página e botões associados (mínimo 1 mantida). |
-| `get_window_rules` | Nenhuma | `Vec<WindowRule>` | Lista regras de auto-profile. |
-| `add_window_rule` | `{ processName, pageIndex }` | `()` | Adiciona regra associando processo à página. |
+| `get_window_rules` | Nenhuma | `Vec<WindowRule>` | Lista regras de auto-profile (incluindo campo `enabled`). |
+| `add_window_rule` | `{ processName, pageIndex }` | `()` | Adiciona regra associando processo à página (inicia habilitada). |
+| `toggle_window_rule` | `{ id, enabled }` | `()` | Ativa ou desativa regra de troca automática sem excluí-la do banco. |
 | `delete_window_rule` | `{ id }` | `()` | Remove regra por ID. |
 
 ### 5.2 Eventos WebSocket (`/ws`)

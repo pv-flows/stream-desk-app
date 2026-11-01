@@ -385,6 +385,9 @@ async fn start_window_monitor(tx: broadcast::Sender<String>) {
         let title_lower = active_win.title.trim().to_lowercase();
 
         let matched_rule = rules.into_iter().find(|rule| {
+            if !rule.enabled {
+                return false;
+            }
             let target = rule.process_name.trim().to_lowercase();
             if target.is_empty() || exe_lower.is_empty() {
                 return false;

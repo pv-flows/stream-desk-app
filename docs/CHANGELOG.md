@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Épico E5 (Toggle Ativo/Inativo de Regras de Auto-Profile)**:
+  - Migração de banco adicionando coluna `enabled INTEGER DEFAULT 1` na tabela `window_rules` do SQLite (`desktop/src-tauri/src/db.rs`).
+  - Comando IPC Tauri `toggle_window_rule` para alternar o estado de ativação de regras sem removê-las da base de dados.
+  - O monitor de janelas ativas (`server.rs`) agora filtra e executa apenas regras com `enabled == true`.
+  - Conexão do componente `AutoProfileView.tsx` e `useDashboardStore.ts` com o `Switch` e `Trash2`: alternar o switch desativa/ativa a regra com feedback visual atenuado (`opacity-60`) e toasts informativos; o botão de lixeira executa a exclusão definitiva.
 - **Épico E1 (Persistência e Sincronização de Aparência)**:
   - Persistência das configurações de aparência (`active_theme`, `accent_color`, `grid_columns`, `vibration_enabled`, `icon_style`) na tabela `settings` do SQLite (`desktop/src-tauri/src/db.rs`).
   - Comandos IPC no Tauri (`get_appearance_settings`, `set_appearance_settings`) com broadcast em tempo real via WebSocket (`broadcast_current_layout`).

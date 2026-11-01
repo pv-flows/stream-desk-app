@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 function getProcessIcon(processName: string): LucideIcon {
@@ -41,9 +42,11 @@ function getProcessIcon(processName: string): LucideIcon {
 }
 
 export function AutoProfileView() {
+  const { toast } = useToast();
   const windowRules = useDashboardStore((s) => s.windowRules);
   const pages = useDashboardStore((s) => s.pages);
   const addWindowRule = useDashboardStore((s) => s.addWindowRule);
+  const toggleWindowRule = useDashboardStore((s) => s.toggleWindowRule);
   const deleteWindowRule = useDashboardStore((s) => s.deleteWindowRule);
 
   // Estados locais para criação rápida de regra
@@ -69,17 +72,54 @@ export function AutoProfileView() {
     await addWindowRule(trimmed, newTargetPageIndex);
     setNewProcessName("");
     setIsAdding(false);
+    toast({
+      title: "Regra Criada",
+      description: `Perfil configurado para alternar automaticamente para o app "${trimmed}".`,
+    });
   };
 
-  const handleChangeTargetPage = async (ruleId: number, processName: string, newPageIdStr: string) => {
+  const handleChangeTargetPage = async (
+    ruleId: number,
+    processName: string,
+    newPageIdStr: string,
+    currentEnabled: boolean
+  ) => {
     const newPageId = parseInt(newPageIdStr, 10);
     if (isNaN(newPageId)) return;
     await deleteWindowRule(ruleId);
     await addWindowRule(processName, newPageId);
+    if (!currentEnabled) {
+      const updated = useDashboardStore
+        .getState()
+        .windowRules.find(
+          (r) => r.process_name === processName && r.page_index === newPageId
+        );
+      if (updated) {
+        await toggleWindowRule(updated.id, false);
+      }
+    }
+    toast({
+      title: "Destino Atualizado",
+      description: `Página associada alterada com sucesso.`,
+    });
+  };
+
+  const handleToggleRule = async (ruleId: number, enabled: boolean) => {
+    await toggleWindowRule(ruleId, enabled);
+    toast({
+      title: enabled ? "Regra Ativada" : "Regra Desativada",
+      description: enabled
+        ? "O perfil mudará automaticamente quando este app estiver focado."
+        : "Esta regra foi desativada e não acionará trocas de perfil.",
+    });
   };
 
   const handleDeleteRule = async (ruleId: number) => {
     await deleteWindowRule(ruleId);
+    toast({
+      title: "Regra Excluída",
+      description: "A regra de perfil automático foi removida com sucesso.",
+    });
   };
 
   return (
@@ -172,7 +212,9 @@ export function AutoProfileView() {
               return (
                 <div
                   key={rule.id}
-                  className="bg-neutral-900/50 hover:bg-neutral-900/80 border border-neutral-800/80 rounded-2xl px-5 py-4 flex items-center justify-between transition-colors shadow-sm backdrop-blur-sm group"
+                  className={`bg-neutral-900/50 hover:bg-neutral-900/80 border border-neutral-800/80 rounded-2xl px-5 py-4 flex items-center justify-between transition-all shadow-sm backdrop-blur-sm group ${
+                    !rule.enabled ? "opacity-60" : ""
+                  }`}
                 >
                   {/* Esquerda: Ícone em círculo + nome do executável */}
                   <div className="w-1/3 flex items-center gap-3 min-w-0">
@@ -190,7 +232,12 @@ export function AutoProfileView() {
                     <Select
                       value={String(rule.page_index)}
                       onValueChange={(val) =>
-                        handleChangeTargetPage(rule.id, rule.process_name, val)
+                        handleChangeTargetPage(
+                          rule.id,
+                          rule.process_name,
+                          val,
+                          rule.enabled
+                        )
                       }
                     >
                       <SelectTrigger className="w-36 h-9 bg-neutral-950/80 border-neutral-800 text-neutral-200 text-xs rounded-xl focus:ring-1 focus:ring-indigo-500">
@@ -218,9 +265,9 @@ export function AutoProfileView() {
                     </button>
 
                     <Switch
-                      checked={true}
-                      onCheckedChange={() => handleDeleteRule(rule.id)}
-                      title="Desativar (remove a regra)"
+                      checked={rule.enabled}
+                      onCheckedChange={(checked) => handleToggleRule(rule.id, checked)}
+                      title={rule.enabled ? "Regra ativa (clique para desativar)" : "Regra inativa (clique para ativar)"}
                       className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-neutral-800 border-neutral-700"
                     />
                   </div>

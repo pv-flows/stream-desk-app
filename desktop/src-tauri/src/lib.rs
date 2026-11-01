@@ -187,6 +187,12 @@ fn add_window_rule(process_name: String, page_index: i32) -> Result<(), String> 
 }
 
 #[tauri::command]
+fn toggle_window_rule(id: i32, enabled: bool) -> Result<(), String> {
+    db::toggle_window_rule(id, enabled).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 fn delete_window_rule(id: i32) -> Result<(), String> {
     db::delete_window_rule(id).map_err(|e| e.to_string())?;
     Ok(())
@@ -230,6 +236,7 @@ pub fn run() {
             delete_button,
             get_window_rules,
             add_window_rule,
+            toggle_window_rule,
             delete_window_rule,
             get_pages,
             add_page,

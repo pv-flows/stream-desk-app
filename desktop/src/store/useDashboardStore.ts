@@ -20,6 +20,7 @@ export interface WindowRule {
   id: number;
   process_name: string;
   page_index: number;
+  enabled: boolean;
 }
 
 export interface AppearanceSettings {
@@ -56,6 +57,7 @@ export interface DashboardState {
   fetchLocalIp: () => Promise<void>;
   fetchWindowRules: () => Promise<void>;
   addWindowRule: (processName: string, pageIndex: number) => Promise<void>;
+  toggleWindowRule: (id: number, enabled: boolean) => Promise<void>;
   deleteWindowRule: (id: number) => Promise<void>;
   init: () => Promise<void>;
 }
@@ -263,10 +265,24 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         return {
           windowRules: [
             ...state.windowRules,
-            { id: nextId, process_name: trimmed, page_index: pageIndex },
+            { id: nextId, process_name: trimmed, page_index: pageIndex, enabled: true },
           ],
         };
       });
+    }
+  },
+
+  toggleWindowRule: async (id: number, enabled: boolean) => {
+    set((state) => ({
+      windowRules: state.windowRules.map((r) =>
+        r.id === id ? { ...r, enabled } : r
+      ),
+    }));
+    try {
+      await invoke("toggle_window_rule", { id, enabled });
+    } catch (err) {
+      console.warn("[Store] Erro ao alternar window rule via IPC:", err);
+      await get().fetchWindowRules();
     }
   },
 

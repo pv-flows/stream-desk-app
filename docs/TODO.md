@@ -42,7 +42,7 @@
 - [ ] **E2** Iniciar com o Windows (autostart) e Minimizar para a bandeja (tray) — hoje fallback "Em breve".
 - [ ] **E3** Importar backup JSON (validação + transação SQLite + broadcast) — hoje fallback "Em breve".
 - [ ] **E4** Lista real de dispositivos conectados e desconexão via servidor — hoje mock em `ConnectionView.tsx`.
-- [ ] **E5** Coluna `enabled` em `window_rules` com toggle real — hoje o switch apaga a regra.
+- [x] **E5** Coluna `enabled` em `window_rules` com toggle real — hoje o switch apaga a regra.
 - [ ] **E6** Integração OBS WebSocket v5 (primeira integração real em `IntegrationsView.tsx`).
 - [ ] **E7** Descoberta de rede mDNS/Zeroconf (item 2 acima).
 - [ ] **E8** Limpeza técnica: remover `ButtonEditorView.tsx` órfão e aplicar code-splitting (bundle > 500 kB).
