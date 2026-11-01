@@ -29,6 +29,7 @@ import { ButtonEditorSheet } from "@/components/ButtonEditorSheet";
 import { ConnectionView } from "@/components/views/ConnectionView";
 import { AutoProfileView } from "@/components/views/AutoProfileView";
 import { AppearanceView } from "@/components/views/AppearanceView";
+import { IntegrationsView } from "@/components/views/IntegrationsView";
 import { SystemView } from "@/components/views/SystemView";
 
 export interface CentralAreaProps {
@@ -62,6 +63,10 @@ export function CentralArea({
 
   if (activeTab === "themes") {
     return <AppearanceView />;
+  }
+
+  if (activeTab === "integrations") {
+    return <IntegrationsView />;
   }
 
   if (activeTab === "system" || activeTab === "about") {

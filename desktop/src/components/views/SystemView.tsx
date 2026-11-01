@@ -41,7 +41,7 @@ export function SystemView() {
             <Switch
               checked={startWithWindows}
               onCheckedChange={setStartWithWindows}
-              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700 border-neutral-700"
+              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700/80 border-neutral-700"
             />
           </div>
 
@@ -56,7 +56,7 @@ export function SystemView() {
             <Switch
               checked={minimizeToTray}
               onCheckedChange={setMinimizeToTray}
-              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700 border-neutral-700"
+              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700/80 border-neutral-700"
             />
           </div>
 
@@ -71,7 +71,7 @@ export function SystemView() {
             <Switch
               checked={keepPhoneAwake}
               onCheckedChange={setKeepPhoneAwake}
-              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700 border-neutral-700"
+              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700/80 border-neutral-700"
             />
           </div>
         </Card>
@@ -87,7 +87,7 @@ export function SystemView() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-xl border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
+                className="h-11 rounded-xl border border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
               >
                 <Upload className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Exportar</span>
@@ -96,7 +96,7 @@ export function SystemView() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-xl border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
+                className="h-11 rounded-xl border border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
               >
                 <Download className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Importar</span>
@@ -146,4 +146,3 @@ export function SystemView() {
 }
 
 export default SystemView;
-
