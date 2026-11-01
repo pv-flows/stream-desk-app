@@ -4,6 +4,9 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Paginação de botões no SQLite com coluna `page_index INTEGER DEFAULT 0` (`desktop/src-tauri/src/db.rs` e `lib.rs`) e envio no payload de broadcast.
+- Seletor de páginas por abas ("Página 1", "Página 2", "Página 3") no Dashboard Desktop (`desktop/src/App.tsx`, `App.css`) com injeção automática de `page_index` e filtragem local da grade.
+- Navegação fluida por deslizamento lateral (swipe) no Mobile utilizando `react-native-pager-view` (`mobile/src/screens/HomeScreen.tsx`), com agrupamento de páginas, telas vazias orientativas e indicador de pontos (dots).
 - Recurso de edição completa de botões (Update CRUD) com a função `update_button` em `desktop/src-tauri/src/db.rs` e comando Tauri `update_button` em `lib.rs` com disparo de broadcast em tempo real.
 - Interface de edição no Dashboard Desktop (`desktop/src/App.tsx`, `App.css`) com botão de editar (✏️) na grade, preenchimento automático do formulário, alteração de ação para "Salvar Alteração" e botão de cancelamento.
 - Feedback Háptico tátil no Mobile via `expo-haptics` acionado no `onPressIn` de `mobile/src/components/DeckButton.tsx` (`Haptics.impactAsync(ImpactFeedbackStyle.Medium)`).

@@ -10,6 +10,7 @@ pub struct Button {
     pub action_name: String,
     pub color: String,
     pub icon: String,
+    pub page_index: i32,
 }
 
 pub fn init_db() -> Result<()> {
@@ -21,13 +22,15 @@ pub fn init_db() -> Result<()> {
             label TEXT NOT NULL,
             action_name TEXT NOT NULL,
             color TEXT NOT NULL,
-            icon TEXT DEFAULT 'zap'
+            icon TEXT DEFAULT 'zap',
+            page_index INTEGER DEFAULT 0
         )",
         [],
     )?;
 
-    // Migração segura caso a tabela já exista sem a coluna icon
+    // Migrações seguras caso a tabela já exista
     let _ = conn.execute("ALTER TABLE buttons ADD COLUMN icon TEXT DEFAULT 'zap'", []);
+    let _ = conn.execute("ALTER TABLE buttons ADD COLUMN page_index INTEGER DEFAULT 0", []);
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS settings (
@@ -47,16 +50,16 @@ pub fn init_db() -> Result<()> {
     if count == 0 {
         println!("[DB] Tabela buttons vazia. Inserindo seed inicial de 4 botões...");
         let seed_buttons = [
-            ("Vol +", "vol_up", "#38bdf8", "volume-2"),
-            ("Vol -", "vol_down", "#0ea5e9", "volume-x"),
-            ("Play/Pause", "play_pause", "#22c55e", "play"),
-            ("Calculadora", "open_calc", "#f59e0b", "calculator"),
+            ("Vol +", "vol_up", "#38bdf8", "volume-2", 0),
+            ("Vol -", "vol_down", "#0ea5e9", "volume-x", 0),
+            ("Play/Pause", "play_pause", "#22c55e", "play", 0),
+            ("Calculadora", "open_calc", "#f59e0b", "calculator", 0),
         ];
 
-        for (label, action_name, color, icon) in seed_buttons {
+        for (label, action_name, color, icon, page_index) in seed_buttons {
             conn.execute(
-                "INSERT INTO buttons (label, action_name, color, icon) VALUES (?1, ?2, ?3, ?4)",
-                params![label, action_name, color, icon],
+                "INSERT INTO buttons (label, action_name, color, icon, page_index) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![label, action_name, color, icon, page_index],
             )?;
         }
     }
@@ -66,7 +69,9 @@ pub fn init_db() -> Result<()> {
 
 pub fn get_all_buttons() -> Result<Vec<Button>> {
     let conn = Connection::open(DB_PATH)?;
-    let mut stmt = conn.prepare("SELECT id, label, action_name, color, COALESCE(icon, 'zap') FROM buttons ORDER BY id ASC")?;
+    let mut stmt = conn.prepare(
+        "SELECT id, label, action_name, color, COALESCE(icon, 'zap'), COALESCE(page_index, 0) FROM buttons ORDER BY id ASC",
+    )?;
 
     let button_iter = stmt.query_map([], |row| {
         Ok(Button {
@@ -75,6 +80,7 @@ pub fn get_all_buttons() -> Result<Vec<Button>> {
             action_name: row.get(2)?,
             color: row.get(3)?,
             icon: row.get(4)?,
+            page_index: row.get(5)?,
         })
     })?;
 
@@ -86,19 +92,32 @@ pub fn get_all_buttons() -> Result<Vec<Button>> {
     Ok(buttons)
 }
 
-pub fn add_button(label: &str, action_name: &str, color: &str, icon: &str) -> Result<usize> {
+pub fn add_button(
+    label: &str,
+    action_name: &str,
+    color: &str,
+    icon: &str,
+    page_index: i32,
+) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute(
-        "INSERT INTO buttons (label, action_name, color, icon) VALUES (?1, ?2, ?3, ?4)",
-        params![label, action_name, color, icon],
+        "INSERT INTO buttons (label, action_name, color, icon, page_index) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![label, action_name, color, icon, page_index],
     )
 }
 
-pub fn update_button(id: i32, label: &str, action_name: &str, color: &str, icon: &str) -> Result<usize> {
+pub fn update_button(
+    id: i32,
+    label: &str,
+    action_name: &str,
+    color: &str,
+    icon: &str,
+    page_index: i32,
+) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute(
-        "UPDATE buttons SET label = ?1, action_name = ?2, color = ?3, icon = ?4 WHERE id = ?5",
-        params![label, action_name, color, icon, id],
+        "UPDATE buttons SET label = ?1, action_name = ?2, color = ?3, icon = ?4, page_index = ?5 WHERE id = ?6",
+        params![label, action_name, color, icon, page_index, id],
     )
 }
 

@@ -55,10 +55,12 @@ fn add_button(
     action_name: String,
     color: String,
     icon: Option<String>,
+    page_index: Option<i32>,
     tx: tauri::State<'_, broadcast::Sender<String>>,
 ) -> Result<(), String> {
     let icon_name = icon.unwrap_or_else(|| "zap".to_string());
-    db::add_button(&label, &action_name, &color, &icon_name).map_err(|e| e.to_string())?;
+    let page = page_index.unwrap_or(0);
+    db::add_button(&label, &action_name, &color, &icon_name, page).map_err(|e| e.to_string())?;
     broadcast_current_layout(&tx);
     Ok(())
 }
@@ -70,10 +72,13 @@ fn update_button(
     action_name: String,
     color: String,
     icon: Option<String>,
+    page_index: Option<i32>,
     tx: tauri::State<'_, broadcast::Sender<String>>,
 ) -> Result<(), String> {
     let icon_name = icon.unwrap_or_else(|| "zap".to_string());
-    db::update_button(id, &label, &action_name, &color, &icon_name).map_err(|e| e.to_string())?;
+    let page = page_index.unwrap_or(0);
+    db::update_button(id, &label, &action_name, &color, &icon_name, page)
+        .map_err(|e| e.to_string())?;
     broadcast_current_layout(&tx);
     Ok(())
 }

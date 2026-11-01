@@ -9,12 +9,14 @@ interface DeckButton {
   action_name: string;
   color: string;
   icon?: string;
+  page_index?: number;
 }
 
 function App() {
   const [buttons, setButtons] = useState<DeckButton[]>([]);
   const [activeTheme, setActiveTheme] = useState<string>("default");
   const [localIp, setLocalIp] = useState<string>("127.0.0.1");
+  const [activePage, setActivePage] = useState<number>(0);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [label, setLabel] = useState("");
   const [actionName, setActionName] = useState("vol_up");
@@ -82,8 +84,9 @@ function App() {
           actionName: actionName.trim(),
           color: color.trim() || "#38bdf8",
           icon: icon.trim() || "zap",
+          pageIndex: activePage,
         });
-        setStatusMsg(`Botão "${label.trim()}" atualizado com sucesso!`);
+        setStatusMsg(`Botão "${label.trim()}" atualizado na Página ${activePage + 1}!`);
         setEditingId(null);
       } else {
         await invoke("add_button", {
@@ -91,8 +94,9 @@ function App() {
           actionName: actionName.trim(),
           color: color.trim() || "#38bdf8",
           icon: icon.trim() || "zap",
+          pageIndex: activePage,
         });
-        setStatusMsg(`Botão "${label.trim()}" adicionado com sucesso!`);
+        setStatusMsg(`Botão "${label.trim()}" adicionado à Página ${activePage + 1}!`);
       }
 
       setLabel("");
@@ -112,6 +116,9 @@ function App() {
     setActionName(btn.action_name);
     setColor(btn.color || "#38bdf8");
     setIcon(btn.icon || "zap");
+    if (btn.page_index !== undefined) {
+      setActivePage(btn.page_index);
+    }
     setStatusMsg(`Editando botão "${btn.label}" (ID ${btn.id}).`);
   };
 
@@ -262,17 +269,44 @@ function App() {
 
       <section className="card">
         <div className="section-header">
-          <h2>Grade Atual ({buttons.length} botões)</h2>
+          <h2>
+            Grade Atual - Página {activePage + 1} (
+            {buttons.filter((b) => (b.page_index ?? 0) === activePage).length} botões)
+          </h2>
           <button type="button" className="btn-secondary" onClick={loadButtons}>
             Atualizar Lista
           </button>
         </div>
 
-        {buttons.length === 0 ? (
-          <p className="empty-state">Nenhum botão cadastrado. Adicione acima!</p>
+        <div className="page-tabs-bar">
+          {[0, 1, 2].map((pIndex) => {
+            const countOnPage = buttons.filter((b) => (b.page_index ?? 0) === pIndex).length;
+            const isActive = activePage === pIndex;
+            return (
+              <button
+                key={pIndex}
+                type="button"
+                className={`page-tab-btn ${isActive ? "active" : ""}`}
+                onClick={() => {
+                  setActivePage(pIndex);
+                  setEditingId(null);
+                }}
+              >
+                Página {pIndex + 1} ({countOnPage})
+              </button>
+            );
+          })}
+        </div>
+
+        {buttons.filter((b) => (b.page_index ?? 0) === activePage).length === 0 ? (
+          <p className="empty-state">
+            Nenhum botão cadastrado na Página {activePage + 1}. Adicione acima!
+          </p>
         ) : (
           <div className="deck-grid">
-            {buttons.map((btn) => (
+            {buttons
+              .filter((b) => (b.page_index ?? 0) === activePage)
+              .map((btn) => (
               <div
                 key={btn.id}
                 className="deck-item"

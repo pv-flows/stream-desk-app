@@ -22,6 +22,7 @@
 - [x] Interface CRUD completa no cliente React do Desktop (`get_buttons`, `add_button`, `update_button`, `delete_button`) integrada via Tauri Commands ao SQLite.
 - [x] Suporte a ícones dinâmicos no SQLite (`icon` em `buttons`) e seleção na criação/edição de botões no Desktop.
 - [x] Feedback Háptico físico no Mobile com `expo-haptics` (`Haptics.impactAsync(Medium)`) ao pressionar botões.
+- [x] Paginação de botões no SQLite (`page_index INTEGER DEFAULT 0`) com abas de páginas no Desktop e navegação fluida por swipe via `<PagerView>` (`react-native-pager-view`) no Mobile.
 
 ## 4. Recursos Pro (Freemium) & Futuros
 - [x] Motor de temas base (`default`, `apple`, `windows`, `steam`, `oneui`, `chromebook`) com Zustand (`themeStore`) no Mobile e seletor sincronizado no Desktop (`App.tsx`).

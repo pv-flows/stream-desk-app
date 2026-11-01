@@ -7,6 +7,7 @@ export interface DeckButtonItem {
   action_name: string;
   color: string;
   icon?: string;
+  page_index?: number;
 }
 
 interface ThemeState {

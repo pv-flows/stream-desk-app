@@ -4,6 +4,7 @@ import { CameraView, BarcodeScanningResult, useCameraPermissions } from 'expo-ca
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import { DeckButton, DeckButtonItem } from '../components/DeckButton';
 import { ConnectionStatus, websocketService } from '../services/websocketService';
 import { useThemeStore } from '../store/themeStore';
@@ -18,6 +19,7 @@ export const HomeScreen: React.FC = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [wsUrl, setWsUrl] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(0);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [lastAction, setLastAction] = useState<string>('Aguardando comando...');
   const [serverReply, setServerReply] = useState<string>('');
@@ -155,7 +157,7 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.statusBadge}>
           <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
           <Text style={[styles.statusText, { color: skin.textColor }]}>
-            Status: {connectionStatus.toUpperCase()} • Skin: {theme.toUpperCase()}
+            Status: {connectionStatus.toUpperCase()} • Skin: {theme.toUpperCase()} • Pág {currentPage + 1}
           </Text>
         </View>
 
@@ -237,6 +239,13 @@ export const HomeScreen: React.FC = () => {
     );
   }
 
+  const maxPageIndex = buttons.reduce(
+    (max, b) => Math.max(max, b.page_index ?? 0),
+    0
+  );
+  const totalPages = Math.max(3, maxPageIndex + 1);
+  const pages = Array.from({ length: totalPages }, (_, i) => i);
+
   return (
     <LinearGradient
       colors={skin.backgroundGradient || ['#0f172a', '#1e293b']}
@@ -245,18 +254,56 @@ export const HomeScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         {renderHeader()}
 
-        <View style={styles.gridContainer}>
-          {buttons.length > 0 ? (
-            <View style={styles.grid}>
-              {buttons.map((item) => (
-                <DeckButton key={String(item.id)} item={item} onPress={handleButtonPress} />
-              ))}
-            </View>
-          ) : (
-            <Text style={[styles.emptyText, { color: skin.textColor }]}>
-              Sincronizando layout de botões com o PC...
-            </Text>
-          )}
+        <View style={styles.pagerContainer}>
+          <PagerView
+            style={styles.pagerView}
+            initialPage={0}
+            onPageSelected={(e) => setCurrentPage(e.nativeEvent.position)}
+          >
+            {pages.map((pIndex) => {
+              const pageButtons = buttons.filter((b) => (b.page_index ?? 0) === pIndex);
+              return (
+                <View key={`page-${pIndex}`} style={styles.pageSlide}>
+                  {pageButtons.length > 0 ? (
+                    <View style={styles.grid}>
+                      {pageButtons.map((item) => (
+                        <DeckButton
+                          key={String(item.id)}
+                          item={item}
+                          onPress={handleButtonPress}
+                        />
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyPageContainer}>
+                      <Text style={[styles.emptyText, { color: skin.textColor }]}>
+                        Página {pIndex + 1} vazia.
+                      </Text>
+                      <Text style={[styles.emptySubText, { color: skin.highlightColor }]}>
+                        Adicione botões nesta página pelo painel Desktop!
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </PagerView>
+
+          <View style={styles.dotsRow}>
+            {pages.map((pIndex) => (
+              <View
+                key={`dot-${pIndex}`}
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor:
+                      currentPage === pIndex ? skin.highlightColor : skin.borderColor,
+                    width: currentPage === pIndex ? 20 : 8,
+                  },
+                ]}
+              />
+            ))}
+          </View>
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -397,6 +444,40 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  pagerContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  pagerView: {
+    flex: 1,
+  },
+  pageSlide: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  dot: {
+    height: 8,
+    borderRadius: 4,
+  },
+  emptyPageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  emptySubText: {
+    fontSize: 12,
+    opacity: 0.8,
+    textAlign: 'center',
   },
   grid: {
     flexDirection: 'row',
