@@ -21,29 +21,36 @@ export interface ServerResponse {
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
-const HOST_WS_URL = 'ws://192.168.1.97:8080/ws';
-
 class WebSocketService {
   private socket: WebSocket | null = null;
-  private defaultUrl: string = HOST_WS_URL;
   private statusListeners: Array<(status: ConnectionStatus) => void> = [];
   private messageListeners: Array<(data: ServerResponse) => void> = [];
   private currentStatus: ConnectionStatus = 'disconnected';
 
-  public connect(url: string = this.defaultUrl): void {
-    if (
-      this.socket &&
-      (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)
-    ) {
-      console.log('[WebSocket] Conexão já em andamento ou ativa.');
+  public connect(url: string): void {
+    const trimmedUrl = url?.trim();
+    if (!trimmedUrl) {
+      console.warn('[WebSocket] URL inválida para conexão.');
+      this.setStatus('error');
       return;
     }
 
+    if (this.socket) {
+      try {
+        this.socket.onopen = null;
+        this.socket.onmessage = null;
+        this.socket.onerror = null;
+        this.socket.onclose = null;
+        this.socket.close();
+      } catch {}
+      this.socket = null;
+    }
+
     this.setStatus('connecting');
-    console.log(`[WebSocket] Conectando ao servidor: ${url}`);
+    console.log(`[WebSocket] Conectando ao servidor: ${trimmedUrl}`);
 
     try {
-      this.socket = new WebSocket(url);
+      this.socket = new WebSocket(trimmedUrl);
 
       this.socket.onopen = () => {
         this.setStatus('connected');
@@ -86,7 +93,9 @@ class WebSocketService {
 
       this.socket.onclose = (event) => {
         console.log(`[WebSocket] Conexão encerrada (código ${event.code}): ${event.reason}`);
-        this.setStatus('disconnected');
+        if (this.currentStatus !== 'error') {
+          this.setStatus('disconnected');
+        }
         this.socket = null;
       };
     } catch (err) {
@@ -97,7 +106,10 @@ class WebSocketService {
 
   public disconnect(): void {
     if (this.socket) {
-      this.socket.close();
+      try {
+        this.socket.onclose = null;
+        this.socket.close();
+      } catch {}
       this.socket = null;
     }
     this.setStatus('disconnected');

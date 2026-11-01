@@ -12,7 +12,7 @@
 - [x] Implementar cliente WebSocket nativo no Mobile com envio de comandos JSON (`sendCommand`) e status de conexão.
 - [x] Implementar broadcast em tempo real (`tokio::sync::broadcast`) para sincronizar alterações de layout (`sync_layout`) imediatamente ao criar/remover botões no Desktop.
 - [x] Implementar descoberta de IP local nativa no Desktop (`local-ip-address`) e geração de QR Code de pareamento (`react-qr-code` em `desktop/src/App.tsx`).
-- [ ] Implementar leitor de QR Code e reconexão automática contínua no Mobile (Expo).
+- [x] Implementar leitor de QR Code (`expo-camera`), persistência da URL (`@react-native-async-storage/async-storage`) e conexão dinâmica WebSocket no Mobile (`HomeScreen.tsx` / `websocketService.ts`).
 - [ ] Suporte a descoberta de rede (mDNS / Zeroconf).
 
 ## 3. Funcionalidades Core (Gratuitas)

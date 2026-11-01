@@ -4,6 +4,7 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Pareamento dinâmico por QR Code no Mobile (`mobile/src/screens/HomeScreen.tsx` e `mobile/src/services/websocketService.ts`) utilizando `CameraView` (`expo-camera`) e persistência da chave `@streamdesk_ws_url` no `AsyncStorage`, eliminando o IP hardcoded e adicionando o botão "Desconectar" para novo pareamento.
 - Descoberta nativa do IP IPv4 local na LAN via crate `local-ip-address` (`get_local_ip` em `desktop/src-tauri/src/lib.rs`).
 - Área de conexão no Dashboard Desktop (`desktop/src/App.tsx` e `App.css`) renderizando o QR Code dinâmico (`ws://${localIp}:8080/ws`) com `react-qr-code` e exibindo o endereço IP local ao lado.
 - Dicionário de Skins (`mobile/src/theme/skins.ts`) mapeando os conceitos visuais (`apple`, `windows`, `steam`, `oneui`, `chromebook`, `default`) com tipos (`glass`, `solid`, `flat`), raios de borda, cores e sombras.
