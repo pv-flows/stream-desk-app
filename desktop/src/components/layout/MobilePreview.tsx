@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Smartphone, RotateCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { getLucideIcon, getButtonColorStyles, isBase64Icon, getBase64Src } from "@/lib/buttonUtils";
@@ -32,7 +31,6 @@ export function MobilePreview({
   const buttons = useDashboardStore((s) => s.buttons);
   const pages = useDashboardStore((s) => s.pages);
   const activePageIndex = useDashboardStore((s) => s.activePageIndex);
-  const theme = useDashboardStore((s) => s.theme);
 
   const activePageObject = pages.find((p) => p.id === activePageIndex);
   const pageTitle = controlledPage ?? (activePageObject ? activePageObject.name : "Principal");
@@ -42,12 +40,12 @@ export function MobilePreview({
 
   return (
     <aside className="w-[320px] flex-shrink-0 flex flex-col border-l border-neutral-800/80 bg-neutral-900/95 backdrop-blur-md select-none">
-      {/* Header */}
+      {/* Header "Preview" (conforme Mockup) */}
       <div className="p-4 border-b border-neutral-800/80 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-sky-400" />
-          <h3 className="text-xs font-semibold text-neutral-200">
-            Mobile Live Preview
+          <Smartphone className="w-4 h-4 text-indigo-400" />
+          <h3 className="text-sm font-medium text-neutral-300">
+            Preview
           </h3>
         </div>
         <Button
@@ -63,31 +61,23 @@ export function MobilePreview({
 
       {/* Mockup Display Wrapper */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
-        {/* Smartphone Chassis com Tailwind */}
+        {/* Smartphone Chassis estilizado com borda branca (conforme Mockup) */}
         <div
-          className={`transition-all duration-300 relative border-[12px] border-black rounded-[3rem] shadow-2xl overflow-hidden bg-neutral-950 p-2.5 flex flex-col justify-between ${
-            isPortrait ? "w-[240px] h-[450px]" : "w-[290px] h-[210px]"
+          className={`transition-all duration-300 relative border-[10px] border-white rounded-[2.8rem] shadow-2xl overflow-hidden bg-black p-2.5 flex flex-col justify-between ${
+            isPortrait ? "w-[240px] h-[460px]" : "w-[300px] h-[210px]"
           }`}
         >
-          {/* Dynamic Island / Notch */}
-          <div className="self-center w-16 h-3.5 bg-black rounded-full mb-1 flex items-center justify-center gap-1.5 z-10">
-            <span className="w-2 h-2 rounded-full bg-neutral-900 inline-block ring-1 ring-neutral-800" />
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-950 inline-block" />
+          {/* Dynamic Island / Notch do Mockup */}
+          <div className="self-center w-20 h-4 bg-black rounded-full mb-1 flex items-center justify-between px-2 z-10">
+            <span className="text-[7px] text-neutral-400 font-mono">9:41</span>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-800 inline-block" />
+              <span className="w-2.5 h-1.5 rounded-sm bg-neutral-700 inline-block" />
+            </div>
           </div>
 
           {/* Simulated Phone Screen Content */}
-          <div className="flex-1 rounded-[1.5rem] bg-gradient-to-br from-slate-900 via-neutral-900 to-sky-950/40 p-2.5 border border-neutral-800/60 flex flex-col justify-between overflow-hidden relative">
-            {/* Mobile Screen Header */}
-            <div className="flex items-center justify-between px-1 text-[9px] text-neutral-400 font-mono">
-              <span className="truncate max-w-[90px] font-medium text-neutral-300">
-                {pageTitle}
-              </span>
-              <div className="flex items-center gap-1 text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>60 FPS</span>
-              </div>
-            </div>
-
+          <div className="flex-1 rounded-[1.8rem] bg-neutral-950 p-2.5 flex flex-col justify-between overflow-hidden relative">
             {/* Scaled Mini Grid com Botões Reais */}
             <div
               className={`grid ${
@@ -104,7 +94,7 @@ export function MobilePreview({
                     <div
                       key={btn.id}
                       style={colorStyle.style}
-                      className={`h-11 rounded-lg bg-neutral-800/80 border flex flex-col items-center justify-center text-center p-1 hover:border-sky-500/50 transition-colors shadow-sm ${colorStyle.className}`}
+                      className={`h-12 rounded-xl bg-neutral-900 border border-neutral-800 flex flex-col items-center justify-center text-center p-1 hover:border-indigo-500/50 transition-colors shadow-sm ${colorStyle.className}`}
                     >
                       {hasBase64 ? (
                         <img
@@ -113,32 +103,32 @@ export function MobilePreview({
                           className="w-3.5 h-3.5 object-contain rounded mb-0.5"
                         />
                       ) : (
-                        <Icon className="w-3 h-3 text-sky-400 mb-0.5" />
+                        <Icon className="w-3.5 h-3.5 text-neutral-300 mb-0.5" />
                       )}
-                      <span className="text-[7.5px] font-medium text-neutral-200 leading-tight truncate w-full px-0.5">
+                      <span className="text-[7px] font-medium text-neutral-300 leading-tight truncate w-full px-0.5">
                         {btn.label}
                       </span>
                     </div>
                   );
                 })
               ) : (
-                <div className="col-span-3 text-center py-4">
-                  <span className="text-[9px] text-neutral-500 font-mono">
-                    Sem botões nesta página
+                <div className="col-span-3 text-center py-6">
+                  <span className="text-[9px] text-neutral-600 font-mono">
+                    Sem botões ativos
                   </span>
                 </div>
               )}
             </div>
 
             {/* Pager Dots Indicator */}
-            <div className="flex items-center justify-center gap-1 py-0.5">
+            <div className="flex items-center justify-center gap-1 py-1">
               {pages.map((p) => (
                 <span
                   key={p.id}
                   className={`h-1 rounded-full transition-all ${
                     p.id === activePageIndex
-                      ? "w-3 bg-sky-400"
-                      : "w-1 bg-neutral-600"
+                      ? "w-3 bg-indigo-500"
+                      : "w-1 bg-neutral-700"
                   }`}
                 />
               ))}
@@ -146,31 +136,12 @@ export function MobilePreview({
           </div>
 
           {/* Home Indicator Bar */}
-          <div className="self-center w-20 h-1 bg-neutral-600 rounded-full mt-1.5" />
+          <div className="self-center w-20 h-1 bg-neutral-700 rounded-full mt-1" />
         </div>
 
-        <p className="mt-3 text-[10px] text-neutral-400 text-center font-mono">
-          Simulação em escala real do cliente Expo
+        <p className="mt-3 text-[10px] text-neutral-500 text-center font-mono">
+          {pageTitle} (320px)
         </p>
-      </div>
-
-      {/* Preview Footer Specs */}
-      <div className="p-3 border-t border-neutral-800/80 bg-neutral-950/40 text-[11px] text-neutral-400 space-y-1.5">
-        <div className="flex justify-between items-center">
-          <span>Tema Ativo:</span>
-          <Badge
-            variant="outline"
-            className="text-[10px] px-1.5 py-0 border-neutral-700 bg-neutral-800/50 text-neutral-200 font-mono"
-          >
-            {theme || "default"}
-          </Badge>
-        </div>
-        <div className="flex justify-between items-center">
-          <span>Orientação:</span>
-          <span className="text-neutral-200 capitalize font-mono text-[10px]">
-            {orientation}
-          </span>
-        </div>
       </div>
     </aside>
   );
