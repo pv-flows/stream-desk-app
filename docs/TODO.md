@@ -39,7 +39,7 @@
 ## 5. Fase 3 — Refinamento (fluxo agêntico interno)
 - [x] Migrar governança agêntica para orquestração interna no Antigravity (`orchestrator` + personas por camada + `[RELATÓRIO DE ENTREGA]`).
 - [x] **E1** Persistir configurações de Aparência (cor de destaque, tamanho da grade, vibração, estilo de ícones) na tabela `settings` + broadcast para o Mobile.
-- [ ] **E2** Iniciar com o Windows (autostart) e Minimizar para a bandeja (tray) — hoje fallback "Em breve".
+- [x] **E2** Iniciar com o Windows (autostart) e Minimizar para a bandeja (tray) — hoje fallback "Em breve".
 - [x] **E3** Importar backup JSON (validação + transação SQLite + broadcast) — hoje fallback "Em breve".
 - [ ] **E4** Lista real de dispositivos conectados e desconexão via servidor — hoje mock em `ConnectionView.tsx`.
 - [x] **E5** Coluna `enabled` em `window_rules` com toggle real — hoje o switch apaga a regra.

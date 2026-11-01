@@ -31,12 +31,18 @@ export interface AppearanceSettings {
   icon_style: "linha" | "preenchido";
 }
 
+export interface SystemSettings {
+  start_with_windows: boolean;
+  minimize_to_tray: boolean;
+}
+
 export interface DashboardState {
   pages: Page[];
   buttons: DeckButton[];
   windowRules: WindowRule[];
   theme: string;
   appearance: AppearanceSettings;
+  systemSettings: SystemSettings;
   localIp: string;
   activePageIndex: number;
   isLoading: boolean;
@@ -48,6 +54,8 @@ export interface DashboardState {
   setTheme: (theme: string) => Promise<void>;
   fetchAppearance: () => Promise<void>;
   setAppearance: (settings: Partial<AppearanceSettings>) => Promise<void>;
+  fetchSystemSettings: () => Promise<void>;
+  setSystemSettings: (settings: Partial<SystemSettings>) => Promise<void>;
   fetchPages: () => Promise<void>;
   addPage: (name: string) => Promise<void>;
   updatePage: (id: number, name: string) => Promise<void>;
@@ -79,6 +87,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     grid_columns: 3,
     vibration_enabled: true,
     icon_style: "linha",
+  },
+  systemSettings: {
+    start_with_windows: false,
+    minimize_to_tray: true,
   },
   localIp: "127.0.0.1",
   activePageIndex: 1,
@@ -121,6 +133,28 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       await invoke("set_appearance_settings", { settings: updated });
     } catch (err) {
       console.warn("[Store] Erro ao persistir appearance via IPC:", err);
+    }
+  },
+
+  fetchSystemSettings: async () => {
+    try {
+      const settings = await invoke<SystemSettings>("get_system_settings");
+      if (settings && typeof settings === "object") {
+        set({ systemSettings: settings });
+      }
+    } catch (err) {
+      console.warn("[Store] Erro ao buscar system settings via IPC:", err);
+    }
+  },
+
+  setSystemSettings: async (settings: Partial<SystemSettings>) => {
+    const current = get().systemSettings;
+    const updated: SystemSettings = { ...current, ...settings };
+    set({ systemSettings: updated });
+    try {
+      await invoke("set_system_settings", { settings: updated });
+    } catch (err) {
+      console.warn("[Store] Erro ao salvar system settings via IPC:", err);
     }
   },
 
@@ -317,6 +351,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         get().fetchPages(),
         get().fetchButtons(),
         get().fetchAppearance(),
+        get().fetchSystemSettings(),
         get().fetchTheme(),
         get().fetchLocalIp(),
         get().fetchWindowRules(),

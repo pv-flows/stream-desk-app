@@ -53,6 +53,8 @@ Sistema cliente-servidor para operação em rede local (LAN), projetado para aut
 | `toggle_window_rule` | `{ id, enabled }` | `()` | Ativa ou desativa regra de troca automática sem excluí-la do banco. |
 | `delete_window_rule` | `{ id }` | `()` | Remove regra por ID. |
 | `import_backup` | `{ backup: BackupData }` | `()` | Executa transação atômica no SQLite para restauração de layout, botões, regras e temas, disparando broadcast WS. |
+| `get_system_settings` | Nenhuma | `SystemSettings` | Obtém configurações de inicialização com Windows e minimizar para bandeja. |
+| `set_system_settings` | `{ settings: SystemSettings }` | `()` | Persiste configurações no SQLite e aplica chave de registro no Windows (`HKCU\...\Run`). |
 
 ### 5.2 Eventos WebSocket (`/ws`)
 

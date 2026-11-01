@@ -24,29 +24,31 @@ export function SystemView() {
   const windowRules = useDashboardStore((s) => s.windowRules);
   const theme = useDashboardStore((s) => s.theme);
   const appearance = useDashboardStore((s) => s.appearance);
+  const systemSettings = useDashboardStore((s) => s.systemSettings);
+  const setSystemSettings = useDashboardStore((s) => s.setSystemSettings);
   const importBackup = useDashboardStore((s) => s.importBackup);
 
-  const [startWithWindows, setStartWithWindows] = useState(true);
-  const [minimizeToTray, setMinimizeToTray] = useState(false);
+  const startWithWindows = systemSettings?.start_with_windows ?? false;
+  const minimizeToTray = systemSettings?.minimize_to_tray ?? true;
   const [keepPhoneAwake, setKeepPhoneAwake] = useState(true);
 
-  const handleToggleStartWithWindows = (checked: boolean) => {
-    setStartWithWindows(checked);
+  const handleToggleStartWithWindows = async (checked: boolean) => {
+    await setSystemSettings({ start_with_windows: checked });
     toast({
       title: "Iniciar com o Windows",
       description: checked
-        ? "Inicialização automática ativada (integração do Registro do Windows em breve)."
+        ? "Inicialização automática ativada no Registro do Windows (Run)."
         : "Inicialização automática desativada.",
     });
   };
 
-  const handleToggleMinimizeToTray = (checked: boolean) => {
-    setMinimizeToTray(checked);
+  const handleToggleMinimizeToTray = async (checked: boolean) => {
+    await setSystemSettings({ minimize_to_tray: checked });
     toast({
       title: "Minimizar para a bandeja",
       description: checked
-        ? "Minimização para bandeja do sistema ativada (integração de Tray em breve)."
-        : "Minimização normal de janela mantida.",
+        ? "Stream Desk continuará em execução na bandeja do sistema ao fechar a janela."
+        : "Minimização e fechamento normal de janela mantidos.",
     });
   };
 

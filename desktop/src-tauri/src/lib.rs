@@ -2,8 +2,12 @@ pub mod db;
 pub mod app_scanner;
 mod server;
 
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
 use tokio::sync::broadcast;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 fn broadcast_current_layout(tx: &broadcast::Sender<String>) {
     if let Ok(buttons) = db::get_all_buttons() {
@@ -215,6 +219,52 @@ fn import_backup(
     Ok(())
 }
 
+#[tauri::command]
+fn get_system_settings() -> Result<db::SystemSettings, String> {
+    db::get_system_settings().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_system_settings(settings: db::SystemSettings) -> Result<(), String> {
+    db::set_system_settings(&settings).map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    {
+        if settings.start_with_windows {
+            if let Ok(current_exe) = std::env::current_exe() {
+                let exe_str = current_exe.to_string_lossy().to_string();
+                let _ = std::process::Command::new("reg")
+                    .args([
+                        "add",
+                        r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+                        "/v",
+                        "StreamDesk",
+                        "/t",
+                        "REG_SZ",
+                        "/d",
+                        &format!("\"{}\"", exe_str),
+                        "/f",
+                    ])
+                    .creation_flags(0x08000000)
+                    .status();
+            }
+        } else {
+            let _ = std::process::Command::new("reg")
+                .args([
+                    "delete",
+                    r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+                    "/v",
+                    "StreamDesk",
+                    "/f",
+                ])
+                .creation_flags(0x08000000)
+                .status();
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if let Err(err) = db::init_db() {
@@ -232,7 +282,61 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 server::start_server(server_tx).await;
             });
+
+            // Configuração do Tray Icon (Bandeja do Sistema)
+            let show_item = MenuItem::with_id(app, "show", "Abrir Stream Desk", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+
+            let mut tray_builder = TrayIconBuilder::new()
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                        }
+                    }
+                });
+
+            if let Some(icon) = app.default_window_icon() {
+                tray_builder = tray_builder.icon(icon.clone());
+            }
+
+            let _ = tray_builder.build(app);
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if let Ok(sys) = db::get_system_settings() {
+                    if sys.minimize_to_tray {
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             get_buttons,
@@ -254,7 +358,9 @@ pub fn run() {
             delete_page,
             update_button_positions,
             get_installed_apps,
-            import_backup
+            import_backup,
+            get_system_settings,
+            set_system_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

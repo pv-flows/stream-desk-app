@@ -61,6 +61,12 @@ pub struct WindowRule {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SystemSettings {
+    pub start_with_windows: bool,
+    pub minimize_to_tray: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BackupData {
     pub version: Option<String>,
     #[serde(alias = "exportedAt")]
@@ -454,6 +460,43 @@ pub fn set_appearance_settings(settings: &AppearanceSettings) -> Result<()> {
     conn.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('icon_style', ?1)",
         params![settings.icon_style],
+    )?;
+    Ok(())
+}
+
+pub fn get_system_settings() -> Result<SystemSettings> {
+    let conn = Connection::open(DB_PATH)?;
+    let start_with_windows: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'start_with_windows'",
+            [],
+            |r| r.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+    let minimize_to_tray: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'minimize_to_tray'",
+            [],
+            |r| r.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(true);
+    Ok(SystemSettings {
+        start_with_windows,
+        minimize_to_tray,
+    })
+}
+
+pub fn set_system_settings(settings: &SystemSettings) -> Result<()> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('start_with_windows', ?1)",
+        params![if settings.start_with_windows { "1" } else { "0" }],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('minimize_to_tray', ?1)",
+        params![if settings.minimize_to_tray { "1" } else { "0" }],
     )?;
     Ok(())
 }

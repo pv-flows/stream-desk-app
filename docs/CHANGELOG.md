@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Épico E2 (Iniciar com o Windows e Minimizar para a Bandeja)**:
+  - Integração nativa com a bandeja do sistema (`TrayIconBuilder`, menu de contexto com "Abrir Stream Desk" e "Sair") e restauração rápida ao clicar com o botão esquerdo.
+  - Interceptação de evento `CloseRequested` da janela principal para ocultar em background na bandeja (`minimize_to_tray`) quando configurado.
+  - Autostart nativo no Windows via chaves do Registro (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) com flags silenciosas sem popups de terminal.
+  - Persistência e binding total no Zustand e UI em `SystemView.tsx` (`get_system_settings`, `set_system_settings`), eliminando os antigos fallbacks "Em breve".
 - **Épico E3 (Importação e Restauração de Backup JSON)**:
   - Validador de schema com Zod (`desktop/src/lib/backupSchema.ts`) cobrindo `pages`, `buttons`, `windowRules`, `appearance` e `theme`.
   - Comando IPC Tauri `import_backup` com execução atômica via transação SQLite (`restore_backup` em `db.rs`), limpando com segurança as tabelas antes de popular e garantindo integridade referencial.
