@@ -14,6 +14,7 @@ import { DeckButton, useDashboardStore } from "@/store/useDashboardStore";
 import { getLucideIcon, getButtonColorStyles, isBase64Icon, getBase64Src } from "@/lib/buttonUtils";
 import { ButtonEditorSheet } from "@/components/ButtonEditorSheet";
 import { ConnectionView } from "@/components/views/ConnectionView";
+import { AutoProfileView } from "@/components/views/AutoProfileView";
 
 export interface CentralAreaProps {
   activeTab?: string;
@@ -33,9 +34,14 @@ export function CentralArea({
   const pages = useDashboardStore((s) => s.pages);
   const activePageIndex = useDashboardStore((s) => s.activePageIndex);
 
-  // Se o usuário estiver na visualização "Conexão", renderiza diretamente a ConnectionView visual
+  // Se o usuário estiver na visualização "Conexão", renderiza ConnectionView
   if (activeTab === "connection") {
     return <ConnectionView />;
+  }
+
+  // Se o usuário estiver na visualização "Perfis automáticos", renderiza AutoProfileView
+  if (activeTab === "auto-profile") {
+    return <AutoProfileView />;
   }
 
   const activePageObject = pages.find((p) => p.id === activePageIndex);
