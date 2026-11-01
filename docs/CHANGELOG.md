@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Início da Fase 2: Design UI/UX Profissional e Setup Tailwind CSS:
+  - **Novo Agente Especialista (`.agents/frontend_designer.md`):** Arquiteto UI/UX focado em React, Tailwind CSS, shadcn/ui e `lucide-react`, com regra de ouro de isolamento estrito do backend Rust.
+  - **Infraestrutura de Estilização Moderna:** Instalação e configuração do Tailwind CSS v3, PostCSS, Autoprefixer, `clsx`, `tailwind-merge` e pacote de ícones `lucide-react` no projeto Desktop (`desktop/tailwind.config.js`, `postcss.config.js`, `App.css`).
+  - **Esqueleto do Layout de 3 Colunas:** Implementação do layout base de alta densidade visual em `desktop/src/App.tsx` com Sidebar esquerda fixa (240px), Área central dinâmica e fluida (`flex-1`) e Painel direito de simulação em tempo real do celular (320px - Mobile Live Preview).
+### Added
 - Scanner Automático de Aplicativos do Windows com Extração de Ícones Base64:
   - **Módulo Nativo `app_scanner.rs`:** Varredura rápida e resiliente das pastas do Menu Iniciar (%APPDATA% e %ProgramData%) e Desktops (Público e Usuário) com limitação de profundidade para máxima performance.
   - **Extração de Metadados e Resolução de Atalhos:** Parsing de arquivos `.lnk` com a crate `lnk` identificando o nome amigável e o executável alvo (ex: `chrome.exe`, `Spotify.exe`), além de filtragem inteligente de desinstaladores e manuais.

@@ -1,1068 +1,325 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import QRCode from "react-qr-code";
+import { useState } from "react";
 import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-  DragStart,
-  DragUpdate,
-} from "@hello-pangea/dnd";
+  Grid,
+  Layers,
+  Sparkles,
+  Palette,
+  QrCode,
+  Settings,
+  Plus,
+  Monitor,
+  Smartphone,
+  RotateCw,
+  Search,
+  Wifi,
+  ExternalLink,
+  Zap,
+  Volume2,
+  Play,
+  Terminal,
+  FolderOpen,
+} from "lucide-react";
 import "./App.css";
 
-interface DeckButton {
-  id: number;
-  label: string;
-  action_name: string;
-  color: string;
-  icon?: string;
-  page_index?: number;
-  position?: number;
-}
-
-interface Page {
-  id: number;
-  name: string;
-}
-
-interface WindowRule {
-  id: number;
-  process_name: string;
-  page_index: number;
-}
-
-function App() {
-  const [buttons, setButtons] = useState<DeckButton[]>([]);
-  const [pages, setPages] = useState<Page[]>([]);
-  const [activePageId, setActivePageId] = useState<number>(1);
-  const [activeTheme, setActiveTheme] = useState<string>("default");
-  const [localIp, setLocalIp] = useState<string>("127.0.0.1");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [label, setLabel] = useState("");
-  const [actionType, setActionType] = useState("vol_up");
-  const [actionCustomParam, setActionCustomParam] = useState("");
-  const [color, setColor] = useState("#38bdf8");
-  const [icon, setIcon] = useState("zap");
-  const [selectedPageForForm, setSelectedPageForForm] = useState<number>(1);
-  const [statusMsg, setStatusMsg] = useState<string>("");
-
-  const [rules, setRules] = useState<WindowRule[]>([]);
-  const [newRuleProcess, setNewRuleProcess] = useState("");
-  const [newRulePage, setNewRulePage] = useState<number>(1);
-
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dragSourcePageRef = useRef<number | null>(null);
-  const draggingButtonIdRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimerRef.current) {
-        clearTimeout(hoverTimerRef.current);
-      }
-    };
-  }, []);
-
-  const loadButtons = async () => {
-    try {
-      const data = await invoke<DeckButton[]>("get_buttons");
-      setButtons(data);
-    } catch (error) {
-      console.error("Erro ao carregar botões:", error);
-      setStatusMsg("Erro ao carregar botões do SQLite.");
-    }
-  };
-
-  const loadPages = async () => {
-    try {
-      const data = await invoke<Page[]>("get_pages");
-      setPages(data);
-      if (data.length > 0) {
-        setActivePageId((current) => {
-          return data.some((p) => p.id === current) ? current : data[0].id;
-        });
-        setSelectedPageForForm((current) => {
-          return data.some((p) => p.id === current) ? current : data[0].id;
-        });
-        setNewRulePage((current) => {
-          return data.some((p) => p.id === current) ? current : data[0].id;
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao carregar páginas:", error);
-    }
-  };
-
-  const loadTheme = async () => {
-    try {
-      const theme = await invoke<string>("get_theme");
-      if (theme) setActiveTheme(theme);
-    } catch (error) {
-      console.error("Erro ao carregar tema:", error);
-    }
-  };
-
-  const loadLocalIp = async () => {
-    try {
-      const ip = await invoke<string>("get_local_ip");
-      if (ip) setLocalIp(ip);
-    } catch (error) {
-      console.error("Erro ao obter IP local:", error);
-    }
-  };
-
-  const loadRules = async () => {
-    try {
-      const data = await invoke<WindowRule[]>("get_window_rules");
-      setRules(data);
-    } catch (error) {
-      console.error("Erro ao carregar regras de janela:", error);
-    }
-  };
-
-  useEffect(() => {
-    loadButtons();
-    loadPages();
-    loadTheme();
-    loadLocalIp();
-    loadRules();
-  }, []);
-
-  const handleThemeChange = async (theme: string) => {
-    setActiveTheme(theme);
-    try {
-      await invoke("set_theme", { theme });
-      setStatusMsg(`Tema global alterado para "${theme}"!`);
-    } catch (error) {
-      console.error("Erro ao alterar tema:", error);
-      setStatusMsg("Erro ao salvar tema no banco de dados.");
-    }
-  };
-
-  const handleAddPage = async () => {
-    const pageName = window.prompt("Nome da nova página:")?.trim();
-    if (!pageName) return;
-
-    try {
-      const newId = await invoke<number>("add_page", { name: pageName });
-      await loadPages();
-      setActivePageId(newId);
-      setSelectedPageForForm(newId);
-      setNewRulePage(newId);
-      setStatusMsg(`Página "${pageName}" criada com sucesso!`);
-    } catch (error) {
-      console.error("Erro ao criar página:", error);
-      setStatusMsg("Erro ao criar nova página.");
-    }
-  };
-
-  const handleRenamePage = async (page: Page) => {
-    const newName = window
-      .prompt(`Novo nome para a página "${page.name}":`, page.name)
-      ?.trim();
-    if (!newName || newName === page.name) return;
-
-    try {
-      await invoke("update_page", { id: page.id, name: newName });
-      await loadPages();
-      setStatusMsg(`Página renomeada para "${newName}".`);
-    } catch (error) {
-      console.error("Erro ao renomear página:", error);
-      setStatusMsg("Erro ao renomear página.");
-    }
-  };
-
-  const handleDeletePage = async (page: Page) => {
-    if (pages.length <= 1) {
-      window.alert("Você deve manter pelo menos uma página.");
-      return;
-    }
-    const confirmed = window.confirm(
-      `Deseja realmente excluir a página "${page.name}"? Todos os botões vinculados a ela serão removidos.`
-    );
-    if (!confirmed) return;
-
-    try {
-      await invoke("delete_page", { id: page.id });
-      await loadPages();
-      await loadButtons();
-      setStatusMsg(`Página "${page.name}" removida.`);
-    } catch (error) {
-      console.error("Erro ao excluir página:", error);
-      setStatusMsg("Erro ao excluir página.");
-    }
-  };
-
-  const computeFinalAction = (): string => {
-    if (actionType === "open_url") {
-      return `open_url:${actionCustomParam.trim()}`;
-    }
-    if (actionType === "open_app") {
-      return `open_app:${actionCustomParam.trim()}`;
-    }
-    if (actionType === "hotkey") {
-      return `hotkey:${actionCustomParam.trim()}`;
-    }
-    if (actionType === "webhook") {
-      return `webhook:${actionCustomParam.trim()}`;
-    }
-    return actionType;
-  };
-
-  const parseActionForForm = (rawAction: string) => {
-    if (rawAction.startsWith("open_url:")) {
-      setActionType("open_url");
-      setActionCustomParam(rawAction.replace("open_url:", ""));
-    } else if (rawAction.startsWith("open_app:")) {
-      setActionType("open_app");
-      setActionCustomParam(rawAction.replace("open_app:", ""));
-    } else if (rawAction.startsWith("hotkey:")) {
-      setActionType("hotkey");
-      setActionCustomParam(rawAction.replace("hotkey:", ""));
-    } else if (rawAction.startsWith("webhook:")) {
-      setActionType("webhook");
-      setActionCustomParam(rawAction.replace("webhook:", ""));
-    } else {
-      setActionType(rawAction);
-      setActionCustomParam("");
-    }
-  };
-
-  const handleFormSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const finalAction = computeFinalAction();
-
-    if (!label.trim() || !finalAction.trim()) {
-      setStatusMsg("Preencha o Label e a Action do botão.");
-      return;
-    }
-
-    if (
-      (actionType === "open_url" ||
-        actionType === "open_app" ||
-        actionType === "hotkey" ||
-        actionType === "webhook") &&
-      !actionCustomParam.trim()
-    ) {
-      setStatusMsg(
-        "Informe os parâmetros da ação selecionada (URL, Aplicativo, Atalho ou Webhook)."
-      );
-      return;
-    }
-
-    try {
-      const pageTarget = selectedPageForForm;
-      const targetPageButtons = buttons.filter(
-        (b) => (b.page_index ?? 0) === pageTarget
-      );
-
-      if (editingId !== null) {
-        const existingBtn = buttons.find((b) => b.id === editingId);
-        await invoke("update_button", {
-          id: editingId,
-          label: label.trim(),
-          actionName: finalAction,
-          color: color.trim() || "#38bdf8",
-          icon: icon.trim() || "zap",
-          pageIndex: pageTarget,
-          position: existingBtn?.position ?? 0,
-        });
-        setStatusMsg(`Botão "${label.trim()}" atualizado!`);
-        setEditingId(null);
-      } else {
-        const nextPosition = targetPageButtons.length;
-        await invoke("add_button", {
-          label: label.trim(),
-          actionName: finalAction,
-          color: color.trim() || "#38bdf8",
-          icon: icon.trim() || "zap",
-          pageIndex: pageTarget,
-          position: nextPosition,
-        });
-        setStatusMsg(`Botão "${label.trim()}" adicionado com sucesso!`);
-      }
-
-      setLabel("");
-      setActionType("vol_up");
-      setActionCustomParam("");
-      setColor("#38bdf8");
-      setIcon("zap");
-      await loadButtons();
-    } catch (error) {
-      console.error("Erro ao salvar botão:", error);
-      setStatusMsg("Erro ao salvar botão no banco de dados.");
-    }
-  };
-
-  const handleEditClick = (btn: DeckButton) => {
-    setEditingId(btn.id);
-    setLabel(btn.label);
-    parseActionForForm(btn.action_name);
-    setColor(btn.color || "#38bdf8");
-    setIcon(btn.icon || "zap");
-    if (btn.page_index !== undefined) {
-      setSelectedPageForForm(btn.page_index);
-      setActivePageId(btn.page_index);
-    }
-    setStatusMsg(`Editando botão "${btn.label}" (ID ${btn.id}).`);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setLabel("");
-    setActionType("vol_up");
-    setActionCustomParam("");
-    setColor("#38bdf8");
-    setIcon("zap");
-    setStatusMsg("Edição cancelada.");
-  };
-
-  const handleDeleteButton = async (id: number, btnLabel: string) => {
-    try {
-      await invoke("delete_button", { id });
-      setStatusMsg(`Botão "${btnLabel}" removido.`);
-      await loadButtons();
-    } catch (error) {
-      console.error("Erro ao remover botão:", error);
-      setStatusMsg("Erro ao remover botão.");
-    }
-  };
-
-  const handleDragStart = (start: DragStart) => {
-    dragSourcePageRef.current = activePageId;
-    draggingButtonIdRef.current = Number(start.draggableId);
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-  };
-
-  const handleDragUpdate = (update: DragUpdate) => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-
-    if (!update.destination) return;
-
-    const destId = update.destination.droppableId;
-    if (destId.startsWith("tab-")) {
-      const targetPageId = Number(destId.replace("tab-", ""));
-      if (targetPageId !== activePageId) {
-        hoverTimerRef.current = setTimeout(() => {
-          setActivePageId(targetPageId);
-          setSelectedPageForForm(targetPageId);
-          const pName =
-            pages.find((p) => p.id === targetPageId)?.name || `ID ${targetPageId}`;
-          setStatusMsg(`Alternando para página "${pName}" (arraste)...`);
-        }, 500);
-      }
-    }
-  };
-
-  const handleDragEnd = async (result: DropResult) => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-
-    const draggedId = draggingButtonIdRef.current;
-    const sourcePageId = dragSourcePageRef.current ?? activePageId;
-    draggingButtonIdRef.current = null;
-    dragSourcePageRef.current = null;
-
-    if (!result.destination || draggedId === null) {
-      return;
-    }
-
-    const destId = result.destination.droppableId;
-    const destIndex = result.destination.index;
-
-    // Caso 1: Soltou diretamente em uma Aba de Página (Droppable "tab-ID")
-    if (destId.startsWith("tab-")) {
-      const targetPageId = Number(destId.replace("tab-", ""));
-      if (targetPageId === sourcePageId) {
-        return;
-      }
-
-      const draggedBtn = buttons.find((b) => b.id === draggedId);
-      if (!draggedBtn) return;
-
-      const targetPageButtons = buttons
-        .filter((b) => (b.page_index ?? 0) === targetPageId)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-      const movedBtn: DeckButton = {
-        ...draggedBtn,
-        page_index: targetPageId,
-        position: targetPageButtons.length,
-      };
-
-      const remainingSource = buttons
-        .filter((b) => (b.page_index ?? 0) === sourcePageId && b.id !== draggedId)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-        .map((b, idx) => ({ ...b, position: idx }));
-
-      const otherButtons = buttons.filter(
-        (b) =>
-          (b.page_index ?? 0) !== sourcePageId &&
-          (b.page_index ?? 0) !== targetPageId
-      );
-
-      const allNewButtons = [
-        ...otherButtons,
-        ...remainingSource,
-        ...targetPageButtons,
-        movedBtn,
-      ];
-
-      setButtons(allNewButtons);
-      setActivePageId(targetPageId);
-      setSelectedPageForForm(targetPageId);
-
-      const updates = [
-        ...remainingSource.map((b) => ({
-          id: b.id,
-          position: b.position,
-          page_index: sourcePageId,
-        })),
-        {
-          id: movedBtn.id,
-          position: movedBtn.position,
-          page_index: targetPageId,
-        },
-      ];
-
-      const targetPageName =
-        pages.find((p) => p.id === targetPageId)?.name || `ID ${targetPageId}`;
-      setStatusMsg(
-        `Botão "${movedBtn.label}" movido para a página "${targetPageName}"!`
-      );
-
-      try {
-        await invoke("update_button_positions", { updates });
-      } catch (error) {
-        console.error("Erro ao mover botão entre abas:", error);
-        setStatusMsg("Erro ao salvar migração de página no banco.");
-        await loadButtons();
-      }
-      return;
-    }
-
-    // Caso 2: Soltou na grade ("deck-grid")
-    if (destId === "deck-grid") {
-      // Subcaso 2A: Página foi alterada durante o arrasto (cross-page via hover)
-      if (sourcePageId !== activePageId) {
-        const draggedBtn = buttons.find((b) => b.id === draggedId);
-        if (!draggedBtn) return;
-
-        const targetPageButtons = buttons
-          .filter(
-            (b) => (b.page_index ?? 0) === activePageId && b.id !== draggedId
-          )
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-        const movedBtn: DeckButton = {
-          ...draggedBtn,
-          page_index: activePageId,
-        };
-
-        const reorderedTarget = Array.from(targetPageButtons);
-        reorderedTarget.splice(destIndex, 0, movedBtn);
-
-        const updatedTarget = reorderedTarget.map((b, idx) => ({
-          ...b,
-          position: idx,
-        }));
-
-        const remainingSource = buttons
-          .filter(
-            (b) => (b.page_index ?? 0) === sourcePageId && b.id !== draggedId
-          )
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-          .map((b, idx) => ({ ...b, position: idx }));
-
-        const otherButtons = buttons.filter(
-          (b) =>
-            (b.page_index ?? 0) !== sourcePageId &&
-            (b.page_index ?? 0) !== activePageId
-        );
-
-        setButtons([...otherButtons, ...remainingSource, ...updatedTarget]);
-
-        const updates = [
-          ...remainingSource.map((b) => ({
-            id: b.id,
-            position: b.position,
-            page_index: sourcePageId,
-          })),
-          ...updatedTarget.map((b) => ({
-            id: b.id,
-            position: b.position,
-            page_index: activePageId,
-          })),
-        ];
-
-        const targetPageName =
-          pages.find((p) => p.id === activePageId)?.name ||
-          `ID ${activePageId}`;
-        setStatusMsg(
-          `Botão "${movedBtn.label}" reposicionado na página "${targetPageName}"!`
-        );
-
-        try {
-          await invoke("update_button_positions", { updates });
-        } catch (error) {
-          console.error("Erro ao salvar posições entre páginas:", error);
-          setStatusMsg("Erro ao salvar nova ordenação no banco.");
-          await loadButtons();
-        }
-        return;
-      }
-
-      // Subcaso 2B: Reordenação na mesma página
-      if (result.source.index === destIndex) return;
-
-      const pageButtons = buttons
-        .filter((b) => (b.page_index ?? 0) === activePageId)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-      const reordered = Array.from(pageButtons);
-      const [moved] = reordered.splice(result.source.index, 1);
-      reordered.splice(destIndex, 0, moved);
-
-      const updatedWithPosition = reordered.map((btn, idx) => ({
-        ...btn,
-        position: idx,
-      }));
-
-      setButtons((prev) => {
-        const otherButtons = prev.filter(
-          (b) => (b.page_index ?? 0) !== activePageId
-        );
-        return [...otherButtons, ...updatedWithPosition];
-      });
-
-      const updates = updatedWithPosition.map((btn) => ({
-        id: btn.id,
-        position: btn.position,
-        page_index: activePageId,
-      }));
-
-      try {
-        await invoke("update_button_positions", { updates });
-        setStatusMsg("Ordem dos botões atualizada!");
-      } catch (error) {
-        console.error("Erro ao salvar posições dos botões:", error);
-        setStatusMsg("Erro ao salvar nova ordenação no banco.");
-        await loadButtons();
-      }
-    }
-  };
-
-  const handleAddRule = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!newRuleProcess.trim()) {
-      setStatusMsg("Informe o nome do executável ou processo (ex: chrome.exe).");
-      return;
-    }
-    try {
-      await invoke("add_window_rule", {
-        processName: newRuleProcess.trim(),
-        pageIndex: Number(newRulePage),
-      });
-      const targetPageName =
-        pages.find((p) => p.id === Number(newRulePage))?.name ||
-        `ID ${newRulePage}`;
-      setStatusMsg(
-        `Regra para "${newRuleProcess.trim()}" -> Página "${targetPageName}" adicionada!`
-      );
-      setNewRuleProcess("");
-      await loadRules();
-    } catch (error) {
-      console.error("Erro ao adicionar regra:", error);
-      setStatusMsg("Erro ao salvar regra no banco de dados.");
-    }
-  };
-
-  const handleDeleteRule = async (id: number, procName: string) => {
-    try {
-      setRules((prev) => prev.filter((r) => r.id !== id));
-      await invoke("delete_window_rule", { id });
-      setStatusMsg(`Regra para "${procName}" removida.`);
-      await loadRules();
-    } catch (error) {
-      console.error("Erro ao remover regra:", error);
-      setStatusMsg("Erro ao remover regra.");
-      await loadRules();
-    }
-  };
-
-  const activePageObj = pages.find((p) => p.id === activePageId);
-  const currentPageButtons = useMemo(() => {
-    let list = buttons
-      .filter((b) => (b.page_index ?? 0) === activePageId)
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-    // Mantém o botão montado durante o arrasto entre páginas para evitar unmount do Draggable
-    if (
-      draggingButtonIdRef.current !== null &&
-      dragSourcePageRef.current !== null &&
-      dragSourcePageRef.current !== activePageId
-    ) {
-      const draggedBtn = buttons.find((b) => b.id === draggingButtonIdRef.current);
-      if (draggedBtn && !list.some((b) => b.id === draggedBtn.id)) {
-        list = [...list, { ...draggedBtn, page_index: activePageId }];
-      }
-    }
-
-    return list;
-  }, [buttons, activePageId]);
+export function App() {
+  const [activeTab, setActiveTab] = useState<"buttons" | "auto-profile" | "themes" | "pairing">("buttons");
+  const [activePage, setActivePage] = useState("Principal");
+  const [previewOrientation, setPreviewOrientation] = useState<"portrait" | "landscape">("portrait");
+
+  const navItems = [
+    { id: "buttons", label: "Grade de Botões", icon: Grid },
+    { id: "auto-profile", label: "Auto-Profile", icon: Monitor },
+    { id: "themes", label: "Skins & Temas", icon: Palette },
+    { id: "pairing", label: "Pareamento QR", icon: QrCode },
+  ] as const;
+
+  const mockPages = ["Principal", "Mídia & Áudio", "Dev & Terminal", "Produtividade"];
+
+  const mockButtons = [
+    { id: 1, label: "Calculadora", icon: Zap, action: "open_app:calc", color: "from-amber-500/20 to-amber-600/30", border: "border-amber-500/40" },
+    { id: 2, label: "Navegador", icon: ExternalLink, action: "open_url:https://google.com", color: "from-sky-500/20 to-sky-600/30", border: "border-sky-500/40" },
+    { id: 3, label: "Terminal", icon: Terminal, action: "open_app:cmd", color: "from-slate-500/20 to-slate-600/30", border: "border-slate-500/40" },
+    { id: 4, label: "Gerenciador", icon: FolderOpen, action: "open_app:explorer", color: "from-emerald-500/20 to-emerald-600/30", border: "border-emerald-500/40" },
+    { id: 5, label: "Volume +", icon: Volume2, action: "vol_up", color: "from-blue-500/20 to-blue-600/30", border: "border-blue-500/40" },
+    { id: 6, label: "Play/Pause", icon: Play, action: "play_pause", color: "from-purple-500/20 to-purple-600/30", border: "border-purple-500/40" },
+  ];
 
   return (
-    <main className="container">
-      <header className="header">
-        <h1>Stream Desk - Gerenciador de Botões</h1>
-        <p className="subtitle">
-          Servidor WebSocket ativo na porta <code>8080/ws</code> | Banco SQLite (
-          <code>streamdesk.db</code>)
-        </p>
-
-        <div className="connection-panel">
-          <div className="qr-wrapper">
-            <QRCode value={`ws://${localIp}:8080/ws`} size={128} />
+    <div className="flex h-screen w-screen overflow-hidden bg-neutral-950 text-neutral-100 select-none">
+      {/* 1. SIDEBAR ESQUERDA (240px) */}
+      <aside className="w-[240px] flex-shrink-0 flex flex-col border-r border-neutral-800/80 bg-neutral-900/95 backdrop-blur-md">
+        {/* Brand Header */}
+        <div className="p-4 border-b border-neutral-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold tracking-tight leading-none text-neutral-100">Stream Desk</h1>
+              <span className="text-[10px] text-neutral-400 font-mono tracking-wider">HOST STUDIO</span>
+            </div>
           </div>
-          <div className="connection-info">
-            <span className="connection-badge">Pareamento via QR Code</span>
-            <p className="connection-ip">
-              IP Local (LAN): <strong>{localIp}</strong>
-            </p>
-            <code className="connection-ws">ws://{localIp}:8080/ws</code>
-            <div className="theme-selector-bar">
-              <label htmlFor="theme-select">Tema Global (Mobile Skin):</label>
-              <select
-                id="theme-select"
-                value={activeTheme}
-                onChange={(e) => handleThemeChange(e.currentTarget.value)}
-              >
-                <option value="default">Padrão</option>
-                <option value="apple">Apple</option>
-                <option value="windows">Windows</option>
-                <option value="steam">Steam</option>
-                <option value="oneui">One UI</option>
-                <option value="chromebook">Chromebook</option>
-              </select>
+          <span className="px-1.5 py-0.5 text-[9px] font-mono font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            v0.2.0
+          </span>
+        </div>
+
+        {/* Server Status Pill */}
+        <div className="px-3 pt-3">
+          <div className="px-3 py-2 rounded-lg bg-neutral-950/60 border border-neutral-800/70 flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[11px] font-medium text-neutral-200 truncate">Smart Server Ativo</span>
+              <span className="text-[9px] font-mono text-neutral-400 truncate">0.0.0.0:8080/ws</span>
             </div>
           </div>
         </div>
-      </header>
 
-      <section className="card">
-        <h2>{editingId !== null ? "Editar Botão" : "Novo Botão"}</h2>
-        <form className="crud-form" onSubmit={handleFormSubmit}>
-          <div className="field">
-            <label htmlFor="label-input">Label (Nome no Botão)</label>
-            <input
-              id="label-input"
-              type="text"
-              placeholder="Ex: Mute, Calculadora..."
-              value={label}
-              onChange={(e) => setLabel(e.currentTarget.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="button-page-select">Página do Botão</label>
-            <select
-              id="button-page-select"
-              value={selectedPageForForm}
-              onChange={(e) => setSelectedPageForForm(Number(e.currentTarget.value))}
-            >
-              {pages.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} (ID {p.id})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="field">
-            <label htmlFor="action-select">Action (Macro)</label>
-            <select
-              id="action-select"
-              value={actionType}
-              onChange={(e) => setActionType(e.currentTarget.value)}
-            >
-              <optgroup label="Controles de Áudio & Mídia">
-                <option value="vol_up">Volume + (vol_up)</option>
-                <option value="vol_down">Volume - (vol_down)</option>
-                <option value="mute">Mudo / Mute (mute)</option>
-                <option value="play_pause">Play/Pause (play_pause)</option>
-                <option value="media_next">Próxima Faixa (media_next)</option>
-                <option value="media_prev">Faixa Anterior (media_prev)</option>
-              </optgroup>
-              <optgroup label="Automações e Sistema">
-                <option value="open_calc">Calculadora (open_calc)</option>
-                <option value="open_url">Abrir Site (URL)</option>
-                <option value="open_app">Abrir Aplicativo / Script</option>
-                <option value="hotkey">Atalho de Teclado (Hotkey)</option>
-                <option value="webhook">Disparar Webhook (HTTP GET)</option>
-              </optgroup>
-            </select>
-          </div>
-
-          {(actionType === "open_url" ||
-            actionType === "open_app" ||
-            actionType === "hotkey" ||
-            actionType === "webhook") && (
-            <div className="field">
-              <label htmlFor="custom-param-input">
-                {actionType === "open_url"
-                  ? "URL do Site (ex: https://youtube.com)"
-                  : actionType === "open_app"
-                  ? "Caminho / Executável (ex: notepad, code, spotify)"
-                  : actionType === "webhook"
-                  ? "URL do Webhook (HTTP GET)"
-                  : "Combinação de Teclas (ex: Ctrl+Shift+A, Alt+F4, Ctrl+C)"}
-              </label>
-              <input
-                id="custom-param-input"
-                type="text"
-                placeholder={
-                  actionType === "open_url"
-                    ? "https://..."
-                    : actionType === "open_app"
-                    ? "notepad / calc / caminho do .exe"
-                    : actionType === "webhook"
-                    ? "http://192.168.../api/trigger"
-                    : "Ctrl+Shift+A"
-                }
-                value={actionCustomParam}
-                onChange={(e) => setActionCustomParam(e.currentTarget.value)}
-              />
-            </div>
-          )}
-
-          <div className="field">
-            <label htmlFor="icon-select">Ícone</label>
-            <select
-              id="icon-select"
-              value={icon}
-              onChange={(e) => setIcon(e.currentTarget.value)}
-            >
-              <option value="volume-2">volume-2 (Volume +)</option>
-              <option value="volume-x">volume-x (Volume -)</option>
-              <option value="mic-off">mic-off (Mute Mic)</option>
-              <option value="play">play (Play/Pause)</option>
-              <option value="calculator">calculator (Calculadora)</option>
-              <option value="globe">globe (Navegador)</option>
-              <option value="settings">settings (Configurações)</option>
-              <option value="folder">folder (Pastas)</option>
-              <option value="terminal">terminal (Terminal)</option>
-              <option value="zap">zap (Ação Rápida)</option>
-            </select>
-          </div>
-
-          <div className="field field-color">
-            <label htmlFor="color-input">Cor</label>
-            <div className="color-Input-group">
-              <input
-                id="color-picker"
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.currentTarget.value)}
-              />
-              <input
-                id="color-input"
-                type="text"
-                value={color}
-                onChange={(e) => setColor(e.currentTarget.value)}
-              />
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button type="submit" className="btn-primary">
-              {editingId !== null ? "Salvar Alteração" : "+ Adicionar Botão"}
-            </button>
-            {editingId !== null && (
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={handleCancelEdit}
-              >
-                Cancelar
-              </button>
-            )}
-          </div>
-        </form>
-        {statusMsg && <p className="status-msg">{statusMsg}</p>}
-      </section>
-
-      <section className="card deck-card">
-        <DragDropContext
-          onDragStart={handleDragStart}
-          onDragUpdate={handleDragUpdate}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="section-header">
-            <h2>
-              Grade de Botões - {activePageObj?.name || "Página"} (
-              {currentPageButtons.length} botões)
-            </h2>
-            <button type="button" className="btn-secondary" onClick={loadButtons}>
-              Atualizar Lista
-            </button>
-          </div>
-
-          <div className="page-tabs-bar">
-            <div className="page-tabs-list">
-              {pages.map((p) => {
-                const countOnPage = buttons.filter(
-                  (b) => (b.page_index ?? 0) === p.id
-                ).length;
-                const isActive = activePageId === p.id;
+        {/* Navigation Sections */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          <div>
+            <span className="px-2 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Menu</span>
+            <nav className="mt-1 space-y-0.5">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
                 return (
-                  <Droppable key={p.id} droppableId={`tab-${p.id}`} type="BUTTON">
-                    {(dropProvided, dropSnapshot) => (
-                      <div
-                        ref={dropProvided.innerRef}
-                        {...dropProvided.droppableProps}
-                        className={`page-tab-wrapper ${isActive ? "active" : ""} ${
-                          dropSnapshot.isDraggingOver ? "drop-target" : ""
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          className="page-tab-btn"
-                          onClick={() => {
-                            setActivePageId(p.id);
-                            setSelectedPageForForm(p.id);
-                            setEditingId(null);
-                          }}
-                        >
-                          {p.name} ({countOnPage})
-                        </button>
-                        <div className="tab-actions">
-                          <button
-                            type="button"
-                            className="tab-action-btn edit-tab-btn"
-                            title="Renomear página"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRenamePage(p);
-                            }}
-                          >
-                            ✏️
-                          </button>
-                          {pages.length > 1 && (
-                            <button
-                              type="button"
-                              className="tab-action-btn delete-tab-btn"
-                              title="Excluir página"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeletePage(p);
-                              }}
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                        <div style={{ display: "none" }}>
-                          {dropProvided.placeholder}
-                        </div>
-                      </div>
-                    )}
-                  </Droppable>
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
+                      isActive
+                        ? "bg-sky-500/10 text-sky-400 border border-sky-500/30 shadow-sm"
+                        : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60 border border-transparent"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
                 );
               })}
+            </nav>
+          </div>
+
+          <div>
+            <div className="px-2 flex items-center justify-between">
+              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Páginas</span>
+              <button
+                title="Adicionar página"
+                className="text-neutral-400 hover:text-sky-400 p-0.5 rounded transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="mt-1 space-y-0.5">
+              {mockPages.map((page, idx) => (
+                <button
+                  key={page}
+                  onClick={() => setActivePage(page)}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                    activePage === page
+                      ? "bg-neutral-800 text-neutral-100 font-medium"
+                      : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Layers className="w-3 h-3 text-neutral-400" />
+                    <span className="truncate">{page}</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-neutral-950/40 text-neutral-400">
+                    {idx === 0 ? 6 : idx === 1 ? 4 : 2}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-3 border-t border-neutral-800/80 bg-neutral-950/40 flex items-center justify-between text-xs text-neutral-400">
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <Wifi className="w-3.5 h-3.5 text-sky-400" />
+            <span className="font-mono">LAN 192.168.1.97</span>
+          </div>
+          <button className="text-neutral-400 hover:text-neutral-200 p-1 rounded hover:bg-neutral-800">
+            <Settings className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </aside>
+
+      {/* 2. ÁREA CENTRAL FLUIDA (flex-1) */}
+      <main className="flex-1 flex flex-col min-w-0 bg-neutral-950/60 overflow-hidden">
+        {/* Top Header */}
+        <header className="h-14 border-b border-neutral-800/80 px-6 flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-semibold text-neutral-100 tracking-tight">{activePage}</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-mono">
+              6 slots preenchidos
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Buscar atalho ou app..."
+                className="w-48 pl-8 pr-3 py-1.5 text-xs rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:border-sky-500/50 transition-colors"
+              />
+            </div>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-sky-500 hover:bg-sky-400 text-white shadow-sm shadow-sky-500/20 transition-all">
+              <Plus className="w-3.5 h-3.5" />
+              <span>Novo Botão</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Content View Area */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Quick Notice Banner */}
+          <div className="p-4 rounded-xl border border-sky-500/20 bg-gradient-to-r from-sky-950/30 to-indigo-950/20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-sky-300">Modo de Design Profissional Ativo (Fase 2)</h3>
+                <p className="text-[11px] text-neutral-400">
+                  Esqueleto de layout de 3 colunas configurado com Tailwind CSS e Radix/Lucide.
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-1 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              Ready for Integration
+            </span>
+          </div>
+
+          {/* Interactive Button Grid Simulator */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-neutral-300 uppercase tracking-wider">Grade de Botões</span>
+              <span className="text-[11px] text-neutral-400">Arraste para reordenar</span>
             </div>
 
-            <button
-              type="button"
-              className="btn-add-page"
-              onClick={handleAddPage}
-              title="Criar nova página dinâmica"
-            >
-              + Nova Página
-            </button>
-          </div>
-
-          <div className="deck-grid-container">
-            <Droppable droppableId="deck-grid" type="BUTTON" direction="horizontal">
-              {(provided) => (
-                <div
-                  className={`deck-grid ${
-                    currentPageButtons.length === 0 ? "empty" : ""
-                  }`}
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                >
-                  {currentPageButtons.length === 0 ? (
-                    <p className="empty-state">
-                      Nenhum botão na página "{activePageObj?.name || 'Atual'}". Arraste um botão aqui ou adicione acima!
-                    </p>
-                  ) : (
-                    currentPageButtons.map((btn, index) => (
-                      <Draggable
-                        key={String(btn.id)}
-                        draggableId={String(btn.id)}
-                        index={index}
-                      >
-                        {(dragProvided, dragSnapshot) => (
-                          <div
-                            ref={dragProvided.innerRef}
-                            {...dragProvided.draggableProps}
-                            {...dragProvided.dragHandleProps}
-                            className={`deck-item ${
-                              dragSnapshot.isDragging ? "dragging" : ""
-                            }`}
-                            style={{
-                              borderColor: btn.color || "#38bdf8",
-                              ...dragProvided.draggableProps.style,
-                            }}
-                          >
-                            <div className="item-actions">
-                              <span
-                                className="drag-handle-hint"
-                                title="Arraste para reordenar ou migrar de página"
-                              >
-                                ⋮⋮
-                              </span>
-                              <button
-                                type="button"
-                                className="edit-btn"
-                                title="Editar botão"
-                                onClick={() => handleEditClick(btn)}
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                type="button"
-                                className="delete-btn"
-                                title="Excluir botão"
-                                onClick={() => handleDeleteButton(btn.id, btn.label)}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                            <span
-                              className="color-dot"
-                              style={{ backgroundColor: btn.color || "#38bdf8" }}
-                            />
-                            <strong className="deck-label">{btn.label}</strong>
-                            <span className="deck-icon-badge">
-                              icon: {btn.icon || "zap"}
-                            </span>
-                            <code className="deck-action">{btn.action_name}</code>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))
-                  )}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </div>
-        </DragDropContext>
-      </section>
-
-      <section className="card">
-        <div className="section-header">
-          <h2>Auto-Profile (Troca Automática)</h2>
-        </div>
-        <p
-          className="subtitle"
-          style={{ marginBottom: "16px", textAlign: "left" }}
-        >
-          Monitora o aplicativo ativo no Windows e força o celular a deslizar para a página correspondente.
-        </p>
-
-        <form className="crud-form" onSubmit={handleAddRule}>
-          <div className="field">
-            <label htmlFor="process-name-input">
-              Nome do Processo (ex: chrome.exe, Spotify.exe)
-            </label>
-            <input
-              id="process-name-input"
-              type="text"
-              placeholder="Ex: Code.exe, chrome.exe, Spotify.exe..."
-              value={newRuleProcess}
-              onChange={(e) => setNewRuleProcess(e.currentTarget.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="rule-page-select">Página de Destino</label>
-            <select
-              id="rule-page-select"
-              value={newRulePage}
-              onChange={(e) => setNewRulePage(Number(e.currentTarget.value))}
-            >
-              {pages.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} (ID {p.id})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-actions">
-            <button type="submit" className="btn-primary">
-              + Adicionar Regra
-            </button>
-          </div>
-        </form>
-
-        <div className="rules-list-container">
-          <h3
-            style={{
-              fontSize: "1rem",
-              marginTop: "20px",
-              marginBottom: "10px",
-              color: "#e2e8f0",
-            }}
-          >
-            Regras de Troca Ativas ({rules.length})
-          </h3>
-          {rules.length === 0 ? (
-            <p className="empty-state">
-              Nenhuma regra de Auto-Profile cadastrada. Adicione uma regra acima para sincronização automática.
-            </p>
-          ) : (
-            <div className="rules-grid">
-              {rules.map((rule) => {
-                const targetPage = pages.find((p) => p.id === rule.page_index);
+            <div className="grid grid-cols-3 gap-3.5">
+              {mockButtons.map((btn) => {
+                const Icon = btn.icon;
                 return (
-                  <div key={rule.id} className="rule-badge-card">
-                    <div className="rule-info">
-                      <span className="rule-process">{rule.process_name}</span>
-                      <span className="rule-arrow">➔</span>
-                      <span className="rule-page-tag">
-                        {targetPage ? targetPage.name : `Página ID ${rule.page_index}`}
-                      </span>
+                  <div
+                    key={btn.id}
+                    className={`group relative p-4 rounded-xl border ${btn.border} bg-gradient-to-b ${btn.color} hover:border-sky-400/60 hover:shadow-lg hover:shadow-sky-500/10 transition-all cursor-grab active:cursor-grabbing flex flex-col justify-between min-h-[110px]`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="h-8 w-8 rounded-lg bg-neutral-900/80 border border-neutral-700/60 flex items-center justify-center text-neutral-200 group-hover:scale-105 transition-transform">
+                        <Icon className="w-4 h-4 text-sky-400" />
+                      </div>
+                      <span className="text-[10px] font-mono text-neutral-400">#{btn.id}</span>
                     </div>
-                    <button
-                      type="button"
-                      className="delete-btn rule-delete-btn"
-                      title="Excluir regra"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteRule(rule.id, rule.process_name);
-                      }}
-                    >
-                      ✕
-                    </button>
+
+                    <div className="mt-3">
+                      <h4 className="text-xs font-semibold text-neutral-100 tracking-tight">{btn.label}</h4>
+                      <code className="text-[10px] text-neutral-400 font-mono truncate block mt-0.5">
+                        {btn.action}
+                      </code>
+                    </div>
                   </div>
                 );
               })}
+
+              {/* Add Button Slot */}
+              <button className="border-2 border-dashed border-neutral-800 hover:border-neutral-700 rounded-xl flex flex-col items-center justify-center gap-1.5 p-4 text-neutral-400 hover:text-neutral-300 transition-colors min-h-[110px]">
+                <Plus className="w-5 h-5" />
+                <span className="text-xs font-medium">Slot Vazio</span>
+              </button>
             </div>
-          )}
+          </div>
         </div>
-      </section>
-    </main>
+      </main>
+
+      {/* 3. PAINEL DIREITO (320px - Mobile Live Preview) */}
+      <aside className="w-[320px] flex-shrink-0 flex flex-col border-l border-neutral-800/80 bg-neutral-900/95 backdrop-blur-md">
+        {/* Preview Header */}
+        <div className="p-4 border-b border-neutral-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-sky-400" />
+            <h3 className="text-xs font-semibold text-neutral-200">Mobile Live Preview</h3>
+          </div>
+          <button
+            onClick={() => setPreviewOrientation((prev) => (prev === "portrait" ? "landscape" : "portrait"))}
+            title="Girar Orientação da Maquete"
+            className="p-1 rounded text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition-colors"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Mockup Display Wrapper */}
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
+          {/* Smartphone Bezel */}
+          <div
+            className={`transition-all duration-300 relative border-4 border-neutral-700 rounded-[2rem] bg-neutral-950 shadow-2xl p-2.5 flex flex-col justify-between ${
+              previewOrientation === "portrait" ? "w-[240px] h-[440px]" : "w-[290px] h-[190px]"
+            }`}
+          >
+            {/* Dynamic Island / Notch */}
+            <div className="self-center w-14 h-3 bg-neutral-800 rounded-full mb-1 flex items-center justify-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-900 inline-block" />
+            </div>
+
+            {/* Simulated Phone Screen Content */}
+            <div className="flex-1 rounded-[1.25rem] bg-gradient-to-br from-slate-900 via-neutral-900 to-sky-950/40 p-2 border border-neutral-800/60 flex flex-col justify-between overflow-hidden">
+              <div className="flex items-center justify-between px-1 text-[9px] text-neutral-400 font-mono">
+                <span>{activePage}</span>
+                <span className="text-emerald-400">● 60 FPS</span>
+              </div>
+
+              {/* Scaled Mini Grid */}
+              <div className="grid grid-cols-3 gap-1.5 my-auto">
+                {mockButtons.map((btn) => (
+                  <div
+                    key={btn.id}
+                    className="h-10 rounded-lg bg-neutral-800/90 border border-neutral-700/80 flex flex-col items-center justify-center text-center p-0.5"
+                  >
+                    <span className="text-[8px] font-medium text-neutral-200 leading-tight truncate w-full px-0.5">
+                      {btn.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dots Pager Indicator */}
+              <div className="flex items-center justify-center gap-1 py-0.5">
+                <span className="h-1 w-3 rounded-full bg-sky-400" />
+                <span className="h-1 w-1 rounded-full bg-neutral-600" />
+                <span className="h-1 w-1 rounded-full bg-neutral-600" />
+              </div>
+            </div>
+
+            {/* Home Indicator Bar */}
+            <div className="self-center w-16 h-1 bg-neutral-700 rounded-full mt-1" />
+          </div>
+
+          <p className="mt-3 text-[10px] text-neutral-400 text-center font-mono">
+            Simulação em escala real do cliente Expo
+          </p>
+        </div>
+
+        {/* Preview Footer Specs */}
+        <div className="p-3 border-t border-neutral-800/80 bg-neutral-950/40 text-[11px] text-neutral-400 space-y-1">
+          <div className="flex justify-between">
+            <span>Skin Ativa:</span>
+            <span className="text-neutral-200 font-medium">Default (Glass)</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Orientação:</span>
+            <span className="text-neutral-200 capitalize font-mono text-[10px]">{previewOrientation}</span>
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }
 
