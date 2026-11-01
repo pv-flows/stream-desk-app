@@ -1,4 +1,5 @@
 pub mod db;
+pub mod app_scanner;
 mod server;
 
 use tauri::Manager;
@@ -167,6 +168,13 @@ fn delete_window_rule(id: i32) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn get_installed_apps() -> Result<Vec<app_scanner::InstalledApp>, String> {
+    tokio::task::spawn_blocking(app_scanner::scan_installed_apps)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if let Err(err) = db::init_db() {
@@ -201,7 +209,8 @@ pub fn run() {
             add_page,
             update_page,
             delete_page,
-            update_button_positions
+            update_button_positions,
+            get_installed_apps
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

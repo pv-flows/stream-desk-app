@@ -4,6 +4,12 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Scanner Automático de Aplicativos do Windows com Extração de Ícones Base64:
+  - **Módulo Nativo `app_scanner.rs`:** Varredura rápida e resiliente das pastas do Menu Iniciar (%APPDATA% e %ProgramData%) e Desktops (Público e Usuário) com limitação de profundidade para máxima performance.
+  - **Extração de Metadados e Resolução de Atalhos:** Parsing de arquivos `.lnk` com a crate `lnk` identificando o nome amigável e o executável alvo (ex: `chrome.exe`, `Spotify.exe`), além de filtragem inteligente de desinstaladores e manuais.
+  - **Extração de Ícones em Base64:** Integração com a crate `windows-icons` gerando ícones em tamanho 48x48 (`IconSize::Medium`) formatados como Data URI PNG (`data:image/png;base64,...`).
+  - **Comando Tauri Assíncrono (`get_installed_apps`):** Executado em threadpool de bloqueio (`tokio::task::spawn_blocking`) em `desktop/src-tauri/src/lib.rs`, garantindo que a varredura não bloqueie a thread principal da UI nem o servidor WebSocket.
+### Added
 - Drag-and-Drop Cruzado entre Páginas (Cross-Page DND):
   - **Abas como Zonas de Drop (Droppable Tabs):** Cada aba de página (`Tabs`) agora opera como um alvo `<Droppable droppableId={`tab-${id}`}>`, permitindo soltar botões diretamente sobre a aba de destino com destaque visual pulsante (`.drop-target`).
   - **Alternância Automática de Página por Hover:** Implementado `onDragUpdate` com timer de 500ms no `<DragDropContext>`. Ao pairar o botão sobre qualquer aba durante o arrasto, a visualização da grade alterna automaticamente para a nova página sem soltar o clique, permitindo posicionar o botão em qualquer índice da nova página.
