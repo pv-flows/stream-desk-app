@@ -3,6 +3,11 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Added
+- Suporte a modo paisagem (landscape) e rotação dinâmica de tela no Mobile (`mobile/app.json` configurado para `orientation: default`).
+- Adaptação dinâmica de grade para 2 linhas de botões no modo horizontal (`useWindowDimensions` e cálculo de proporção em `mobile/src/screens/HomeScreen.tsx`), repassando `buttonWidth` e `buttonHeight` para o componente `DeckButton.tsx`.
+- Header e indicadores de página compactos para visualização e aproveitamento máximo de tela em landscape.
+
 ### Fixed
 - Correção no container e renderização do `<PagerView>` em `mobile/src/screens/HomeScreen.tsx` para mapear de forma fixa as 3 páginas (`PAGES = [0, 1, 2]`) com `flex: 1`, filtragem `(b.page_index || 0) === pageIndex` e feedback visual de dots, corrigindo o deslizamento lateral por swipe.
 

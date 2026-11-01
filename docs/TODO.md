@@ -24,6 +24,7 @@
 - [x] Suporte a ícones dinâmicos no SQLite (`icon` em `buttons`) e seleção na criação/edição de botões no Desktop.
 - [x] Feedback Háptico físico no Mobile com `expo-haptics` (`Haptics.impactAsync(Medium)`) ao pressionar botões.
 - [x] Paginação de botões no SQLite (`page_index INTEGER DEFAULT 0`) com abas de páginas no Desktop e navegação fluida por swipe via `<PagerView>` (`react-native-pager-view`) no Mobile.
+- [x] Suporte a rotação de tela e modo paisagem dinâmico (`orientation: default` no `app.json`, grade adaptativa de 2 linhas em landscape na `HomeScreen.tsx` e `DeckButton.tsx`).
 
 ## 4. Recursos Pro (Freemium) & Futuros
 - [x] Motor de temas base (`default`, `apple`, `windows`, `steam`, `oneui`, `chromebook`) com Zustand (`themeStore`) no Mobile e seletor sincronizado no Desktop (`App.tsx`).

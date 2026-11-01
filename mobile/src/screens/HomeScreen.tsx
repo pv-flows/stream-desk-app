@@ -3,7 +3,7 @@ import { BlurView } from 'expo-blur';
 import { CameraView, BarcodeScanningResult, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { DeckButton, DeckButtonItem } from '../components/DeckButton';
 import { ConnectionStatus, websocketService } from '../services/websocketService';
@@ -25,6 +25,9 @@ export const HomeScreen: React.FC = () => {
   const [lastAction, setLastAction] = useState<string>('Aguardando comando...');
   const [serverReply, setServerReply] = useState<string>('');
   const scannedLockRef = useRef<boolean>(false);
+
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
 
   useEffect(() => {
     const unsubscribeStatus = websocketService.onStatusChange((status) => {
@@ -136,7 +139,7 @@ export const HomeScreen: React.FC = () => {
     const isGlass = skin.type === 'glass';
 
     return (
-      <View style={styles.headerWrapper}>
+      <View style={[styles.headerWrapper, isLandscape && styles.headerWrapperLandscape]}>
         {isGlass ? (
           <BlurView
             intensity={skin.blurIntensity}
@@ -146,26 +149,31 @@ export const HomeScreen: React.FC = () => {
         ) : null}
 
         <View style={styles.headerTopRow}>
-          <Text style={[styles.title, { color: skin.textColor }]}>Stream Desk</Text>
+          <Text style={[styles.title, isLandscape && styles.titleLandscape, { color: skin.textColor }]}>
+            Stream Desk
+          </Text>
+          <View style={[styles.statusBadge, isLandscape && styles.statusBadgeLandscape]}>
+            <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
+            <Text style={[styles.statusText, { color: skin.textColor }]}>
+              {connectionStatus.toUpperCase()} • {theme.toUpperCase()} • Pág {currentPage + 1}
+            </Text>
+          </View>
           <Pressable
             onPress={handleDisconnect}
-            style={[styles.disconnectBtn, { borderColor: skin.borderColor }]}
+            style={[styles.disconnectBtn, isLandscape && styles.disconnectBtnLandscape, { borderColor: skin.borderColor }]}
           >
             <Text style={[styles.disconnectBtnText, { color: '#f87171' }]}>Desconectar</Text>
           </Pressable>
         </View>
 
-        <View style={styles.statusBadge}>
-          <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
-          <Text style={[styles.statusText, { color: skin.textColor }]}>
-            Status: {connectionStatus.toUpperCase()} • Skin: {theme.toUpperCase()} • Pág {currentPage + 1}
-          </Text>
-        </View>
-
-        <Text style={[styles.subtitle, { color: skin.highlightColor }]}>{lastAction}</Text>
-        {serverReply ? (
-          <Text style={[styles.serverReply, { color: skin.highlightColor }]}>{serverReply}</Text>
-        ) : null}
+        {!isLandscape && (
+          <>
+            <Text style={[styles.subtitle, { color: skin.highlightColor }]}>{lastAction}</Text>
+            {serverReply ? (
+              <Text style={[styles.serverReply, { color: skin.highlightColor }]}>{serverReply}</Text>
+            ) : null}
+          </>
+        )}
       </View>
     );
   };
@@ -240,6 +248,14 @@ export const HomeScreen: React.FC = () => {
     );
   }
 
+  // Cálculo dinâmico para 2 linhas no modo paisagem (landscape)
+  const availableGridHeight = Math.max(160, height - (isLandscape ? 85 : 220));
+  const landscapeButtonHeight = Math.floor((availableGridHeight - 32) / 2);
+  const landscapeButtonWidth = Math.min(
+    Math.floor((width - 80) / 4),
+    Math.floor(landscapeButtonHeight * 1.3)
+  );
+
   return (
     <LinearGradient
       colors={skin.backgroundGradient || ['#0f172a', '#1e293b']}
@@ -257,14 +273,19 @@ export const HomeScreen: React.FC = () => {
             {PAGES.map((pageIndex) => {
               const pageButtons = buttons.filter((b) => (b.page_index || 0) === pageIndex);
               return (
-                <View key={pageIndex} style={styles.pageSlide}>
+                <View
+                  key={pageIndex}
+                  style={[styles.pageSlide, isLandscape && styles.pageSlideLandscape]}
+                >
                   {pageButtons.length > 0 ? (
-                    <View style={styles.grid}>
+                    <View style={[styles.grid, isLandscape && styles.gridLandscape]}>
                       {pageButtons.map((item) => (
                         <DeckButton
                           key={String(item.id)}
                           item={item}
                           onPress={handleButtonPress}
+                          buttonWidth={isLandscape ? landscapeButtonWidth : undefined}
+                          buttonHeight={isLandscape ? landscapeButtonHeight : undefined}
                         />
                       ))}
                     </View>
@@ -283,7 +304,7 @@ export const HomeScreen: React.FC = () => {
             })}
           </PagerView>
 
-          <View style={styles.dotsRow}>
+          <View style={[styles.dotsRow, isLandscape && styles.dotsRowLandscape]}>
             {PAGES.map((pageIndex) => (
               <View
                 key={`dot-${pageIndex}`}
@@ -329,6 +350,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
   },
+  headerWrapperLandscape: {
+    paddingTop: 10,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
+    marginTop: 4,
+    borderRadius: 12,
+  },
   headerBlur: {
     borderRadius: 20,
   },
@@ -342,6 +370,26 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
+  },
+  titleLandscape: {
+    fontSize: 16,
+  },
+  statusBadgeLandscape: {
+    marginVertical: 0,
+    paddingVertical: 2,
+  },
+  disconnectBtnLandscape: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  pageSlideLandscape: {
+    padding: 6,
+  },
+  gridLandscape: {
+    paddingHorizontal: 6,
+  },
+  dotsRowLandscape: {
+    paddingVertical: 6,
   },
   statusBadge: {
     flexDirection: 'row',

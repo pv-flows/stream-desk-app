@@ -18,6 +18,8 @@ export { DeckButtonItem };
 interface DeckButtonProps {
   item: DeckButtonItem;
   onPress: (item: DeckButtonItem) => void;
+  buttonWidth?: number | string;
+  buttonHeight?: number | string;
 }
 
 const FEATHER_ICONS = new Set([
@@ -33,7 +35,12 @@ const FEATHER_ICONS = new Set([
   'zap',
 ]);
 
-export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
+export const DeckButton: React.FC<DeckButtonProps> = ({
+  item,
+  onPress,
+  buttonWidth,
+  buttonHeight,
+}) => {
   const theme = useThemeStore((state) => state.theme);
   const skin = getSkin(theme);
 
@@ -142,7 +149,11 @@ export const DeckButton: React.FC<DeckButtonProps> = ({ item, onPress }) => {
       android_ripple={
         isRippleTheme ? { color: skin.rippleColor, borderless: false } : undefined
       }
-      style={styles.pressableWrapper}
+      style={[
+        styles.pressableWrapper,
+        buttonWidth !== undefined && { width: buttonWidth },
+        buttonHeight !== undefined && { height: buttonHeight, aspectRatio: undefined },
+      ]}
     >
       <Animated.View
         style={[
