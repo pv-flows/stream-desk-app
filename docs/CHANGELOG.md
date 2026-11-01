@@ -4,6 +4,8 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Motor de Ações Avançadas no Desktop (`desktop/src-tauri/src/server.rs`): suporte dinâmico a prefixos `open_url:<link>` (abertura de links no navegador via `open::that`) e `open_app:<app>` (abertura de executáveis e scripts com fallback via `std::process::Command`), e novas teclas de multimídia (`mute`, `media_play`, `media_next`, `media_prev`).
+- Seletor avançado de macros com campo de parâmetros condicionais no Dashboard Desktop (`desktop/src/App.tsx`), permitindo configurar sites, apps, scripts e atalhos multimídia de forma visual.
 - Paginação de botões no SQLite com coluna `page_index INTEGER DEFAULT 0` (`desktop/src-tauri/src/db.rs` e `lib.rs`) e envio no payload de broadcast.
 - Seletor de páginas por abas ("Página 1", "Página 2", "Página 3") no Dashboard Desktop (`desktop/src/App.tsx`, `App.css`) com injeção automática de `page_index` e filtragem local da grade.
 - Navegação fluida por deslizamento lateral (swipe) no Mobile utilizando `react-native-pager-view` (`mobile/src/screens/HomeScreen.tsx`), com agrupamento de páginas, telas vazias orientativas e indicador de pontos (dots).

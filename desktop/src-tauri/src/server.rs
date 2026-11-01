@@ -140,6 +140,24 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
 }
 
 fn execute_macro(action: &str) {
+    if let Some(url) = action.strip_prefix("open_url:") {
+        println!("[Macro] Abrindo URL: {}", url);
+        if let Err(e) = open::that(url.trim()) {
+            eprintln!("[Macro] Erro ao abrir URL '{}': {:?}", url, e);
+        }
+        return;
+    }
+
+    if let Some(app) = action.strip_prefix("open_app:") {
+        let app_target = app.trim();
+        println!("[Macro] Abrindo aplicativo/script: {}", app_target);
+        if let Err(e) = open::that(app_target) {
+            eprintln!("[Macro] open::that falhou, tentando Command: {:?}", e);
+            let _ = std::process::Command::new(app_target).spawn();
+        }
+        return;
+    }
+
     match action {
         "vol_up" => {
             println!("[Macro] Executando Volume Up");
@@ -153,15 +171,33 @@ fn execute_macro(action: &str) {
                 let _ = enigo.key(Key::VolumeDown, Click);
             }
         }
-        "play_pause" => {
-            println!("[Macro] Executando Play/Pause");
+        "mute" => {
+            println!("[Macro] Executando Volume Mute");
+            if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                let _ = enigo.key(Key::VolumeMute, Click);
+            }
+        }
+        "play_pause" | "media_play" => {
+            println!("[Macro] Executando Media Play/Pause");
             if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
                 let _ = enigo.key(Key::MediaPlayPause, Click);
             }
         }
+        "media_next" => {
+            println!("[Macro] Executando Media Next Track");
+            if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                let _ = enigo.key(Key::MediaNextTrack, Click);
+            }
+        }
+        "media_prev" => {
+            println!("[Macro] Executando Media Previous Track");
+            if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                let _ = enigo.key(Key::MediaPrevTrack, Click);
+            }
+        }
         "open_calc" => {
             println!("[Macro] Abrindo Calculadora");
-            open::that("calc").unwrap_or_default();
+            let _ = open::that("calc");
         }
         other => {
             println!("[Macro] Comando não mapeado: {}", other);

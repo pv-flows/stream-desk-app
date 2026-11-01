@@ -19,7 +19,8 @@ function App() {
   const [activePage, setActivePage] = useState<number>(0);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [label, setLabel] = useState("");
-  const [actionName, setActionName] = useState("vol_up");
+  const [actionType, setActionType] = useState("vol_up");
+  const [actionCustomParam, setActionCustomParam] = useState("");
   const [color, setColor] = useState("#38bdf8");
   const [icon, setIcon] = useState("zap");
   const [statusMsg, setStatusMsg] = useState<string>("");
@@ -69,10 +70,43 @@ function App() {
     }
   };
 
+  const computeFinalAction = (): string => {
+    if (actionType === "open_url") {
+      return `open_url:${actionCustomParam.trim()}`;
+    }
+    if (actionType === "open_app") {
+      return `open_app:${actionCustomParam.trim()}`;
+    }
+    return actionType;
+  };
+
+  const parseActionForForm = (rawAction: string) => {
+    if (rawAction.startsWith("open_url:")) {
+      setActionType("open_url");
+      setActionCustomParam(rawAction.replace("open_url:", ""));
+    } else if (rawAction.startsWith("open_app:")) {
+      setActionType("open_app");
+      setActionCustomParam(rawAction.replace("open_app:", ""));
+    } else {
+      setActionType(rawAction);
+      setActionCustomParam("");
+    }
+  };
+
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!label.trim() || !actionName.trim()) {
+    const finalAction = computeFinalAction();
+
+    if (!label.trim() || !finalAction.trim()) {
       setStatusMsg("Preencha o Label e a Action do botão.");
+      return;
+    }
+
+    if (
+      (actionType === "open_url" || actionType === "open_app") &&
+      !actionCustomParam.trim()
+    ) {
+      setStatusMsg("Informe a URL ou o Caminho do Aplicativo.");
       return;
     }
 
@@ -81,7 +115,7 @@ function App() {
         await invoke("update_button", {
           id: editingId,
           label: label.trim(),
-          actionName: actionName.trim(),
+          actionName: finalAction,
           color: color.trim() || "#38bdf8",
           icon: icon.trim() || "zap",
           pageIndex: activePage,
@@ -91,7 +125,7 @@ function App() {
       } else {
         await invoke("add_button", {
           label: label.trim(),
-          actionName: actionName.trim(),
+          actionName: finalAction,
           color: color.trim() || "#38bdf8",
           icon: icon.trim() || "zap",
           pageIndex: activePage,
@@ -100,7 +134,8 @@ function App() {
       }
 
       setLabel("");
-      setActionName("vol_up");
+      setActionType("vol_up");
+      setActionCustomParam("");
       setColor("#38bdf8");
       setIcon("zap");
       await loadButtons();
@@ -113,7 +148,7 @@ function App() {
   const handleEditClick = (btn: DeckButton) => {
     setEditingId(btn.id);
     setLabel(btn.label);
-    setActionName(btn.action_name);
+    parseActionForForm(btn.action_name);
     setColor(btn.color || "#38bdf8");
     setIcon(btn.icon || "zap");
     if (btn.page_index !== undefined) {
@@ -125,7 +160,8 @@ function App() {
   const handleCancelEdit = () => {
     setEditingId(null);
     setLabel("");
-    setActionName("vol_up");
+    setActionType("vol_up");
+    setActionCustomParam("");
     setColor("#38bdf8");
     setIcon("zap");
     setStatusMsg("Edição cancelada.");
@@ -194,22 +230,48 @@ function App() {
           </div>
 
           <div className="field">
-            <label htmlFor="action-input">Action (Macro)</label>
-            <input
-              id="action-input"
-              type="text"
-              list="macro-suggestions"
-              placeholder="Ex: vol_up, vol_down, play_pause, open_calc"
-              value={actionName}
-              onChange={(e) => setActionName(e.currentTarget.value)}
-            />
-            <datalist id="macro-suggestions">
-              <option value="vol_up">Volume + (vol_up)</option>
-              <option value="vol_down">Volume - (vol_down)</option>
-              <option value="play_pause">Play/Pause (play_pause)</option>
-              <option value="open_calc">Calculadora (open_calc)</option>
-            </datalist>
+            <label htmlFor="action-select">Action (Macro)</label>
+            <select
+              id="action-select"
+              value={actionType}
+              onChange={(e) => setActionType(e.currentTarget.value)}
+            >
+              <optgroup label="Controles de Áudio & Mídia">
+                <option value="vol_up">Volume + (vol_up)</option>
+                <option value="vol_down">Volume - (vol_down)</option>
+                <option value="mute">Mudo / Mute (mute)</option>
+                <option value="play_pause">Play/Pause (play_pause)</option>
+                <option value="media_next">Próxima Faixa (media_next)</option>
+                <option value="media_prev">Faixa Anterior (media_prev)</option>
+              </optgroup>
+              <optgroup label="Automações e Sistema">
+                <option value="open_calc">Calculadora (open_calc)</option>
+                <option value="open_url">Abrir Site (URL)</option>
+                <option value="open_app">Abrir Aplicativo / Script</option>
+              </optgroup>
+            </select>
           </div>
+
+          {(actionType === "open_url" || actionType === "open_app") && (
+            <div className="field">
+              <label htmlFor="custom-param-input">
+                {actionType === "open_url"
+                  ? "URL do Site (ex: https://youtube.com)"
+                  : "Caminho / Executável (ex: notepad, code, spotify)"}
+              </label>
+              <input
+                id="custom-param-input"
+                type="text"
+                placeholder={
+                  actionType === "open_url"
+                    ? "https://..."
+                    : "notepad / calc / caminho do .exe"
+                }
+                value={actionCustomParam}
+                onChange={(e) => setActionCustomParam(e.currentTarget.value)}
+              />
+            </div>
+          )}
 
           <div className="field">
             <label htmlFor="icon-select">Ícone</label>
