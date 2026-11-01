@@ -16,6 +16,7 @@ import { ButtonEditorSheet } from "@/components/ButtonEditorSheet";
 import { ConnectionView } from "@/components/views/ConnectionView";
 import { AutoProfileView } from "@/components/views/AutoProfileView";
 import { AppearanceView } from "@/components/views/AppearanceView";
+import { SystemView } from "@/components/views/SystemView";
 
 export interface CentralAreaProps {
   activeTab?: string;
@@ -35,7 +36,7 @@ export function CentralArea({
   const pages = useDashboardStore((s) => s.pages);
   const activePageIndex = useDashboardStore((s) => s.activePageIndex);
 
-  // Navegação de visualizações
+  // Navegação de visualizações principais
   if (activeTab === "connection") {
     return <ConnectionView />;
   }
@@ -46,6 +47,10 @@ export function CentralArea({
 
   if (activeTab === "themes") {
     return <AppearanceView />;
+  }
+
+  if (activeTab === "system" || activeTab === "about") {
+    return <SystemView />;
   }
 
   const activePageObject = pages.find((p) => p.id === activePageIndex);

@@ -1,0 +1,148 @@
+import { useState } from "react";
+import {
+  Plug,
+  Inbox,
+  Smartphone,
+  Upload,
+  Download,
+  Bookmark,
+  Star,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+export function SystemView() {
+  const [startWithWindows, setStartWithWindows] = useState(true);
+  const [minimizeToTray, setMinimizeToTray] = useState(false);
+  const [keepPhoneAwake, setKeepPhoneAwake] = useState(true);
+
+  return (
+    <div className="flex-1 flex flex-col min-w-0 bg-neutral-950/70 p-8 overflow-y-auto select-none">
+      <div className="space-y-6 max-w-4xl">
+        {/* Header: Título "Sistema" */}
+        <header className="pb-2">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-100">
+            Sistema
+          </h1>
+        </header>
+
+        {/* 1. Agrupamento Superior (Geral) em Card Escuro */}
+        <Card className="bg-neutral-900/50 border-neutral-800/80 rounded-2xl p-6 space-y-6 shadow-sm backdrop-blur-sm">
+          {/* Linha 1: Iniciar com o Windows */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              <Plug className="w-4 h-4 text-neutral-400 stroke-[2]" />
+              <span className="text-sm font-medium text-neutral-200">
+                Iniciar com o Windows
+              </span>
+            </div>
+            <Switch
+              checked={startWithWindows}
+              onCheckedChange={setStartWithWindows}
+              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700 border-neutral-700"
+            />
+          </div>
+
+          {/* Linha 2: Minimizar para a bandeja */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              <Inbox className="w-4 h-4 text-neutral-400 stroke-[2]" />
+              <span className="text-sm font-medium text-neutral-200">
+                Minimizar para a bandeja
+              </span>
+            </div>
+            <Switch
+              checked={minimizeToTray}
+              onCheckedChange={setMinimizeToTray}
+              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700 border-neutral-700"
+            />
+          </div>
+
+          {/* Linha 3: Manter tela do celular ligada */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              <Smartphone className="w-4 h-4 text-neutral-400 stroke-[2]" />
+              <span className="text-sm font-medium text-neutral-200">
+                Manter tela do celular ligada
+              </span>
+            </div>
+            <Switch
+              checked={keepPhoneAwake}
+              onCheckedChange={setKeepPhoneAwake}
+              className="data-[state=checked]:bg-indigo-600 data-[state=unchecked]:bg-neutral-700 border-neutral-700"
+            />
+          </div>
+        </Card>
+
+        {/* 2. Agrupamento "Backup" */}
+        <div className="space-y-3 pt-2">
+          <h2 className="text-sm font-semibold text-neutral-200 tracking-tight">
+            Backup
+          </h2>
+
+          <Card className="bg-neutral-900/50 border-neutral-800/80 rounded-2xl p-4 shadow-sm backdrop-blur-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
+              >
+                <Upload className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Exportar</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl border-indigo-500/30 bg-neutral-950/60 hover:bg-indigo-950/20 text-indigo-300 hover:text-indigo-200 font-medium text-xs gap-2 transition-all shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Importar</span>
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* 3. Agrupamento "Sobre" */}
+        <div className="space-y-3 pt-2">
+          <h2 className="text-sm font-semibold text-neutral-200 tracking-tight">
+            Sobre
+          </h2>
+
+          <Card className="bg-neutral-900/50 border-neutral-800/80 rounded-2xl p-5 flex items-center justify-between shadow-sm backdrop-blur-sm">
+            <div className="space-y-0.5">
+              <p className="text-xs text-neutral-400 font-medium">
+                Versão do App
+              </p>
+              <p className="text-sm font-mono font-medium text-neutral-200">
+                v1.2.3
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Badge
+                variant="outline"
+                className="h-8 px-3 rounded-lg border-neutral-700/80 bg-neutral-800/60 text-neutral-300 text-xs font-medium gap-1.5"
+              >
+                <Bookmark className="w-3 h-3 text-neutral-400" />
+                <span>Free</span>
+              </Badge>
+
+              <Button
+                size="sm"
+                className="h-8 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-md shadow-indigo-600/30 gap-1.5 transition-all"
+              >
+                <Star className="w-3.5 h-3.5 fill-white text-white" />
+                <span>Fazer upgrade</span>
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SystemView;
