@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { DeckButton, DeckButtonItem } from '../components/DeckButton';
 import { ConnectionStatus, websocketService } from '../services/websocketService';
 import { useThemeStore } from '../store/themeStore';
-import { ThemeName } from '../theme/colors';
-
-const THEME_OPTIONS: ThemeName[] = ['default', 'ios', 'windows', 'gamer'];
+import { getSkin } from '../theme/skins';
 
 export const HomeScreen: React.FC = () => {
-  const { theme, palette, buttons, setTheme } = useThemeStore();
+  const { theme, palette, buttons } = useThemeStore();
+  const skin = getSkin(theme);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [lastAction, setLastAction] = useState<string>('Aguardando comando...');
   const [serverReply, setServerReply] = useState<string>('');
@@ -60,20 +59,20 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: skin.screenBackground || palette.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: palette.textColor }]}>Stream Desk</Text>
+        <Text style={[styles.title, { color: skin.textColor }]}>Stream Desk</Text>
 
         <View style={styles.statusBadge}>
           <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
-          <Text style={[styles.statusText, { color: palette.textColor }]}>
-            Status: {connectionStatus.toUpperCase()}
+          <Text style={[styles.statusText, { color: skin.textColor }]}>
+            Status: {connectionStatus.toUpperCase()} • Skin: {theme.toUpperCase()}
           </Text>
         </View>
 
-        <Text style={[styles.subtitle, { color: palette.highlight }]}>{lastAction}</Text>
+        <Text style={[styles.subtitle, { color: skin.highlightColor }]}>{lastAction}</Text>
         {serverReply ? (
-          <Text style={[styles.serverReply, { color: palette.highlight }]}>{serverReply}</Text>
+          <Text style={[styles.serverReply, { color: skin.highlightColor }]}>{serverReply}</Text>
         ) : null}
       </View>
 
@@ -85,41 +84,10 @@ export const HomeScreen: React.FC = () => {
             ))}
           </View>
         ) : (
-          <Text style={[styles.emptyText, { color: palette.textColor }]}>
+          <Text style={[styles.emptyText, { color: skin.textColor }]}>
             Sincronizando layout de botões com o PC...
           </Text>
         )}
-      </View>
-
-      <View style={[styles.footer, { borderTopColor: palette.borderColor }]}>
-        <Text style={[styles.footerLabel, { color: palette.textColor }]}>Tema:</Text>
-        <View style={styles.themeRow}>
-          {THEME_OPTIONS.map((option) => {
-            const isSelected = theme === option;
-            return (
-              <Pressable
-                key={option}
-                onPress={() => setTheme(option)}
-                style={[
-                  styles.themeButton,
-                  {
-                    backgroundColor: isSelected ? palette.highlight : palette.buttonBackground,
-                    borderColor: palette.borderColor,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.themeButtonText,
-                    { color: isSelected ? '#000000' : palette.textColor },
-                  ]}
-                >
-                  {option.toUpperCase()}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -188,34 +156,5 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     textAlign: 'center',
     paddingHorizontal: 24,
-  },
-  footer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    alignItems: 'center',
-  },
-  footerLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  themeRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  themeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginHorizontal: 4,
-  },
-  themeButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
   },
 });

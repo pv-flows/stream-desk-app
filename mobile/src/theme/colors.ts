@@ -1,4 +1,12 @@
-export type ThemeName = 'default' | 'apple' | 'steam' | 'ios' | 'windows' | 'gamer';
+export type ThemeName =
+  | 'default'
+  | 'apple'
+  | 'windows'
+  | 'steam'
+  | 'oneui'
+  | 'chromebook'
+  | 'ios'
+  | 'gamer';
 
 export interface ThemePalette {
   background: string;
@@ -17,11 +25,11 @@ export const themes: Record<ThemeName, ThemePalette> = {
     borderColor: '#334155',
   },
   apple: {
-    background: '#f2f2f7',
-    buttonBackground: '#ffffff',
-    textColor: '#1c1c1e',
-    highlight: '#007aff',
-    borderColor: '#d1d1d6',
+    background: '#1c1c1e',
+    buttonBackground: 'rgba(255, 255, 255, 0.14)',
+    textColor: '#ffffff',
+    highlight: '#0a84ff',
+    borderColor: 'rgba(255, 255, 255, 0.28)',
   },
   steam: {
     background: '#171a21',
@@ -30,19 +38,33 @@ export const themes: Record<ThemeName, ThemePalette> = {
     highlight: '#66c0f4',
     borderColor: '#2a475e',
   },
+  oneui: {
+    background: '#000000',
+    buttonBackground: '#17171a',
+    textColor: '#fafaff',
+    highlight: '#3e8aff',
+    borderColor: '#2c2c34',
+  },
+  chromebook: {
+    background: '#202124',
+    buttonBackground: '#303134',
+    textColor: '#e8eaed',
+    highlight: '#8ab4f8',
+    borderColor: '#5f6368',
+  },
   ios: {
-    background: '#f2f2f7',
-    buttonBackground: '#ffffff',
-    textColor: '#1c1c1e',
-    highlight: '#007aff',
-    borderColor: '#d1d1d6',
+    background: '#1c1c1e',
+    buttonBackground: 'rgba(255, 255, 255, 0.14)',
+    textColor: '#ffffff',
+    highlight: '#0a84ff',
+    borderColor: 'rgba(255, 255, 255, 0.28)',
   },
   windows: {
-    background: '#1f1f1f',
-    buttonBackground: '#2d2d2d',
-    textColor: '#ffffff',
-    highlight: '#0078d4',
-    borderColor: '#404040',
+    background: '#111827',
+    buttonBackground: 'rgba(32, 32, 32, 0.55)',
+    textColor: '#f3f4f6',
+    highlight: '#60cdff',
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   gamer: {
     background: '#090014',

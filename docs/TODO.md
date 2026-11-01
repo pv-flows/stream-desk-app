@@ -21,8 +21,8 @@
 - [x] Interface CRUD no cliente React do Desktop (`get_buttons`, `add_button`, `delete_button`) integrada via Tauri Commands ao SQLite.
 
 ## 4. Recursos Pro (Freemium) & Futuros
-- [x] Motor de temas base (`default`, `apple`, `steam`, `gamer`) com Zustand (`themeStore`) no Mobile.
+- [x] Motor de temas base (`default`, `apple`, `windows`, `steam`, `oneui`, `chromebook`, `gamer`) com Zustand (`themeStore`) no Mobile.
 - [x] Persistência do tema ativo (`active_theme`) na tabela `settings` do SQLite e sincronização global em tempo real via payload `sync_layout` (`{ theme, buttons }`).
-- [ ] Customização cosmética avançada de botões (Skins completas por tema).
+- [x] Motor de Estilos e Animações no Mobile (`skins.ts`, `BlurView` via `expo-blur` e animações táticas com `react-native-reanimated` em `DeckButton.tsx`) e remoção do seletor local no Mobile (`HomeScreen.tsx`).
 - [ ] Rastreamento de janela ativa para alternância automática de perfis.
 - [ ] Módulo experimental de webcam virtual via WebRTC.

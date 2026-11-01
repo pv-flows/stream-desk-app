@@ -4,6 +4,9 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- Dicionário de Skins (`mobile/src/theme/skins.ts`) mapeando os conceitos visuais (`apple`, `windows`, `steam`, `oneui`, `chromebook`, `default`) com tipos (`glass`, `solid`, `flat`), raios de borda, cores e sombras.
+- Refatoração do `DeckButton.tsx` no Mobile com `expo-blur` (`<BlurView>` para temas `glass`) e animações específicas via `react-native-reanimated` (`withSpring` na escala para `apple`/`windows`, corte seco `withTiming` invertendo cores para `steam`, e efeito Ripple + elevação de sombra para `oneui`/`chromebook`).
+- Remoção permanente do seletor de temas local na `HomeScreen.tsx` do Mobile, consolidando o modelo "Dumb Client" onde apenas o Desktop controla a Skin ativa.
 - Tabela `settings` no SQLite (`desktop/src-tauri/src/db.rs`) com seed inicial `active_theme = 'default'` e funções `get_active_theme` / `set_active_theme`.
 - Comandos Tauri `set_theme` e `get_theme` (`desktop/src-tauri/src/lib.rs`) e seletor de tema global (`default`, `apple`, `steam`, `gamer`) no Dashboard React (`desktop/src/App.tsx`).
 - Atualização do contrato de payload do evento `sync_layout` (`lib.rs`, `server.rs` e `mobile/src/services/websocketService.ts`) para enviar e processar `{ theme, buttons }`, aplicando automaticamente o tema e os botões nos stores do Mobile (`useDeckStore` e `useThemeStore`).
