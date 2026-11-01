@@ -189,6 +189,9 @@ function App() {
     if (actionType === "hotkey") {
       return `hotkey:${actionCustomParam.trim()}`;
     }
+    if (actionType === "webhook") {
+      return `webhook:${actionCustomParam.trim()}`;
+    }
     return actionType;
   };
 
@@ -202,6 +205,9 @@ function App() {
     } else if (rawAction.startsWith("hotkey:")) {
       setActionType("hotkey");
       setActionCustomParam(rawAction.replace("hotkey:", ""));
+    } else if (rawAction.startsWith("webhook:")) {
+      setActionType("webhook");
+      setActionCustomParam(rawAction.replace("webhook:", ""));
     } else {
       setActionType(rawAction);
       setActionCustomParam("");
@@ -220,11 +226,12 @@ function App() {
     if (
       (actionType === "open_url" ||
         actionType === "open_app" ||
-        actionType === "hotkey") &&
+        actionType === "hotkey" ||
+        actionType === "webhook") &&
       !actionCustomParam.trim()
     ) {
       setStatusMsg(
-        "Informe os parâmetros da ação selecionada (URL, Aplicativo ou Atalho)."
+        "Informe os parâmetros da ação selecionada (URL, Aplicativo, Atalho ou Webhook)."
       );
       return;
     }
@@ -475,19 +482,23 @@ function App() {
                 <option value="open_url">Abrir Site (URL)</option>
                 <option value="open_app">Abrir Aplicativo / Script</option>
                 <option value="hotkey">Atalho de Teclado (Hotkey)</option>
+                <option value="webhook">Disparar Webhook (HTTP GET)</option>
               </optgroup>
             </select>
           </div>
 
           {(actionType === "open_url" ||
             actionType === "open_app" ||
-            actionType === "hotkey") && (
+            actionType === "hotkey" ||
+            actionType === "webhook") && (
             <div className="field">
               <label htmlFor="custom-param-input">
                 {actionType === "open_url"
                   ? "URL do Site (ex: https://youtube.com)"
                   : actionType === "open_app"
                   ? "Caminho / Executável (ex: notepad, code, spotify)"
+                  : actionType === "webhook"
+                  ? "URL do Webhook (HTTP GET)"
                   : "Combinação de Teclas (ex: Ctrl+Shift+A, Alt+F4, Ctrl+C)"}
               </label>
               <input
@@ -498,6 +509,8 @@ function App() {
                     ? "https://..."
                     : actionType === "open_app"
                     ? "notepad / calc / caminho do .exe"
+                    : actionType === "webhook"
+                    ? "http://192.168.../api/trigger"
                     : "Ctrl+Shift+A"
                 }
                 value={actionCustomParam}

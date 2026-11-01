@@ -244,6 +244,22 @@ fn execute_macro(action: &str) {
         return;
     }
 
+    if let Some(webhook_url) = action.strip_prefix("webhook:") {
+        let url = webhook_url.trim().to_string();
+        println!("[Macro] Disparando Webhook HTTP GET: {}", url);
+        tokio::spawn(async move {
+            match reqwest::get(&url).await {
+                Ok(resp) => {
+                    println!("[Webhook] Resposta recebida: {} para {}", resp.status(), url);
+                }
+                Err(err) => {
+                    eprintln!("[Webhook] Falha na requisição HTTP GET para '{}': {:?}", url, err);
+                }
+            }
+        });
+        return;
+    }
+
     if let Some(app) = action.strip_prefix("open_app:") {
         let app_target = app.trim();
         println!("[Macro] Abrindo aplicativo/script: {}", app_target);
