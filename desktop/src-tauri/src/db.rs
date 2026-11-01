@@ -24,6 +24,19 @@ pub fn init_db() -> Result<()> {
         [],
     )?;
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('active_theme', 'default')",
+        [],
+    )?;
+
     let count: i64 = conn.query_row("SELECT COUNT(*) FROM buttons", [], |row| row.get(0))?;
 
     if count == 0 {
@@ -78,4 +91,25 @@ pub fn add_button(label: &str, action_name: &str, color: &str) -> Result<usize> 
 pub fn delete_button(id: i32) -> Result<usize> {
     let conn = Connection::open(DB_PATH)?;
     conn.execute("DELETE FROM buttons WHERE id = ?1", params![id])
+}
+
+pub fn get_active_theme() -> Result<String> {
+    let conn = Connection::open(DB_PATH)?;
+    let theme: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'active_theme'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "default".to_string());
+    Ok(theme)
+}
+
+pub fn set_active_theme(theme: &str) -> Result<()> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('active_theme', ?1)",
+        params![theme],
+    )?;
+    Ok(())
 }

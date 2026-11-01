@@ -23,8 +23,8 @@ export const useThemeStore = create<ThemeState>((set) => ({
   buttons: [],
   setTheme: (theme: ThemeName) =>
     set({
-      theme,
-      palette: themes[theme],
+      theme: themes[theme] ? theme : 'default',
+      palette: themes[theme] ?? themes.default,
     }),
   setButtons: (buttons: DeckButtonItem[]) => set({ buttons }),
 }));

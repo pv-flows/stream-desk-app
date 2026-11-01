@@ -3,6 +3,11 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Added
+- Tabela `settings` no SQLite (`desktop/src-tauri/src/db.rs`) com seed inicial `active_theme = 'default'` e funções `get_active_theme` / `set_active_theme`.
+- Comandos Tauri `set_theme` e `get_theme` (`desktop/src-tauri/src/lib.rs`) e seletor de tema global (`default`, `apple`, `steam`, `gamer`) no Dashboard React (`desktop/src/App.tsx`).
+- Atualização do contrato de payload do evento `sync_layout` (`lib.rs`, `server.rs` e `mobile/src/services/websocketService.ts`) para enviar e processar `{ theme, buttons }`, aplicando automaticamente o tema e os botões nos stores do Mobile (`useDeckStore` e `useThemeStore`).
+
 ### Changed
 - Refinamento arquitetural das diretrizes (`global_rules.md`, `.agents/backend_desktop.md`, `.agents/frontend_mobile.md` e migração de `.agentes/` para `.agents/`) consolidando o modelo "Dumb Client / Smart Server" e sincronização orientada a eventos ("State Sync").
 

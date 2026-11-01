@@ -39,6 +39,38 @@ body {
   font-size: 0.9rem;
 }
 
+.theme-selector-bar {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  padding: 8px 16px;
+  border-radius: 10px;
+}
+
+.theme-selector-bar label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.theme-selector-bar select {
+  border-radius: 8px;
+  border: 1px solid #475569;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  color: #f8fafc;
+  background-color: #0f172a;
+  outline: none;
+  cursor: pointer;
+}
+
+.theme-selector-bar select:focus {
+  border-color: #38bdf8;
+}
+
 .card {
   background-color: #1e293b;
   border: 1px solid #334155;

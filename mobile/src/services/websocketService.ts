@@ -1,14 +1,21 @@
-import { DeckButtonItem, useThemeStore } from '../store/themeStore';
+import { DeckButtonItem, useDeckStore } from '../store/deckStore';
+import { useThemeStore } from '../store/themeStore';
+import { ThemeName } from '../theme/colors';
 
 export interface CommandMessage {
   action: string;
   payload?: string;
 }
 
+export interface SyncLayoutPayload {
+  theme?: ThemeName;
+  buttons?: DeckButtonItem[];
+}
+
 export interface ServerResponse {
   status?: string;
   action?: string;
-  payload?: DeckButtonItem[] | string;
+  payload?: SyncLayoutPayload | DeckButtonItem[] | string;
   message?: string;
 }
 
@@ -51,11 +58,18 @@ class WebSocketService {
           console.log('[WebSocket] Resposta do servidor recebida:', parsed);
 
           if (parsed.action === 'sync_layout' && parsed.payload) {
-            const buttons: DeckButtonItem[] =
+            const payload =
               typeof parsed.payload === 'string' ? JSON.parse(parsed.payload) : parsed.payload;
 
-            if (Array.isArray(buttons)) {
-              useThemeStore.getState().setButtons(buttons);
+            if (Array.isArray(payload)) {
+              useDeckStore.getState().setButtons(payload);
+            } else {
+              if (Array.isArray(payload.buttons)) {
+                useDeckStore.getState().setButtons(payload.buttons);
+              }
+              if (payload.theme) {
+                useThemeStore.getState().setTheme(payload.theme);
+              }
             }
           }
 

@@ -11,6 +11,7 @@ interface DeckButton {
 
 function App() {
   const [buttons, setButtons] = useState<DeckButton[]>([]);
+  const [activeTheme, setActiveTheme] = useState<string>("default");
   const [label, setLabel] = useState("");
   const [actionName, setActionName] = useState("vol_up");
   const [color, setColor] = useState("#38bdf8");
@@ -26,9 +27,30 @@ function App() {
     }
   };
 
+  const loadTheme = async () => {
+    try {
+      const theme = await invoke<string>("get_theme");
+      if (theme) setActiveTheme(theme);
+    } catch (error) {
+      console.error("Erro ao carregar tema:", error);
+    }
+  };
+
   useEffect(() => {
     loadButtons();
+    loadTheme();
   }, []);
+
+  const handleThemeChange = async (theme: string) => {
+    setActiveTheme(theme);
+    try {
+      await invoke("set_theme", { theme });
+      setStatusMsg(`Tema global alterado para "${theme}"!`);
+    } catch (error) {
+      console.error("Erro ao alterar tema:", error);
+      setStatusMsg("Erro ao salvar tema no banco de dados.");
+    }
+  };
 
   const handleAddButton = async (e: FormEvent) => {
     e.preventDefault();
@@ -70,6 +92,19 @@ function App() {
         <p className="subtitle">
           Servidor WebSocket ativo na porta <code>8080/ws</code> | Banco SQLite (<code>streamdesk.db</code>)
         </p>
+        <div className="theme-selector-bar">
+          <label htmlFor="theme-select">Tema Global (Mobile Skin):</label>
+          <select
+            id="theme-select"
+            value={activeTheme}
+            onChange={(e) => handleThemeChange(e.currentTarget.value)}
+          >
+            <option value="default">Default</option>
+            <option value="apple">Apple</option>
+            <option value="steam">Steam</option>
+            <option value="gamer">Gamer</option>
+          </select>
+        </div>
       </header>
 
       <section className="card">
