@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { DeckButton, useDashboardStore } from "@/store/useDashboardStore";
@@ -220,16 +219,6 @@ export function CentralArea({
           <h2 className="text-sm font-semibold tracking-tight truncate">
             {currentPageTitle}
           </h2>
-          <Badge
-            variant="secondary"
-            className={`hidden sm:inline-flex text-[11px] font-mono px-2 py-0.5 font-normal border flex-shrink-0 ${
-              isLight
-                ? "bg-slate-100 text-slate-600 border-slate-200"
-                : "bg-neutral-800 text-neutral-400 border-neutral-700/60"
-            }`}
-          >
-            {pageButtons.length} slots
-          </Badge>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -274,9 +263,9 @@ export function CentralArea({
               ? `linear-gradient(to right, ${accent.hex}12, transparent)`
               : `linear-gradient(to right, ${accent.hex}22, transparent)`,
           }}
-          className="p-4 rounded-xl border flex items-center justify-between gap-3 shadow-sm transition-all"
+          className="p-3.5 sm:p-4 rounded-xl border flex items-center justify-between gap-3 shadow-sm transition-all"
         >
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div
               style={{
                 backgroundColor: `${accent.hex}18`,
@@ -287,28 +276,18 @@ export function CentralArea({
             >
               <Sparkles className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3
                 style={{ color: accent.hex }}
-                className="text-xs font-semibold truncate"
+                className="text-xs sm:text-sm font-semibold whitespace-normal break-words"
               >
                 Grade de Botões com Drag-and-Drop Reativo
               </h3>
-              <p className={`text-[11px] ${isLight ? "text-slate-600" : "text-neutral-400"} line-clamp-1 sm:line-clamp-none`}>
+              <p className={`text-[11px] ${isLight ? "text-slate-600" : "text-neutral-400"} mt-0.5 line-clamp-2 sm:line-clamp-none`}>
                 Arraste os cards para reordenar instantaneamente ou dê duplo clique para editar.
               </p>
             </div>
           </div>
-          <Badge
-            style={{
-              backgroundColor: `${accent.hex}20`,
-              color: accent.hex,
-              borderColor: `${accent.hex}44`,
-            }}
-            className="hidden md:inline-flex border font-mono text-[10px] flex-shrink-0 whitespace-nowrap"
-          >
-            D&D + IPC Active
-          </Badge>
         </div>
 
         {/* Abas e Filtros de Categoria */}
@@ -357,10 +336,6 @@ export function CentralArea({
               </TabsTrigger>
             </TabsList>
           </Tabs>
-
-          <span className={`hidden lg:inline-block text-[11px] ${isLight ? "text-slate-500" : "text-neutral-400"} font-mono flex-shrink-0`}>
-            Página ID: #{activePageIndex}
-          </span>
         </div>
 
         {/* Grade de Botões com @hello-pangea/dnd e Tamanho Dinâmico (1 a 10) */}

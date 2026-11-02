@@ -4,6 +4,10 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Fixed
+- **Limpeza Visual e Polimento na Tela "Páginas e Botões"**:
+  - Remoção do badge técnico `"D&D + IPC Active"` e da etiqueta redundante `"Página ID: #X"`.
+  - Remoção do indicador redundante de slots no header (`"{pageButtons.length} slots"`), mantendo a linha de busca limpa e despoluída.
+  - Ajuste de responsividade no banner superior: título `"Grade de Botões com Drag-and-Drop Reativo"` configurado com quebra fluida (`whitespace-normal break-words`), permanecendo 100% visível e legível mesmo com a janela compactada e a barra lateral recolhida.
 - **Temas Escuros & AMOLED na Personalização e Grade Central**:
   - Correção na troca de temas em `AppearanceView.tsx`: selecionar qualquer tema nativo (`escuro`, `amoled`, `claro`, `sistema`) agora limpa `custom_bg_hex` residual e remove `--app-bg-custom` no DOM, permitindo a transição plena entre os modos escuros e AMOLED sem sobreposição de fundo estático.
   - Correção do palco de demonstração em `AppearanceView.tsx` para respeitar o fundo preto puro (`#000000`) em modo AMOLED.

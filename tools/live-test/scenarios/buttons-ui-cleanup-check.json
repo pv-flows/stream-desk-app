@@ -1,0 +1,20 @@
+{
+  "name": "buttons-ui-cleanup-check",
+  "continueOnFail": false,
+  "steps": [
+    { "do": "click", "selector": "nav >> role=button[name='Páginas e botões']", "label": "navegar para Páginas e botões" },
+    { "do": "wait", "ms": 500 },
+    { "do": "expect", "selector": "header", "notText": "slots", "label": "garantir que 'slots' foi removido do header" },
+    { "do": "expect", "selector": "main", "notText": "D&D + IPC Active", "label": "garantir que 'D&D + IPC Active' foi removido" },
+    { "do": "expect", "selector": "main", "notText": "Página ID:", "label": "garantir que 'Página ID:' técnico foi removido" },
+    { "do": "expect", "selector": "h3", "text": "Grade de Botões", "visible": true, "label": "título da grade está visível" },
+    { "do": "viewport", "width": 800, "height": 540 },
+    { "do": "wait", "ms": 400 },
+    { "do": "expect", "selector": "h3", "visible": true, "label": "título visível com painel encolhido em 800x540" },
+    { "do": "screenshot", "name": "buttons-view-compact-800x540" },
+    { "do": "viewport", "width": 1280, "height": 800 },
+    { "do": "wait", "ms": 400 },
+    { "do": "screenshot", "name": "buttons-view-cleaned-1280x800" },
+    { "do": "overflowCheck", "label": "sem extravasamentos", "max": 0 }
+  ]
+}
