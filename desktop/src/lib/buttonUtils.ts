@@ -1,22 +1,5 @@
-import {
-  Zap,
-  ExternalLink,
-  Terminal,
-  FolderOpen,
-  Volume2,
-  Volume1,
-  VolumeX,
-  Play,
-  Pause,
-  Calculator,
-  Monitor,
-  Music,
-  Sparkles,
-  Command,
-  FileText,
-  Video,
-  type LucideIcon,
-} from "lucide-react";
+import { Zap, type LucideIcon } from "lucide-react";
+import { ICON_MAP_BY_ID } from "./iconCatalog";
 
 export function isBase64Icon(icon?: string): boolean {
   if (!icon) return false;
@@ -155,62 +138,38 @@ export function resolveAccentColorHex(color?: string, fallback: string = "#38bdf
   return fallback;
 }
 
+const LEGACY_ALIASES: Record<string, string> = {
+  browser: "globe",
+  calc: "calculator",
+  cmd: "terminal",
+  powershell: "terminal",
+  explorer: "folder-open",
+  folderopen: "folder-open",
+  url: "external-link",
+  externallink: "external-link",
+  volup: "volume-2",
+  volume: "volume-2",
+  voldown: "volume-1",
+  volmute: "volume-x",
+  playpause: "play",
+  obs: "video",
+  doc: "file-text",
+  file: "file-text",
+  filetext: "file-text",
+};
+
 export function getLucideIcon(iconName?: string): LucideIcon {
   if (!iconName) return Zap;
-  const name = iconName.toLowerCase().replace(/[-_]/g, "");
-  switch (name) {
-    case "calc":
-    case "calculator":
-      return Calculator;
-    case "browser":
-    case "globe":
-    case "url":
-    case "externallink":
-      return ExternalLink;
-    case "terminal":
-    case "cmd":
-    case "powershell":
-    case "code":
-      return Terminal;
-    case "folder":
-    case "folderopen":
-    case "explorer":
-      return FolderOpen;
-    case "volume":
-    case "volup":
-    case "volume2":
-      return Volume2;
-    case "voldown":
-    case "volume1":
-      return Volume1;
-    case "volmute":
-    case "volumex":
-      return VolumeX;
-    case "play":
-    case "playpause":
-      return Play;
-    case "pause":
-      return Pause;
-    case "sparkles":
-      return Sparkles;
-    case "monitor":
-      return Monitor;
-    case "music":
-      return Music;
-    case "command":
-      return Command;
-    case "doc":
-    case "file":
-    case "filetext":
-      return FileText;
-    case "video":
-    case "obs":
-    case "camera":
-      return Video;
-    case "zap":
-    default:
-      return Zap;
-  }
+  const raw = iconName.toLowerCase().trim();
+  const aliased = LEGACY_ALIASES[raw] || raw;
+  const sanitized = aliased.replace(/[-_]/g, "");
+
+  return (
+    ICON_MAP_BY_ID[aliased] ||
+    ICON_MAP_BY_ID[sanitized] ||
+    ICON_MAP_BY_ID[raw] ||
+    Zap
+  );
 }
 
 export function getButtonColorStyles(color?: string) {

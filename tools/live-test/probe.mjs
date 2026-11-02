@@ -103,7 +103,9 @@ function parseArgs(argv) {
 }
 
 function truncate(text, max = SNAPSHOT_MAX_CHARS) {
+  if (text === undefined) return "undefined";
   if (typeof text !== "string") text = JSON.stringify(text);
+  if (!text) return "";
   return text.length > max ? `${text.slice(0, max)}\n…[truncado ${text.length - max} chars]` : text;
 }
 

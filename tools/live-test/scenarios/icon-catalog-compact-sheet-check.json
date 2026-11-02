@@ -1,0 +1,150 @@
+{
+  "name": "icon-catalog-compact-sheet-check",
+  "continueOnFail": false,
+  "steps": [
+    {
+      "do": "reload",
+      "label": "recarregar para estado limpo"
+    },
+    {
+      "do": "wait",
+      "ms": 600
+    },
+    {
+      "do": "click",
+      "selector": "nav >> role=button[name='Páginas e botões']",
+      "label": "navegar para Páginas e botões"
+    },
+    {
+      "do": "wait",
+      "ms": 500
+    },
+    {
+      "do": "click",
+      "selector": "role=button[name='+ Novo Botão']",
+      "label": "abrir modal Criar Novo Botão"
+    },
+    {
+      "do": "wait",
+      "ms": 400
+    },
+    {
+      "do": "expect",
+      "selector": "role=heading[name='Criar Novo Botão']",
+      "visible": true,
+      "label": "título Criar Novo Botão visível"
+    },
+    {
+      "do": "expect",
+      "selector": "role=button[name='Criar Botão']",
+      "visible": true,
+      "label": "botão Criar Botão no rodapé imediatamente visível sem scroll"
+    },
+    {
+      "do": "expect",
+      "js": "(() => { const sheet = document.querySelector('[role=\"dialog\"]'); if (!sheet) return false; return sheet.scrollHeight <= sheet.clientHeight + 2; })()",
+      "label": "verificar zero-scroll no modal principal"
+    },
+    {
+      "do": "expect",
+      "js": "(() => { const grid = document.querySelector('[role=\"dialog\"] .grid'); if (!grid) return false; return grid.scrollHeight > grid.clientHeight && grid.clientHeight >= 120 && grid.clientHeight <= 140; })()",
+      "label": "verificar grade de 3 linhas com scroll interno funcional"
+    },
+    {
+      "do": "fill",
+      "selector": "input[placeholder*='Buscar ícone']",
+      "value": "volume",
+      "label": "filtrar ícones por termo 'volume'"
+    },
+    {
+      "do": "wait",
+      "ms": 200
+    },
+    {
+      "do": "expect",
+      "selector": "[role='dialog'] >> text=Volume Alto",
+      "visible": true,
+      "label": "ícone Volume Alto encontrado na busca"
+    },
+    {
+      "do": "click",
+      "selector": "role=button[name='Mídia']",
+      "label": "filtrar por categoria Mídia"
+    },
+    {
+      "do": "wait",
+      "ms": 200
+    },
+    {
+      "do": "fill",
+      "selector": "input[placeholder*='Buscar ícone']",
+      "value": "",
+      "label": "limpar busca para exibir todos de Mídia"
+    },
+    {
+      "do": "wait",
+      "ms": 200
+    },
+    {
+      "do": "expect",
+      "selector": "[role='dialog'] >> text=Play",
+      "visible": true,
+      "label": "ícone Play visível na categoria Mídia"
+    },
+    {
+      "do": "click",
+      "selector": "role=button[name='Dev']",
+      "label": "filtrar por categoria Dev"
+    },
+    {
+      "do": "wait",
+      "ms": 200
+    },
+    {
+      "do": "expect",
+      "selector": "[role='dialog'] >> text=Terminal / CMD",
+      "visible": true,
+      "label": "ícone Terminal / CMD visível na categoria Dev"
+    },
+    {
+      "do": "screenshot",
+      "name": "icon-catalog-compact-sheet-dev"
+    },
+    {
+      "do": "click",
+      "selector": "[role='dialog'] >> button:has-text('Terminal / CMD')",
+      "label": "selecionar ícone Terminal / CMD"
+    },
+    {
+      "do": "fill",
+      "selector": "input[placeholder*='Calculadora, Discord']",
+      "value": "Live Test Botão",
+      "label": "preencher rótulo"
+    },
+    {
+      "do": "fill",
+      "selector": "input[placeholder*='calc, notepad']",
+      "value": "cmd",
+      "label": "preencher comando"
+    },
+    {
+      "do": "click",
+      "selector": "role=button[name='Criar Botão']",
+      "label": "submeter criação do botão"
+    },
+    {
+      "do": "wait",
+      "ms": 600
+    },
+    {
+      "do": "expect",
+      "selector": "text=Live Test Botão",
+      "visible": true,
+      "label": "botão criado com sucesso e visível na grade do CentralArea"
+    },
+    {
+      "do": "screenshot",
+      "name": "icon-catalog-button-created-in-central-area"
+    }
+  ]
+}
