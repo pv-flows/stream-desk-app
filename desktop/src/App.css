@@ -57,3 +57,14 @@
     @apply bg-neutral-950 text-neutral-100 antialiased selection:bg-sky-500/30 selection:text-white;
   }
 }
+
+/* Utilitário para ocultar barras de rolagem mantendo a navegação ativa */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

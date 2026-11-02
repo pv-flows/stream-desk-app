@@ -29,11 +29,29 @@ export interface AppearanceSettings {
   grid_columns: number;
   vibration_enabled: boolean;
   icon_style: "linha" | "preenchido";
+  custom_accent_hex?: string | null;
+  button_radius?: "sharp" | "smooth" | "pill" | string;
+  show_labels?: boolean;
+  label_font_size?: "compact" | "normal" | "large" | string;
+  haptic_strength?: "soft" | "medium" | "strong" | string;
+  glow_enabled?: boolean;
 }
 
 export interface SystemSettings {
   start_with_windows: boolean;
   minimize_to_tray: boolean;
+  start_minimized: boolean;
+  keep_phone_awake: boolean;
+  notify_device_connection: boolean;
+  ws_port: number;
+}
+
+export interface DatabaseInfo {
+  file_size_bytes: number;
+  total_buttons: number;
+  total_pages: number;
+  total_rules: number;
+  integrity_ok: boolean;
 }
 
 export interface ConnectedDevice {
@@ -88,6 +106,12 @@ export interface DashboardState {
   addWindowRule: (processName: string, pageIndex: number) => Promise<void>;
   toggleWindowRule: (id: number, enabled: boolean) => Promise<void>;
   deleteWindowRule: (id: number) => Promise<void>;
+  databaseInfo: DatabaseInfo | null;
+  fetchDatabaseInfo: () => Promise<DatabaseInfo | null>;
+  vacuumDatabase: () => Promise<number>;
+  resetToFactoryDefaults: () => Promise<void>;
+  saveQuickSnapshot: () => { success: boolean; timestamp: string };
+  restoreQuickSnapshot: () => Promise<boolean>;
   importBackup: (backup: unknown) => Promise<void>;
   init: () => Promise<void>;
 }
@@ -105,14 +129,25 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   appearance: {
     theme: "escuro",
     accent_color: "purple",
-    grid_columns: 3,
+    grid_columns: 5,
     vibration_enabled: true,
     icon_style: "linha",
+    custom_accent_hex: null,
+    button_radius: "smooth",
+    show_labels: true,
+    label_font_size: "normal",
+    haptic_strength: "medium",
+    glow_enabled: true,
   },
   systemSettings: {
     start_with_windows: false,
     minimize_to_tray: true,
+    start_minimized: false,
+    keep_phone_awake: true,
+    notify_device_connection: true,
+    ws_port: 8080,
   },
+  databaseInfo: null,
   obsSettings: {
     host: "localhost",
     port: 4455,
@@ -409,6 +444,79 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     }
   },
 
+  fetchDatabaseInfo: async () => {
+    try {
+      const info = await invoke<DatabaseInfo>("get_database_info");
+      if (info && typeof info === "object") {
+        set({ databaseInfo: info });
+        return info;
+      }
+    } catch (err) {
+      console.warn("[Store] Erro ao buscar info do banco via IPC:", err);
+    }
+    return null;
+  },
+
+  vacuumDatabase: async () => {
+    try {
+      const size = await invoke<number>("vacuum_database");
+      await get().fetchDatabaseInfo();
+      return typeof size === "number" ? size : 0;
+    } catch (err) {
+      console.warn("[Store] Erro ao executar VACUUM via IPC:", err);
+      return 0;
+    }
+  },
+
+  resetToFactoryDefaults: async () => {
+    try {
+      await invoke("reset_to_factory_defaults");
+      await Promise.allSettled([
+        get().fetchPages(),
+        get().fetchButtons(),
+        get().fetchWindowRules(),
+        get().fetchAppearance(),
+        get().fetchSystemSettings(),
+        get().fetchDatabaseInfo(),
+      ]);
+    } catch (err) {
+      console.warn("[Store] Erro ao redefinir aos padrões de fábrica:", err);
+      throw err;
+    }
+  },
+
+  saveQuickSnapshot: () => {
+    try {
+      const snapshot = {
+        version: "1.2.3",
+        exportedAt: new Date().toISOString(),
+        pages: get().pages,
+        buttons: get().buttons,
+        windowRules: get().windowRules,
+        appearance: get().appearance,
+        theme: get().theme,
+      };
+      localStorage.setItem("streamdesk_quick_snapshot", JSON.stringify(snapshot));
+      return { success: true, timestamp: snapshot.exportedAt };
+    } catch (err) {
+      console.warn("[Store] Erro ao salvar snapshot no localStorage:", err);
+      return { success: false, timestamp: "" };
+    }
+  },
+
+  restoreQuickSnapshot: async () => {
+    try {
+      const raw = localStorage.getItem("streamdesk_quick_snapshot");
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      await get().importBackup(parsed);
+      return true;
+    } catch (err) {
+      console.warn("[Store] Erro ao restaurar snapshot:", err);
+      return false;
+    }
+  },
+
   importBackup: async (backup: unknown) => {
     await invoke("import_backup", { backup });
     await Promise.allSettled([
@@ -433,6 +541,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         get().fetchTheme(),
         get().fetchLocalIp(),
         get().fetchWindowRules(),
+        get().fetchDatabaseInfo(),
       ]);
     } catch (err) {
       set({ error: String(err) });

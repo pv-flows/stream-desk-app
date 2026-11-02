@@ -108,10 +108,11 @@ export const MobileIcon: React.FC<MobileIconProps> = ({
   color = '#ffffff',
   iconStyle = 'linha',
 }) => {
-  const strokeWidth = iconStyle === 'preenchido' ? 2.8 : 1.8;
+  const isFilled = iconStyle === 'preenchido';
+  const strokeWidth = isFilled ? 2.8 : 1.8;
 
   if (!iconName) {
-    return <Zap size={size} color={color} strokeWidth={strokeWidth} />;
+    return <Zap size={size} color={color} fill={isFilled ? color : 'none'} strokeWidth={strokeWidth} />;
   }
 
   // Se for ícone base64 extraído do Windows
@@ -131,7 +132,7 @@ export const MobileIcon: React.FC<MobileIconProps> = ({
   const normalized = iconName.toLowerCase().replace(/[-_\s]/g, '');
   const IconComponent = ICON_MAP[normalized] || Zap;
 
-  return <IconComponent size={size} color={color} strokeWidth={strokeWidth} />;
+  return <IconComponent size={size} color={color} fill={isFilled ? color : 'none'} strokeWidth={strokeWidth} />;
 };
 
 const styles = StyleSheet.create({

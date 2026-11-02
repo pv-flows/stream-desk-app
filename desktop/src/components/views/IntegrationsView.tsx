@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { useDashboardStore, type ObsSettings } from "@/store/useDashboardStore";
+import { getAccentColor } from "@/lib/buttonUtils";
 
 interface IntegrationItem {
   id: string;
@@ -81,6 +82,13 @@ export function IntegrationsView() {
   const setObsSettings = useDashboardStore((s) => s.setObsSettings);
   const testObsConnection = useDashboardStore((s) => s.testObsConnection);
   const fetchObsSettings = useDashboardStore((s) => s.fetchObsSettings);
+
+  const theme = useDashboardStore((s) => s.theme);
+  const appearance = useDashboardStore((s) => s.appearance);
+  const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
+  const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
+  const isAmoled = normalizedTheme === "amoled";
+  const accent = getAccentColor(appearance?.accent_color);
 
   const [isObsSheetOpen, setIsObsSheetOpen] = useState(false);
   const [obsForm, setObsForm] = useState<ObsSettings>({
@@ -178,15 +186,35 @@ export function IntegrationsView() {
     });
   };
 
+  const cardBgClass = isLight
+    ? "bg-white border-slate-200/90 shadow-sm"
+    : isAmoled
+    ? "bg-neutral-950 border-neutral-900 shadow-sm"
+    : "bg-neutral-900/50 border-neutral-800/80 shadow-sm backdrop-blur-sm";
+
+  const textPrimaryClass = isLight ? "text-slate-800" : isAmoled ? "text-white" : "text-neutral-100";
+  const textSecondaryClass = isLight ? "text-slate-500" : "text-neutral-400";
+  const iconBubbleClass = isLight
+    ? "bg-slate-100 border-slate-200 text-slate-700"
+    : "bg-neutral-800/60 border-neutral-700/50 text-neutral-300";
+
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-neutral-950/70 p-8 overflow-y-auto select-none">
-      <div className="space-y-6 max-w-4xl">
+    <div
+      className={`flex-1 flex flex-col min-w-0 p-6 md:p-8 overflow-y-auto select-none transition-colors duration-200 ${
+        isLight
+          ? "bg-slate-50/90 text-slate-900"
+          : isAmoled
+          ? "bg-black text-white"
+          : "bg-neutral-950/70 text-neutral-100"
+      }`}
+    >
+      <div className="space-y-6 max-w-3xl mx-auto w-full">
         {/* Header: Título "Integrações" */}
         <header className="pb-2">
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-100">
+          <h1 className={`text-2xl font-bold tracking-tight ${textPrimaryClass}`}>
             Integrações
           </h1>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className={`text-xs mt-1 ${textSecondaryClass}`}>
             Conecte aplicativos externos e automações para acionar comandos via Stream Desk.
           </p>
         </header>
@@ -194,10 +222,10 @@ export function IntegrationsView() {
         {/* Grade 2 Colunas de Integrações */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Card Principal Real: OBS Studio */}
-          <Card className="bg-neutral-900/50 border-neutral-800/80 rounded-2xl p-5 flex flex-col justify-between h-44 shadow-sm backdrop-blur-sm hover:border-neutral-700/70 transition-all">
+          <Card className={`rounded-2xl p-5 flex flex-col justify-between h-44 border transition-all ${cardBgClass}`}>
             <div className="flex items-center justify-between">
-              <div className="w-11 h-11 rounded-2xl bg-neutral-800/60 border border-neutral-700/50 flex items-center justify-center text-neutral-300 shadow-inner">
-                <Video className="w-5 h-5 text-neutral-200 stroke-[1.75]" />
+              <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center shadow-inner ${iconBubbleClass}`}>
+                <Video className="w-5 h-5 stroke-[1.75]" />
               </div>
 
               <div className="flex items-center gap-2">
@@ -209,7 +237,8 @@ export function IntegrationsView() {
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="text-[10px] font-mono font-medium px-2 py-0.5 border-indigo-500/30 bg-indigo-500/10 text-indigo-400 rounded-md"
+                  style={{ borderColor: `${accent.hex}44`, color: accent.hex, backgroundColor: `${accent.hex}15` }}
+                  className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md"
                 >
                   Pro
                 </Badge>
@@ -217,10 +246,10 @@ export function IntegrationsView() {
             </div>
 
             <div>
-              <h3 className="text-base font-semibold text-neutral-100 tracking-tight">
+              <h3 className={`text-base font-semibold tracking-tight ${textPrimaryClass}`}>
                 OBS Studio
               </h3>
-              <p className="text-xs text-neutral-400 truncate mt-0.5">
+              <p className={`text-xs truncate mt-0.5 ${textSecondaryClass}`}>
                 {obsSettings.enabled
                   ? `Ativo em ws://${obsSettings.host}:${obsSettings.port}`
                   : "Desativado (clique em Configurar)"}
@@ -235,6 +264,8 @@ export function IntegrationsView() {
                 className={`h-9 px-4 rounded-xl text-xs font-medium transition-all ${
                   obsSettings.enabled
                     ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/30"
+                    : isLight
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
                     : "bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/60"
                 }`}
               >
@@ -247,7 +278,11 @@ export function IntegrationsView() {
                 type="button"
                 onClick={handleOpenObsConfig}
                 title="Configurações do OBS Studio"
-                className="h-9 w-9 rounded-xl border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors"
+                className={`h-9 w-9 rounded-xl transition-colors ${
+                  isLight
+                    ? "border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900"
+                    : "border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200"
+                }`}
               >
                 <Settings className="w-4 h-4 stroke-[1.75]" />
               </Button>
@@ -261,17 +296,18 @@ export function IntegrationsView() {
             return (
               <Card
                 key={item.id}
-                className="bg-neutral-900/50 border-neutral-800/80 rounded-2xl p-5 flex flex-col justify-between h-44 shadow-sm backdrop-blur-sm hover:border-neutral-700/70 transition-all"
+                className={`rounded-2xl p-5 flex flex-col justify-between h-44 border transition-all ${cardBgClass}`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-11 h-11 rounded-2xl bg-neutral-800/60 border border-neutral-700/50 flex items-center justify-center text-neutral-300 shadow-inner">
-                    <Icon className="w-5 h-5 text-neutral-200 stroke-[1.75]" />
+                  <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center shadow-inner ${iconBubbleClass}`}>
+                    <Icon className="w-5 h-5 stroke-[1.75]" />
                   </div>
 
                   {item.isPro && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono font-medium px-2 py-0.5 border-indigo-500/30 bg-indigo-500/10 text-indigo-400 rounded-md"
+                      style={{ borderColor: `${accent.hex}44`, color: accent.hex, backgroundColor: `${accent.hex}15` }}
+                      className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md"
                     >
                       Pro
                     </Badge>
@@ -279,10 +315,10 @@ export function IntegrationsView() {
                 </div>
 
                 <div>
-                  <h3 className="text-base font-semibold text-neutral-100 tracking-tight">
+                  <h3 className={`text-base font-semibold tracking-tight ${textPrimaryClass}`}>
                     {item.name}
                   </h3>
-                  <p className="text-xs text-neutral-400 truncate mt-0.5">
+                  <p className={`text-xs truncate mt-0.5 ${textSecondaryClass}`}>
                     {item.details}
                   </p>
                 </div>
@@ -292,9 +328,12 @@ export function IntegrationsView() {
                     size="sm"
                     type="button"
                     onClick={() => handleToggleOther(item.id, item.name)}
+                    style={isConnected ? { backgroundColor: accent.hex, color: "#ffffff" } : undefined}
                     className={`h-9 px-4 rounded-xl text-xs font-medium transition-all ${
                       isConnected
-                        ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30"
+                        ? "shadow-sm"
+                        : isLight
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
                         : "bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/60"
                     }`}
                   >
@@ -307,7 +346,11 @@ export function IntegrationsView() {
                     type="button"
                     onClick={() => handleConfigureOther(item.name)}
                     title={`Configurações de ${item.name}`}
-                    className="h-9 w-9 rounded-xl border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors"
+                    className={`h-9 w-9 rounded-xl transition-colors ${
+                      isLight
+                        ? "border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900"
+                        : "border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200"
+                    }`}
                   >
                     <Settings className="w-4 h-4 stroke-[1.75]" />
                   </Button>

@@ -252,9 +252,15 @@ async fn handle_socket(
                                     let appearance = db::get_appearance_settings().unwrap_or(db::AppearanceSettings {
                                         theme: theme.clone(),
                                         accent_color: "purple".to_string(),
-                                        grid_columns: 3,
+                                        grid_columns: 5,
                                         vibration_enabled: true,
                                         icon_style: "linha".to_string(),
+                                        custom_accent_hex: None,
+                                        button_radius: "smooth".to_string(),
+                                        show_labels: true,
+                                        label_font_size: "normal".to_string(),
+                                        haptic_strength: "medium".to_string(),
+                                        glow_enabled: true,
                                     });
                                     let response = serde_json::json!({
                                         "status": "ok",

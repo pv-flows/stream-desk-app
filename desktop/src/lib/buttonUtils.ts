@@ -31,6 +31,75 @@ export function getBase64Src(icon?: string): string {
   return icon;
 }
 
+export interface AccentOption {
+  id: string;
+  label: string;
+  hex: string;
+  bgClass: string;
+}
+
+export const ACCENT_OPTIONS: AccentOption[] = [
+  { id: "purple", label: "Roxo", hex: "#6366f1", bgClass: "bg-indigo-600" },
+  { id: "blue", label: "Azul", hex: "#3b82f6", bgClass: "bg-sky-500" },
+  { id: "teal", label: "Turquesa", hex: "#0d9488", bgClass: "bg-teal-600" },
+  { id: "green", label: "Verde", hex: "#10b981", bgClass: "bg-emerald-500" },
+  { id: "yellow", label: "Amarelo", hex: "#f59e0b", bgClass: "bg-amber-400" },
+  { id: "orange", label: "Laranja", hex: "#f97316", bgClass: "bg-orange-500" },
+  { id: "red", label: "Vermelho", hex: "#f43f5e", bgClass: "bg-rose-500" },
+  { id: "fuchsia", label: "Fúcsia", hex: "#d946ef", bgClass: "bg-fuchsia-500" },
+  { id: "slate", label: "Grafite", hex: "#64748b", bgClass: "bg-slate-500" },
+];
+
+export function getAccentColor(accentId?: string, customHex?: string | null): AccentOption {
+  if (accentId === "custom" && customHex) {
+    return {
+      id: "custom",
+      label: "Personalizada",
+      hex: customHex,
+      bgClass: "bg-neutral-800",
+    };
+  }
+  const found = ACCENT_OPTIONS.find((a) => a.id === accentId);
+  return found || ACCENT_OPTIONS[0];
+}
+
+export function getButtonRadiusClass(radius?: string): string {
+  switch (radius) {
+    case "sharp":
+      return "rounded-md";
+    case "pill":
+      return "rounded-3xl";
+    case "smooth":
+    default:
+      return "rounded-xl";
+  }
+}
+
+export function getLabelFontSizeClass(size?: string): { title: string; subtitle: string } {
+  switch (size) {
+    case "compact":
+      return { title: "text-[10px]", subtitle: "text-[9px]" };
+    case "large":
+      return { title: "text-sm", subtitle: "text-xs" };
+    case "normal":
+    default:
+      return { title: "text-xs", subtitle: "text-[10px]" };
+  }
+}
+
+export function resolveAccentColorHex(color?: string, fallback: string = "#38bdf8"): string {
+  if (!color) return fallback;
+  if (color.startsWith("#") || color.startsWith("rgb")) return color;
+  const c = color.toLowerCase();
+  if (c.includes("emerald") || c.includes("green")) return "#10b981";
+  if (c.includes("amber") || c.includes("yellow") || c.includes("orange")) return "#f59e0b";
+  if (c.includes("purple") || c.includes("violet") || c.includes("indigo")) return "#818cf8";
+  if (c.includes("rose") || c.includes("red")) return "#f43f5e";
+  if (c.includes("blue")) return "#3b82f6";
+  if (c.includes("slate") || c.includes("gray")) return "#94a3b8";
+  return fallback;
+}
+
 export function getLucideIcon(iconName?: string): LucideIcon {
   if (!iconName) return Zap;
   const name = iconName.toLowerCase().replace(/[-_]/g, "");

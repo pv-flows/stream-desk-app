@@ -24,6 +24,10 @@ import {
   getButtonColorStyles,
   isBase64Icon,
   getBase64Src,
+  getAccentColor,
+  resolveAccentColorHex,
+  getButtonRadiusClass,
+  getLabelFontSizeClass,
 } from "@/lib/buttonUtils";
 import { ButtonEditorSheet } from "@/components/ButtonEditorSheet";
 import { ConnectionView } from "@/components/views/ConnectionView";
@@ -31,6 +35,7 @@ import { AutoProfileView } from "@/components/views/AutoProfileView";
 import { AppearanceView } from "@/components/views/AppearanceView";
 import { IntegrationsView } from "@/components/views/IntegrationsView";
 import { SystemView } from "@/components/views/SystemView";
+import { AboutView } from "@/components/views/AboutView";
 
 export interface CentralAreaProps {
   activeTab?: string;
@@ -51,6 +56,8 @@ export function CentralArea({
   const fetchButtons = useDashboardStore((s) => s.fetchButtons);
   const pages = useDashboardStore((s) => s.pages);
   const activePageIndex = useDashboardStore((s) => s.activePageIndex);
+  const theme = useDashboardStore((s) => s.theme);
+  const appearance = useDashboardStore((s) => s.appearance);
 
   // Roteamento de visualizações secundárias
   if (activeTab === "connection") {
@@ -69,8 +76,12 @@ export function CentralArea({
     return <IntegrationsView />;
   }
 
-  if (activeTab === "system" || activeTab === "about") {
+  if (activeTab === "system") {
     return <SystemView />;
+  }
+
+  if (activeTab === "about") {
+    return <AboutView />;
   }
 
   const activePageObject = pages.find((p) => p.id === activePageIndex);
@@ -164,119 +175,208 @@ export function CentralArea({
     setIsSheetOpen(true);
   };
 
+  const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
+  const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
+  const isAmoled = normalizedTheme === "amoled";
+
+  const accent = getAccentColor(appearance?.accent_color, appearance?.custom_accent_hex);
+  const iconStyle = appearance?.icon_style === "preenchido" ? "preenchido" : "linha";
+  const isFilled = iconStyle === "preenchido";
+  const buttonRadiusClass = getButtonRadiusClass(appearance?.button_radius);
+  const showLabels = appearance?.show_labels ?? true;
+  const labelFontSizeClass = getLabelFontSizeClass(appearance?.label_font_size);
+  const glowEnabled = appearance?.glow_enabled ?? false;
+
+  // Dimensão dinâmica dos botões de 1 a 10 (padrão = 5, sincronizado com o celular)
+  const buttonDimension = Math.max(1, Math.min(10, appearance?.grid_columns || 5));
+  const minColWidth = Math.round(110 + (buttonDimension - 1) * 11);
+  const minCardHeight = Math.round(90 + (buttonDimension - 1) * 8);
+  const iconSizeClass = buttonDimension >= 7 ? "w-6 h-6" : buttonDimension <= 3 ? "w-4 h-4" : "w-5 h-5";
+
   return (
-    <main className="flex-1 flex flex-col min-w-0 bg-neutral-950/60 overflow-hidden select-none">
+    <main
+      className={`flex-1 flex flex-col min-w-0 ${
+        isLight
+          ? "bg-slate-50/90 text-slate-900"
+          : isAmoled
+          ? "bg-black text-white"
+          : "bg-neutral-950/60 text-white"
+      } overflow-hidden select-none transition-colors duration-200`}
+    >
       {/* Top Header Dinâmico */}
-      <header className="h-14 border-b border-neutral-800/80 px-6 flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-neutral-100 tracking-tight">
+      <header
+        className={`h-14 flex-shrink-0 border-b ${
+          isLight
+            ? "bg-white/80 border-slate-200 text-slate-800"
+            : isAmoled
+            ? "bg-black/80 border-neutral-900 text-white"
+            : "bg-neutral-900/40 border-neutral-800/80 text-white"
+        } px-4 sm:px-6 flex items-center justify-between gap-3 backdrop-blur-sm`}
+      >
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <h2 className="text-sm font-semibold tracking-tight truncate">
             {currentPageTitle}
           </h2>
           <Badge
             variant="secondary"
-            className="text-[11px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-400 font-normal border-neutral-700/60"
+            className={`hidden sm:inline-flex text-[11px] font-mono px-2 py-0.5 font-normal border flex-shrink-0 ${
+              isLight
+                ? "bg-slate-100 text-slate-600 border-slate-200"
+                : "bg-neutral-800 text-neutral-400 border-neutral-700/60"
+            }`}
           >
-            {pageButtons.length} slots configurados
+            {pageButtons.length} slots
           </Badge>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar atalho ou app..."
-              className="w-52 h-8 pl-8 pr-3 text-xs bg-neutral-900/80 border-neutral-800 text-neutral-200 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-indigo-500/50"
+              placeholder="Buscar..."
+              className={`w-32 sm:w-44 md:w-52 h-8 pl-8 pr-3 text-xs border focus-visible:ring-1 transition-all ${
+                isLight
+                  ? "bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 focus-visible:ring-slate-400"
+                  : "bg-neutral-900/80 border-neutral-800 text-neutral-200 placeholder:text-neutral-500 focus-visible:ring-indigo-500/50"
+              }`}
             />
           </div>
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-8 gap-1.5 px-3 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-500/20"
+            style={{
+              backgroundColor: accent.hex,
+              color: "#ffffff",
+              boxShadow: `0 4px 14px ${accent.hex}35`,
+            }}
+            className="h-8 gap-1.5 px-3 text-xs font-medium hover:opacity-90 shadow-sm flex-shrink-0 transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Novo Botão</span>
+            <span className="hidden sm:inline">+ Novo Botão</span>
+            <span className="sm:hidden">+ Novo</span>
           </Button>
         </div>
       </header>
 
       {/* Content View Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-5">
         {/* Quick Notice Banner */}
-        <div className="p-4 rounded-xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950/30 to-purple-950/20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+        <div
+          style={{
+            borderColor: `${accent.hex}33`,
+            background: isLight
+              ? `linear-gradient(to right, ${accent.hex}12, transparent)`
+              : `linear-gradient(to right, ${accent.hex}22, transparent)`,
+          }}
+          className="p-4 rounded-xl border flex items-center justify-between gap-3 shadow-sm transition-all"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              style={{
+                backgroundColor: `${accent.hex}18`,
+                borderColor: `${accent.hex}33`,
+                color: accent.hex,
+              }}
+              className="h-9 w-9 rounded-lg border flex items-center justify-center flex-shrink-0"
+            >
               <Sparkles className="w-4 h-4" />
             </div>
-            <div>
-              <h3 className="text-xs font-semibold text-indigo-300">
+            <div className="min-w-0">
+              <h3
+                style={{ color: accent.hex }}
+                className="text-xs font-semibold truncate"
+              >
                 Grade de Botões com Drag-and-Drop Reativo
               </h3>
-              <p className="text-[11px] text-neutral-400">
+              <p className={`text-[11px] ${isLight ? "text-slate-600" : "text-neutral-400"} line-clamp-1 sm:line-clamp-none`}>
                 Arraste os cards para reordenar instantaneamente ou dê duplo clique para editar.
               </p>
             </div>
           </div>
-          <Badge className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono text-[10px]">
+          <Badge
+            style={{
+              backgroundColor: `${accent.hex}20`,
+              color: accent.hex,
+              borderColor: `${accent.hex}44`,
+            }}
+            className="hidden md:inline-flex border font-mono text-[10px] flex-shrink-0 whitespace-nowrap"
+          >
             D&D + IPC Active
           </Badge>
         </div>
 
         {/* Abas e Filtros de Categoria */}
-        <div className="flex items-center justify-between border-b border-neutral-800/60 pb-3">
+        <div
+          className={`flex items-center justify-between border-b ${
+            isLight ? "border-slate-200" : "border-neutral-800/60"
+          } pb-3 gap-2 overflow-x-auto no-scrollbar`}
+        >
           <Tabs
             value={filterCategory}
             onValueChange={setFilterCategory}
-            className="w-auto"
+            className="w-auto flex-shrink-0"
           >
-            <TabsList className="bg-neutral-900/80 border border-neutral-800 h-8 p-0.5">
+            <TabsList
+              className={`h-8 p-0.5 border ${
+                isLight ? "bg-slate-100 border-slate-200" : "bg-neutral-900/80 border-neutral-800"
+              }`}
+            >
               <TabsTrigger
                 value="all"
-                className="text-xs px-3 py-1 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300"
+                style={filterCategory === "all" ? { backgroundColor: accent.hex, color: "#ffffff" } : undefined}
+                className="text-xs px-2.5 sm:px-3 py-1 transition-all"
               >
                 Todos ({pageButtons.length})
               </TabsTrigger>
               <TabsTrigger
                 value="apps"
-                className="text-xs px-3 py-1 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300"
+                style={filterCategory === "apps" ? { backgroundColor: accent.hex, color: "#ffffff" } : undefined}
+                className="text-xs px-2.5 sm:px-3 py-1 transition-all"
               >
                 Aplicativos
               </TabsTrigger>
               <TabsTrigger
                 value="media"
-                className="text-xs px-3 py-1 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300"
+                style={filterCategory === "media" ? { backgroundColor: accent.hex, color: "#ffffff" } : undefined}
+                className="text-xs px-2.5 sm:px-3 py-1 transition-all"
               >
                 Mídia & Som
               </TabsTrigger>
               <TabsTrigger
                 value="macros"
-                className="text-xs px-3 py-1 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300"
+                style={filterCategory === "macros" ? { backgroundColor: accent.hex, color: "#ffffff" } : undefined}
+                className="text-xs px-2.5 sm:px-3 py-1 transition-all"
               >
                 Macros
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <span className="text-[11px] text-neutral-400 font-mono">
+          <span className={`hidden lg:inline-block text-[11px] ${isLight ? "text-slate-500" : "text-neutral-400"} font-mono flex-shrink-0`}>
             Página ID: #{activePageIndex}
           </span>
         </div>
 
-        {/* Grade de Botões com @hello-pangea/dnd */}
+        {/* Grade de Botões com @hello-pangea/dnd e Tamanho Dinâmico (1 a 10) */}
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId={`grid-page-${activePageIndex}`}>
             {(provided) => (
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="grid grid-cols-3 gap-3.5"
+                style={{
+                  gridTemplateColumns: `repeat(auto-fill, minmax(${minColWidth}px, 1fr))`,
+                }}
+                className="grid gap-3.5"
               >
                 {filteredButtons.map((btn, index) => {
                   const Icon = getLucideIcon(btn.icon);
                   const colorStyle = getButtonColorStyles(btn.color);
                   const hasBase64 = isBase64Icon(btn.icon);
+                  const btnAccentColor = resolveAccentColorHex(btn.color, accent.hex);
 
                   return (
                     <Draggable
@@ -292,17 +392,32 @@ export function CentralArea({
                           onDoubleClick={() => handleOpenEdit(btn)}
                         >
                           <Card
-                            style={colorStyle.style}
-                            className={`group relative p-4 rounded-xl border transition-all flex flex-col justify-between min-h-[115px] select-none ${
-                              colorStyle.className
+                            style={{
+                              ...colorStyle.style,
+                              minHeight: `${minCardHeight}px`,
+                              borderColor: `${btnAccentColor}44`,
+                              boxShadow: glowEnabled ? `0 0 16px -2px ${btnAccentColor}35` : undefined,
+                            }}
+                            className={`group relative p-4 ${buttonRadiusClass} border transition-all flex flex-col justify-between select-none ${
+                              isLight
+                                ? "bg-white text-slate-800 shadow-sm hover:border-slate-300"
+                                : isAmoled
+                                ? "bg-neutral-950 text-white border-neutral-900"
+                                : `bg-neutral-900/80 text-white ${colorStyle.className}`
                             } ${
                               snapshot.isDragging
-                                ? "ring-2 ring-indigo-500 shadow-2xl shadow-indigo-500/20 scale-[1.02] z-50"
-                                : "cursor-grab active:cursor-grabbing"
+                                ? "ring-2 scale-[1.02] z-50 shadow-2xl"
+                                : "cursor-grab active:cursor-grabbing hover:scale-[1.01]"
                             }`}
                           >
                             <div className="flex items-start justify-between">
-                              <div className="h-9 w-9 rounded-lg bg-neutral-900/80 border border-neutral-700/60 flex items-center justify-center text-neutral-200 group-hover:scale-105 transition-transform">
+                              <div
+                                style={{
+                                  backgroundColor: isLight ? "#f1f5f9" : "rgba(23, 23, 23, 0.8)",
+                                  borderColor: `${btnAccentColor}33`,
+                                }}
+                                className={`h-9 w-9 ${buttonRadiusClass} border flex items-center justify-center group-hover:scale-105 transition-transform`}
+                              >
                                 {hasBase64 ? (
                                   <img
                                     src={getBase64Src(btn.icon)}
@@ -310,12 +425,17 @@ export function CentralArea({
                                     className="w-5 h-5 object-contain rounded"
                                   />
                                 ) : (
-                                  <Icon className="w-4 h-4 text-indigo-400" />
+                                  <Icon
+                                    style={{ color: btnAccentColor }}
+                                    fill={isFilled ? "currentColor" : "none"}
+                                    strokeWidth={isFilled ? 2.5 : 2}
+                                    className={`${iconSizeClass} transition-all`}
+                                  />
                                 )}
                               </div>
 
                               <div className="flex items-center gap-1">
-                                <GripVertical className="w-3.5 h-3.5 text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <GripVertical className="w-3.5 h-3.5 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -323,21 +443,27 @@ export function CentralArea({
                                     handleOpenEdit(btn);
                                   }}
                                   title="Configurar Botão"
-                                  className="p-1.5 rounded-lg bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-indigo-300 transition-colors border border-transparent hover:border-neutral-700"
+                                  className={`p-1.5 rounded-lg border border-transparent transition-colors ${
+                                    isLight
+                                      ? "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800"
+                                      : "bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200"
+                                  }`}
                                 >
                                   <Settings className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             </div>
 
-                            <div className="mt-3">
-                              <h4 className="text-xs font-semibold text-neutral-100 tracking-tight">
-                                {btn.label}
-                              </h4>
-                              <code className="text-[10px] text-neutral-400 font-mono truncate block mt-0.5">
-                                {btn.action_name}
-                              </code>
-                            </div>
+                            {showLabels && (
+                              <div className="mt-3">
+                                <h4 className={`font-semibold tracking-tight ${labelFontSizeClass} ${isLight ? "text-slate-800" : "text-neutral-100"}`}>
+                                  {btn.label}
+                                </h4>
+                                <code className={`text-[10px] font-mono truncate block mt-0.5 ${isLight ? "text-slate-500" : "text-neutral-400"}`}>
+                                  {btn.action_name}
+                                </code>
+                              </div>
+                            )}
                           </Card>
                         </div>
                       )}
@@ -350,9 +476,14 @@ export function CentralArea({
                 <button
                   type="button"
                   onClick={handleOpenCreate}
-                  className="border-2 border-dashed border-neutral-800 hover:border-indigo-500/40 hover:bg-neutral-900/30 rounded-xl flex flex-col items-center justify-center gap-1.5 p-4 text-neutral-400 hover:text-indigo-300 transition-colors min-h-[115px]"
+                  style={{ minHeight: `${minCardHeight}px` }}
+                  className={`border-2 border-dashed ${buttonRadiusClass} flex flex-col items-center justify-center gap-1.5 p-4 transition-colors cursor-pointer ${
+                    isLight
+                      ? "border-slate-300 hover:border-slate-400 hover:bg-slate-100 text-slate-500 hover:text-slate-800"
+                      : "border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/30 text-neutral-400 hover:text-neutral-200"
+                  }`}
                 >
-                  <Plus className="w-5 h-5 text-neutral-500" />
+                  <Plus className="w-5 h-5 text-neutral-400" />
                   <span className="text-xs font-medium">+ Novo Botão</span>
                 </button>
               </div>

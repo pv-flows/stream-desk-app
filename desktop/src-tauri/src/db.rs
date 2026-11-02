@@ -37,6 +37,18 @@ pub struct ButtonPositionUpdate {
     pub page_index: Option<i32>,
 }
 
+fn default_button_radius() -> String {
+    "smooth".to_string()
+}
+
+fn default_label_font_size() -> String {
+    "normal".to_string()
+}
+
+fn default_haptic_strength() -> String {
+    "medium".to_string()
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AppearanceSettings {
     pub theme: String,
@@ -44,6 +56,18 @@ pub struct AppearanceSettings {
     pub grid_columns: i32,
     pub vibration_enabled: bool,
     pub icon_style: String,
+    #[serde(default)]
+    pub custom_accent_hex: Option<String>,
+    #[serde(default = "default_button_radius")]
+    pub button_radius: String,
+    #[serde(default = "default_true")]
+    pub show_labels: bool,
+    #[serde(default = "default_label_font_size")]
+    pub label_font_size: String,
+    #[serde(default = "default_haptic_strength")]
+    pub haptic_strength: String,
+    #[serde(default = "default_true")]
+    pub glow_enabled: bool,
 }
 
 fn default_enabled() -> bool {
@@ -60,10 +84,35 @@ pub struct WindowRule {
     pub enabled: bool,
 }
 
+fn default_true() -> bool {
+    true
+}
+
+fn default_ws_port() -> u16 {
+    8080
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SystemSettings {
     pub start_with_windows: bool,
     pub minimize_to_tray: bool,
+    #[serde(default)]
+    pub start_minimized: bool,
+    #[serde(default = "default_true")]
+    pub keep_phone_awake: bool,
+    #[serde(default = "default_true")]
+    pub notify_device_connection: bool,
+    #[serde(default = "default_ws_port")]
+    pub ws_port: u16,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DatabaseInfo {
+    pub file_size_bytes: u64,
+    pub total_buttons: i64,
+    pub total_pages: i64,
+    pub total_rules: i64,
+    pub integrity_ok: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -187,7 +236,7 @@ pub fn init_db_conn(conn: &mut Connection) -> Result<()> {
         ("Calculadora", "open_app:calc", "#f59e0b", "calculator", principal_id, 0),
         ("Navegador", "open_url:https://google.com", "#38bdf8", "globe", principal_id, 1),
         ("Terminal", "open_app:cmd", "#64748b", "terminal", principal_id, 2),
-        ("Tarefas", "hotkey:Ctrl+Shift+Escape", "#10b981", "zap", principal_id, 3),
+        ("Tarefas", "hotkey:Ctrl+Shift+Escape", "#f97316", "zap", principal_id, 3),
         // Página Mídia: Mídia & Controles de Áudio
         ("Vol +", "vol_up", "#38bdf8", "volume-2", media_id, 0),
         ("Vol -", "vol_down", "#0ea5e9", "volume-x", media_id, 1),
@@ -421,6 +470,50 @@ pub fn get_appearance_settings() -> Result<AppearanceSettings> {
             |row| row.get(0),
         )
         .unwrap_or_else(|_| "linha".to_string());
+    let custom_accent_hex: Option<String> = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'custom_accent_hex'",
+            [],
+            |row| row.get(0),
+        )
+        .ok();
+    let button_radius: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'button_radius'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "smooth".to_string());
+    let show_labels: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'show_labels'",
+            [],
+            |row| row.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(true);
+    let label_font_size: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'label_font_size'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "normal".to_string());
+    let haptic_strength: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'haptic_strength'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "medium".to_string());
+    let glow_enabled: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'glow_enabled'",
+            [],
+            |row| row.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(true);
 
     Ok(AppearanceSettings {
         theme,
@@ -428,6 +521,12 @@ pub fn get_appearance_settings() -> Result<AppearanceSettings> {
         grid_columns,
         vibration_enabled,
         icon_style,
+        custom_accent_hex,
+        button_radius,
+        show_labels,
+        label_font_size,
+        haptic_strength,
+        glow_enabled,
     })
 }
 
@@ -453,6 +552,34 @@ pub fn set_appearance_settings(settings: &AppearanceSettings) -> Result<()> {
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('icon_style', ?1)",
         params![settings.icon_style],
     )?;
+    if let Some(ref hex) = settings.custom_accent_hex {
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('custom_accent_hex', ?1)",
+            params![hex],
+        )?;
+    } else {
+        conn.execute("DELETE FROM settings WHERE key = 'custom_accent_hex'", [])?;
+    }
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('button_radius', ?1)",
+        params![settings.button_radius],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_labels', ?1)",
+        params![if settings.show_labels { "1" } else { "0" }],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('label_font_size', ?1)",
+        params![settings.label_font_size],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('haptic_strength', ?1)",
+        params![settings.haptic_strength],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('glow_enabled', ?1)",
+        params![if settings.glow_enabled { "1" } else { "0" }],
+    )?;
     Ok(())
 }
 
@@ -474,9 +601,47 @@ pub fn get_system_settings() -> Result<SystemSettings> {
         )
         .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(true);
+    let start_minimized: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'start_minimized'",
+            [],
+            |r| r.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+    let keep_phone_awake: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'keep_phone_awake'",
+            [],
+            |r| r.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(true);
+    let notify_device_connection: bool = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'notify_device_connection'",
+            [],
+            |r| r.get(0),
+        )
+        .map(|v: String| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(true);
+    let ws_port: u16 = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'ws_port'",
+            [],
+            |r| r.get(0),
+        )
+        .ok()
+        .and_then(|v: String| v.parse::<u16>().ok())
+        .unwrap_or(8080);
+
     Ok(SystemSettings {
         start_with_windows,
         minimize_to_tray,
+        start_minimized,
+        keep_phone_awake,
+        notify_device_connection,
+        ws_port,
     })
 }
 
@@ -490,6 +655,67 @@ pub fn set_system_settings(settings: &SystemSettings) -> Result<()> {
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('minimize_to_tray', ?1)",
         params![if settings.minimize_to_tray { "1" } else { "0" }],
     )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('start_minimized', ?1)",
+        params![if settings.start_minimized { "1" } else { "0" }],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('keep_phone_awake', ?1)",
+        params![if settings.keep_phone_awake { "1" } else { "0" }],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('notify_device_connection', ?1)",
+        params![if settings.notify_device_connection { "1" } else { "0" }],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('ws_port', ?1)",
+        params![settings.ws_port.to_string()],
+    )?;
+    Ok(())
+}
+
+pub fn vacuum_database() -> Result<u64> {
+    let conn = Connection::open(DB_PATH)?;
+    conn.execute("VACUUM", [])?;
+    let size = std::fs::metadata(DB_PATH).map(|m| m.len()).unwrap_or(0);
+    Ok(size)
+}
+
+pub fn get_database_info() -> Result<DatabaseInfo> {
+    let conn = Connection::open(DB_PATH)?;
+    let total_buttons: i64 = conn
+        .query_row("SELECT COUNT(*) FROM buttons", [], |r| r.get(0))
+        .unwrap_or(0);
+    let total_pages: i64 = conn
+        .query_row("SELECT COUNT(*) FROM pages", [], |r| r.get(0))
+        .unwrap_or(0);
+    let total_rules: i64 = conn
+        .query_row("SELECT COUNT(*) FROM window_rules", [], |r| r.get(0))
+        .unwrap_or(0);
+    let integrity_ok: bool = conn
+        .query_row("PRAGMA integrity_check", [], |r| {
+            let res: String = r.get(0)?;
+            Ok(res.eq_ignore_ascii_case("ok"))
+        })
+        .unwrap_or(true);
+    let file_size_bytes = std::fs::metadata(DB_PATH).map(|m| m.len()).unwrap_or(0);
+
+    Ok(DatabaseInfo {
+        file_size_bytes,
+        total_buttons,
+        total_pages,
+        total_rules,
+        integrity_ok,
+    })
+}
+
+pub fn reset_to_factory_defaults() -> Result<()> {
+    let mut conn = Connection::open(DB_PATH)?;
+    conn.execute("DELETE FROM buttons", [])?;
+    conn.execute("DELETE FROM window_rules", [])?;
+    conn.execute("DELETE FROM pages", [])?;
+    conn.execute("DELETE FROM settings WHERE key = 'seed_v2_applied'", [])?;
+    init_db_conn(&mut conn)?;
     Ok(())
 }
 

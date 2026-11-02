@@ -17,9 +17,15 @@ fn broadcast_current_layout(tx: &broadcast::Sender<String>) {
         let appearance = db::get_appearance_settings().unwrap_or(db::AppearanceSettings {
             theme: theme.clone(),
             accent_color: "purple".to_string(),
-            grid_columns: 3,
+            grid_columns: 5,
             vibration_enabled: true,
             icon_style: "linha".to_string(),
+            custom_accent_hex: None,
+            button_radius: "smooth".to_string(),
+            show_labels: true,
+            label_font_size: "normal".to_string(),
+            haptic_strength: "medium".to_string(),
+            glow_enabled: true,
         });
         let json_string = serde_json::json!({
             "status": "ok",
@@ -221,6 +227,25 @@ fn import_backup(
 }
 
 #[tauri::command]
+fn vacuum_database() -> Result<u64, String> {
+    db::vacuum_database().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_database_info() -> Result<db::DatabaseInfo, String> {
+    db::get_database_info().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn reset_to_factory_defaults(
+    tx: tauri::State<'_, broadcast::Sender<String>>,
+) -> Result<(), String> {
+    db::reset_to_factory_defaults().map_err(|e| e.to_string())?;
+    broadcast_current_layout(&tx);
+    Ok(())
+}
+
+#[tauri::command]
 fn get_system_settings() -> Result<db::SystemSettings, String> {
     db::get_system_settings().map_err(|e| e.to_string())
 }
@@ -414,7 +439,10 @@ pub fn run() {
             get_obs_settings,
             set_obs_settings,
             test_obs_connection,
-            execute_obs_action
+            execute_obs_action,
+            vacuum_database,
+            get_database_info,
+            reset_to_factory_defaults
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
