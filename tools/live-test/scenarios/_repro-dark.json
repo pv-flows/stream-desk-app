@@ -1,0 +1,17 @@
+{
+  "name": "repro-dark",
+  "continueOnFail": true,
+  "steps": [
+    { "do": "click", "selector": "nav >> role=button[name='Aparência']", "label": "abrir Aparência" },
+    { "do": "eval", "label": "estado inicial", "js": "(() => { const s = window.__store; return JSON.stringify({html: document.documentElement.className, bodyBg: getComputedStyle(document.querySelector('#root > div')).backgroundColor, customBg: document.documentElement.style.getPropertyValue('--app-bg-custom')}); })()" },
+    { "do": "click", "selector": "role=button[name=/^Escuro/]", "label": "selecionar Escuro" },
+    { "do": "wait", "ms": 600 },
+    { "do": "eval", "label": "cores após Escuro", "js": "(() => { const v = document.querySelector('h1').closest('.overflow-y-auto'); const root = document.querySelector('#root > div'); return JSON.stringify({html: document.documentElement.className, root: getComputedStyle(root).backgroundColor, view: getComputedStyle(v).backgroundColor, viewCls: v.className.slice(0,300)}); })()" },
+    { "do": "screenshot", "name": "escuro" },
+    { "do": "click", "selector": "role=button[name=/^AMOLED/]", "label": "selecionar AMOLED" },
+    { "do": "wait", "ms": 600 },
+    { "do": "eval", "label": "cores após AMOLED", "js": "(() => { const v = document.querySelector('h1').closest('.overflow-y-auto'); const root = document.querySelector('#root > div'); return JSON.stringify({html: document.documentElement.className, root: getComputedStyle(root).backgroundColor, view: getComputedStyle(v).backgroundColor}); })()" },
+    { "do": "screenshot", "name": "amoled" }
+  ]
+}
+

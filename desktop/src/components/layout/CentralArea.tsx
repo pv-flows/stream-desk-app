@@ -88,6 +88,10 @@ export function CentralArea({
   const currentPageTitle =
     controlledPage ?? (activePageObject ? activePageObject.name : "Página Principal");
 
+  const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
+  const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
+  const isAmoled = normalizedTheme === "amoled";
+
   // Filtra e ordena os botões pertencentes à página ativa
   const pageButtons = buttons
     .filter((btn) => btn.page_index === activePageIndex)
@@ -175,10 +179,6 @@ export function CentralArea({
     setIsSheetOpen(true);
   };
 
-  const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
-  const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
-  const isAmoled = normalizedTheme === "amoled";
-
   const accent = getAccentColor(appearance);
   const iconStyle = appearance?.icon_style === "preenchido" ? "preenchido" : "linha";
   const isFilled = iconStyle === "preenchido";
@@ -195,8 +195,11 @@ export function CentralArea({
 
   return (
     <main
+      style={appearance?.custom_bg_hex ? { backgroundColor: appearance.custom_bg_hex } : undefined}
       className={`flex-1 flex flex-col min-w-0 ${
-        isLight
+        appearance?.custom_bg_hex
+          ? ""
+          : isLight
           ? "bg-slate-50/90 text-slate-900"
           : isAmoled
           ? "bg-black text-white"

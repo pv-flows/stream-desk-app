@@ -3,6 +3,14 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Fixed
+- **Temas Escuros & AMOLED na Personalização e Grade Central**:
+  - Correção na troca de temas em `AppearanceView.tsx`: selecionar qualquer tema nativo (`escuro`, `amoled`, `claro`, `sistema`) agora limpa `custom_bg_hex` residual e remove `--app-bg-custom` no DOM, permitindo a transição plena entre os modos escuros e AMOLED sem sobreposição de fundo estático.
+  - Correção do palco de demonstração em `AppearanceView.tsx` para respeitar o fundo preto puro (`#000000`) em modo AMOLED.
+  - Sincronização do elemento raiz de `CentralArea.tsx` para responder fielmente a `appearance.custom_bg_hex` e às classes dinâmicas de tema.
+- **Estabilização de Redimensionamento e Prevenção de Extravasamento**:
+  - Ajuste no ponto de quebra de colapso automático da `Sidebar.tsx` (1040px / proporção 4:3.4) para garantir espaço horizontal contínuo e estável para a área central em resoluções mínimas (800x540 e 1024x768).
+  - Adição de `viewport` e `overflowCheck` no harness de teste ao vivo `probe.mjs` para validação matemática de extravasamento de layout.
 ### Added
 - **Agente `tester` e teste ao vivo (`tools/live-test/`)**:
   - Persona `.agents/tester.md`: congela critérios de aceite em cenário, opera o app Tauri real (clique, digitação, arrasto, snapshot de acessibilidade, prints) e só libera a entrega com `PASS`.

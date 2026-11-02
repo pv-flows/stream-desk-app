@@ -7,3 +7,4 @@
     { "do": "expect", "selector": "role=heading[level=1]", "text": "TEXTO-INEXISTENTE", "label": "falha proposital (valida evidência)" }
   ]
 }
+

@@ -23,6 +23,73 @@ const SNAPSHOT_MAX_CHARS = 3_000;
 const MAX_SCREENSHOTS = 4;
 const MAX_CONSOLE_ENTRIES = 10;
 
+// Runs in the page. Reports content that spills out of the window or is cut by a clipping ancestor,
+// plus containers with unexpected horizontal scroll. Intentional ellipsis (`text-overflow`) is text, not elements, so it is not flagged.
+const OVERFLOW_DETECTOR = ({ scope, ignore, limit }) => {
+  const TOL = 1.5;
+  const root = document.querySelector(scope) ?? document.body;
+  const ignored = (el) => ignore.some((s) => el.closest(s));
+  const describe = (el) => {
+    const cls = typeof el.className === "string" ? el.className.split(/\s+/).filter(Boolean).slice(0, 3).join(".") : "";
+    const label = el.getAttribute("aria-label") || el.getAttribute("title") || (el.innerText || "").trim().slice(0, 30);
+    return `${el.tagName.toLowerCase()}${cls ? `.${cls}` : ""}${label ? ` "${label.replace(/\s+/g, " ")}"` : ""}`;
+  };
+  const isHidden = (el, cs) =>
+    cs.display === "none" || cs.visibility === "hidden" || Number(cs.opacity) === 0 || el.getClientRects().length === 0;
+  const out = [];
+  const flagged = new Set();
+  const vw = document.documentElement.clientWidth;
+  const vh = document.documentElement.clientHeight;
+  if (document.documentElement.scrollWidth > vw + TOL) {
+    out.push({ el: "document", issue: "scroll horizontal na janela", px: document.documentElement.scrollWidth - vw });
+  }
+  for (const el of root.querySelectorAll("*")) {
+    if (out.length >= limit) break;
+    if (ignored(el)) continue;
+    let p = el.parentElement;
+    let skip = false;
+    while (p) { if (flagged.has(p)) { skip = true; break; } p = p.parentElement; }
+    if (skip) continue;
+    const cs = getComputedStyle(el);
+    if (isHidden(el, cs) || cs.position === "fixed") continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) continue;
+    // 1) Spills out of the window horizontally.
+    if (r.right > vw + TOL || r.left < -TOL) {
+      out.push({ el: describe(el), issue: "fora da janela (horizontal)", px: Math.round(Math.max(r.right - vw, -r.left)) });
+      flagged.add(el);
+      continue;
+    }
+    // 2) Unexpected horizontal scrollbar inside a container.
+    if ((cs.overflowX === "auto" || cs.overflowX === "scroll") && el.scrollWidth > el.clientWidth + TOL) {
+      out.push({ el: describe(el), issue: "scroll horizontal no contêiner", px: el.scrollWidth - el.clientWidth });
+      flagged.add(el);
+      continue;
+    }
+    // 3) Cut by the nearest clipping ancestor (overflow hidden/clip) — content silently lost.
+    let a = el.parentElement;
+    while (a && a !== document.body) {
+      const acs = getComputedStyle(a);
+      const clipX = acs.overflowX === "hidden" || acs.overflowX === "clip";
+      const clipY = acs.overflowY === "hidden" || acs.overflowY === "clip";
+      const scrollY = acs.overflowY === "auto" || acs.overflowY === "scroll";
+      if (clipX || clipY || scrollY) {
+        const ar = a.getBoundingClientRect();
+        if (clipX && (r.right > ar.right + TOL || r.left < ar.left - TOL)) {
+          out.push({ el: describe(el), issue: "cortado na horizontal", px: Math.round(Math.max(r.right - ar.right, ar.left - r.left)), by: describe(a) });
+          flagged.add(el);
+        } else if (clipY && !scrollY && (r.bottom > ar.bottom + TOL || r.top < ar.top - TOL) && r.top < vh) {
+          out.push({ el: describe(el), issue: "cortado na vertical", px: Math.round(Math.max(r.bottom - ar.bottom, ar.top - r.top)), by: describe(a) });
+          flagged.add(el);
+        }
+        break;
+      }
+      a = a.parentElement;
+    }
+  }
+  return out;
+};
+
 function parseArgs(argv) {
   const args = { file: null, target: "cdp", port: 9222, continueOnFail: false };
   for (let i = 0; i < argv.length; i++) {
@@ -58,8 +125,15 @@ async function connect(target, port) {
   const page =
     pages.find((p) => /localhost:1420|tauri\.localhost/.test(p.url())) ?? pages[0];
   if (!page) throw new Error("CDP conectado, mas nenhuma página do app foi encontrada.");
-  // Do not close the real app window: only drop the CDP connection.
-  return { browser, page, close: () => browser.close().catch(() => {}) };
+  // Do not close the real app window: only clear emulation (viewport step) and drop the CDP connection.
+  const close = async () => {
+    try {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send("Emulation.clearDeviceMetricsOverride");
+    } catch { /* ignore */ }
+    await browser.close().catch(() => {});
+  };
+  return { browser, page, close };
 }
 
 async function runStep(page, step, ctx) {
@@ -148,6 +222,24 @@ async function runStep(page, step, ctx) {
     case "eval": {
       const value = await page.evaluate(step.js);
       return { value: truncate(value, 1_000) };
+    }
+    case "viewport": {
+      // Emulates a window size (layout/resize testing). Cleared when the CDP session closes.
+      await page.setViewportSize({ width: step.width, height: step.height });
+      await page.waitForTimeout(250);
+      return null;
+    }
+    case "overflowCheck": {
+      const offenders = await page.evaluate(OVERFLOW_DETECTOR, {
+        scope: step.selector ?? "body",
+        ignore: step.ignore ?? [],
+        limit: step.limit ?? 12,
+      });
+      const max = step.max ?? 0;
+      if (offenders.length > max) {
+        throw new Error(`${offenders.length} extravasamento(s): ${truncate(JSON.stringify(offenders), 1_200)}`);
+      }
+      return { overflow: offenders.length };
     }
     default:
       throw new Error(`Passo desconhecido: "${step.do}"`);

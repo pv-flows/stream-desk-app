@@ -70,7 +70,7 @@ export function Sidebar({
       const height = window.innerHeight;
       const ratio = width / (height || 1);
       // Ao achatar a tela para proporção 4:3.5 ou limite horizontal de segurança, recolhe liberando espaço
-      const isSquareOrCompact = ratio <= (4 / 3.4) || width <= 1080;
+      const isSquareOrCompact = ratio <= (4 / 3.4) || width <= 1040;
       setIsAutoCompact(isSquareOrCompact);
     };
 

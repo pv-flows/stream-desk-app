@@ -56,3 +56,4 @@ Todo passo aceita `label` (aparece no relatório) e `timeout` (padrão 5000 ms).
 **Na falha** o probe para (salvo `--continue`) e anexa `snapshotOnFail` + print do momento do erro.
 
 Saídas (prints, `app.log`, `app.pid`) ficam em `out/` (ignorado pelo git). Cenários com prefixo `_` são de autoteste do harness.
+

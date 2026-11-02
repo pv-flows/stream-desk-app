@@ -1,0 +1,25 @@
+{
+  "name": "dark-modes-and-resize-check",
+  "continueOnFail": false,
+  "steps": [
+    { "do": "click", "selector": "nav >> role=button[name='Aparência']", "label": "abrir tela de Aparência" },
+    { "do": "wait", "ms": 500 },
+    { "do": "click", "selector": "role=button[name=/^Escuro/]", "label": "clicar no tema Escuro" },
+    { "do": "wait", "ms": 500 },
+    { "do": "eval", "label": "conferir palco em modo Escuro", "js": "(() => { const palco = document.querySelector('.grid.grid-cols-3')?.parentElement; return JSON.stringify({ bg: getComputedStyle(palco).backgroundColor }); })()" },
+    { "do": "click", "selector": "role=button[name=/^AMOLED/]", "label": "clicar no tema AMOLED" },
+    { "do": "wait", "ms": 500 },
+    { "do": "eval", "label": "conferir palco em modo AMOLED", "js": "(() => { const palco = document.querySelector('.grid.grid-cols-3')?.parentElement; return JSON.stringify({ bg: getComputedStyle(palco).backgroundColor }); })()" },
+    { "do": "screenshot", "name": "amoled-stage-fixed" },
+    { "do": "click", "selector": "nav >> role=button[name='Páginas e botões']", "label": "abrir grade de botões central" },
+    { "do": "wait", "ms": 500 },
+    { "do": "eval", "label": "conferir grade central em AMOLED", "js": "(() => { const m = document.querySelector('main'); return JSON.stringify({ bg: getComputedStyle(m).backgroundColor }); })()" },
+    { "do": "screenshot", "name": "central-grid-amoled" },
+    { "do": "viewport", "width": 800, "height": 540 },
+    { "do": "wait", "ms": 400 },
+    { "do": "overflowCheck", "label": "verificar extravasamento em 800x540", "max": 0 },
+    { "do": "viewport", "width": 1024, "height": 768 },
+    { "do": "wait", "ms": 400 },
+    { "do": "overflowCheck", "label": "verificar extravasamento em 1024x768", "max": 0 }
+  ]
+}

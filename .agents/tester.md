@@ -67,3 +67,4 @@ Regras do orçamento:
 - Evidência: <print final ou trecho do snapshot>
 - Verificação manual pendente: <roteiro curto ou "Nenhuma">
 ```
+

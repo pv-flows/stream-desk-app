@@ -113,7 +113,9 @@ export function AppearanceView() {
 
   const handleThemeChange = async (novoTema: "sistema" | "escuro" | "claro" | "amoled") => {
     try {
-      await setAppearance({ theme: novoTema });
+      await setAppearance({ theme: novoTema, custom_bg_hex: null });
+      setCustomBgInput("#0a0a0c");
+      document.documentElement.style.removeProperty("--app-bg-custom");
       toast({
         title: "Tema Atualizado",
         description: `Modo "${novoTema.toUpperCase()}" aplicado com sucesso.`,
@@ -468,9 +470,9 @@ export function AppearanceView() {
               ? "#ffffff"
               : isAmoled
               ? "#000000"
-              : "rgba(23, 23, 23, 0.7)",
+              : "#171717",
           }}
-          className="border rounded-2xl p-5 transition-all backdrop-blur-md relative overflow-hidden shadow-md"
+          className="border rounded-2xl p-5 transition-all relative overflow-hidden shadow-md"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -492,7 +494,7 @@ export function AppearanceView() {
                 boxShadow: glowEnabled ? `0 0 16px -2px ${accent.hex}40` : undefined,
               }}
               className={`p-3 border flex flex-col items-center justify-center text-center transition-all cursor-pointer hover:scale-105 active:scale-95 select-none ${previewRadiusClass} ${
-                isLight ? "bg-white shadow-sm" : isAmoled ? "bg-neutral-950" : "bg-neutral-900/90"
+                isLight ? "bg-white shadow-sm" : isAmoled ? "bg-black" : "bg-neutral-900/90"
               }`}
             >
               <div
@@ -522,7 +524,7 @@ export function AppearanceView() {
                 boxShadow: glowEnabled ? `0 0 16px -2px ${accent.hex}40` : undefined,
               }}
               className={`p-3 border flex flex-col items-center justify-center text-center transition-all cursor-pointer hover:scale-105 active:scale-95 select-none ${previewRadiusClass} ${
-                isLight ? "bg-white shadow-sm" : isAmoled ? "bg-neutral-950" : "bg-neutral-900/90"
+                isLight ? "bg-white shadow-sm" : isAmoled ? "bg-black" : "bg-neutral-900/90"
               }`}
             >
               <div
@@ -552,7 +554,7 @@ export function AppearanceView() {
                 boxShadow: glowEnabled ? `0 0 16px -2px ${accent.hex}40` : undefined,
               }}
               className={`p-3 border flex flex-col items-center justify-center text-center transition-all cursor-pointer hover:scale-105 active:scale-95 select-none ${previewRadiusClass} ${
-                isLight ? "bg-white shadow-sm" : isAmoled ? "bg-neutral-950" : "bg-neutral-900/90"
+                isLight ? "bg-white shadow-sm" : isAmoled ? "bg-black" : "bg-neutral-900/90"
               }`}
             >
               <div
