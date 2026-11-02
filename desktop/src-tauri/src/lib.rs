@@ -21,6 +21,7 @@ fn broadcast_current_layout(tx: &broadcast::Sender<String>) {
             vibration_enabled: true,
             icon_style: "linha".to_string(),
             custom_accent_hex: None,
+            custom_bg_hex: None,
             button_radius: "smooth".to_string(),
             show_labels: true,
             label_font_size: "normal".to_string(),

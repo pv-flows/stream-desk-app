@@ -58,6 +58,8 @@ pub struct AppearanceSettings {
     pub icon_style: String,
     #[serde(default)]
     pub custom_accent_hex: Option<String>,
+    #[serde(default)]
+    pub custom_bg_hex: Option<String>,
     #[serde(default = "default_button_radius")]
     pub button_radius: String,
     #[serde(default = "default_true")]
@@ -477,6 +479,13 @@ pub fn get_appearance_settings() -> Result<AppearanceSettings> {
             |row| row.get(0),
         )
         .ok();
+    let custom_bg_hex: Option<String> = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'custom_bg_hex'",
+            [],
+            |row| row.get(0),
+        )
+        .ok();
     let button_radius: String = conn
         .query_row(
             "SELECT value FROM settings WHERE key = 'button_radius'",
@@ -522,6 +531,7 @@ pub fn get_appearance_settings() -> Result<AppearanceSettings> {
         vibration_enabled,
         icon_style,
         custom_accent_hex,
+        custom_bg_hex,
         button_radius,
         show_labels,
         label_font_size,
@@ -559,6 +569,14 @@ pub fn set_appearance_settings(settings: &AppearanceSettings) -> Result<()> {
         )?;
     } else {
         conn.execute("DELETE FROM settings WHERE key = 'custom_accent_hex'", [])?;
+    }
+    if let Some(ref hex) = settings.custom_bg_hex {
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('custom_bg_hex', ?1)",
+            params![hex],
+        )?;
+    } else {
+        conn.execute("DELETE FROM settings WHERE key = 'custom_bg_hex'", [])?;
     }
     conn.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('button_radius', ?1)",

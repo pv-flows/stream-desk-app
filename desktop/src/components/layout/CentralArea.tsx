@@ -179,7 +179,7 @@ export function CentralArea({
   const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
   const isAmoled = normalizedTheme === "amoled";
 
-  const accent = getAccentColor(appearance?.accent_color, appearance?.custom_accent_hex);
+  const accent = getAccentColor(appearance);
   const iconStyle = appearance?.icon_style === "preenchido" ? "preenchido" : "linha";
   const isFilled = iconStyle === "preenchido";
   const buttonRadiusClass = getButtonRadiusClass(appearance?.button_radius);

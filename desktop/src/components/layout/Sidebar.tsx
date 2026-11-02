@@ -58,7 +58,7 @@ export function Sidebar({
   const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
   const isAmoled = normalizedTheme === "amoled";
 
-  const accent = getAccentColor(appearance?.accent_color);
+  const accent = getAccentColor(appearance);
 
   // Detecção de proporção quadrada ou 4:3 (aspect ratio <= 1.35 ou largura <= 1040px)
   const [isAutoCompact, setIsAutoCompact] = useState(false);

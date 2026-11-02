@@ -81,7 +81,7 @@ export function AboutView() {
   const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
   const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
   const isAmoled = normalizedTheme === "amoled";
-  const accent = getAccentColor(appearance?.accent_color);
+  const accent = getAccentColor(appearance);
 
   const [copiedDiag, setCopiedDiag] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);

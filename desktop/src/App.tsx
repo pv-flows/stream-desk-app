@@ -5,7 +5,7 @@ import { MobilePreview } from "@/components/layout/MobilePreview";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useDashboardStore } from "@/store/useDashboardStore";
-import { getAccentColor } from "@/lib/buttonUtils";
+import { getAccentColor, isHexColorLight } from "@/lib/buttonUtils";
 import "./App.css";
 
 export function App() {
@@ -39,9 +39,11 @@ export function App() {
         : "claro"
       : normalizedTheme;
 
-  const isLight = effectiveTheme === "claro" || effectiveTheme === "light";
-  const isAmoled = effectiveTheme === "amoled";
-  const accent = getAccentColor(appearance?.accent_color, appearance?.custom_accent_hex);
+  const hasCustomBg = Boolean(appearance?.custom_bg_hex);
+  const isCustomBgLight = hasCustomBg ? isHexColorLight(appearance?.custom_bg_hex) : false;
+  const isLight = hasCustomBg ? isCustomBgLight : (effectiveTheme === "claro" || effectiveTheme === "light");
+  const isAmoled = !hasCustomBg && effectiveTheme === "amoled";
+  const accent = getAccentColor(appearance);
 
   // Sincroniza classes no elemento raiz html e variáveis CSS de cor de destaque e geometria
   useEffect(() => {
@@ -56,6 +58,12 @@ export function App() {
     }
     root.style.setProperty("--accent-primary", accent.hex);
 
+    if (appearance?.custom_bg_hex) {
+      root.style.setProperty("--app-bg-custom", appearance.custom_bg_hex);
+    } else {
+      root.style.removeProperty("--app-bg-custom");
+    }
+
     const radius =
       appearance?.button_radius === "sharp"
         ? "6px"
@@ -69,9 +77,13 @@ export function App() {
         ? `0 0 18px ${accent.hex}30`
         : "none";
     root.style.setProperty("--deck-glow", glow);
-  }, [isLight, isAmoled, accent.hex, appearance?.button_radius, appearance?.glow_enabled]);
+  }, [isLight, isAmoled, accent.hex, appearance?.button_radius, appearance?.glow_enabled, appearance?.custom_bg_hex]);
 
-  const appBgClass = isLight
+  const appBgClass = hasCustomBg
+    ? isCustomBgLight
+      ? "text-slate-900"
+      : "text-white"
+    : isLight
     ? "bg-slate-100 text-slate-900"
     : isAmoled
     ? "bg-black text-white"
@@ -79,6 +91,7 @@ export function App() {
 
   return (
     <div
+      style={appearance?.custom_bg_hex ? { backgroundColor: appearance.custom_bg_hex } : undefined}
       className={`h-screen w-screen flex ${appBgClass} overflow-hidden min-w-[720px] min-h-[520px] transition-colors duration-200`}
     >
       {/* 1. Barra Lateral de Navegação (recolhível automaticamente em 4:3 ou sob demanda) */}

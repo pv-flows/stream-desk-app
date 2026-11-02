@@ -20,7 +20,7 @@ export function ConnectionView() {
   const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
   const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
   const isAmoled = normalizedTheme === "amoled";
-  const accent = getAccentColor(appearance?.accent_color);
+  const accent = getAccentColor(appearance);
 
   const displayIp = localIp && localIp !== "0.0.0.0" ? localIp : "192.168.1.15";
   const qrValue = `ws://${displayIp}:8080/ws`;

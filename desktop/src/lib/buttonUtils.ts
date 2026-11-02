@@ -50,12 +50,62 @@ export const ACCENT_OPTIONS: AccentOption[] = [
   { id: "slate", label: "Grafite", hex: "#64748b", bgClass: "bg-slate-500" },
 ];
 
-export function getAccentColor(accentId?: string, customHex?: string | null): AccentOption {
-  if (accentId === "custom" && customHex) {
+export interface BgPreset {
+  id: string;
+  label: string;
+  hex: string;
+  isLight: boolean;
+}
+
+export const BG_PRESETS: BgPreset[] = [
+  { id: "dark_studio", label: "Estúdio Grafite", hex: "#0a0a0c", isLight: false },
+  { id: "amoled_pure", label: "AMOLED Puro", hex: "#000000", isLight: false },
+  { id: "midnight", label: "Azul Meia-Noite", hex: "#0b101b", isLight: false },
+  { id: "slate_dark", label: "Ardósia Escura", hex: "#0f172a", isLight: false },
+  { id: "charcoal", label: "Carvão Zinc", hex: "#18181b", isLight: false },
+  { id: "matte_grey", label: "Cinza Fosco", hex: "#22252a", isLight: false },
+  { id: "slate_light", label: "Névoa Clara", hex: "#f8fafc", isLight: true },
+  { id: "pure_white", label: "Branco Puro", hex: "#ffffff", isLight: true },
+];
+
+export function isHexColorLight(hex?: string | null): boolean {
+  if (!hex) return false;
+  const clean = hex.replace("#", "").trim();
+  if (clean.length !== 6 && clean.length !== 3) return false;
+  let full = clean;
+  if (clean.length === 3) {
+    full = clean.split("").map((c) => c + c).join("");
+  }
+  const r = parseInt(full.substring(0, 2), 16);
+  const g = parseInt(full.substring(2, 4), 16);
+  const b = parseInt(full.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return false;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.55;
+}
+
+export function getAccentColor(
+  accentIdOrAppearance?: string | { accent_color?: string; custom_accent_hex?: string | null } | null,
+  customHex?: string | null
+): AccentOption {
+  let accentId: string | undefined;
+  let custom: string | null | undefined = customHex;
+
+  if (typeof accentIdOrAppearance === "object" && accentIdOrAppearance !== null) {
+    accentId = accentIdOrAppearance.accent_color;
+    if (!custom) {
+      custom = accentIdOrAppearance.custom_accent_hex;
+    }
+  } else if (typeof accentIdOrAppearance === "string") {
+    accentId = accentIdOrAppearance;
+  }
+
+  if (accentId === "custom" && custom) {
+    const formatted = custom.startsWith("#") ? custom : `#${custom}`;
     return {
       id: "custom",
-      label: "Personalizada",
-      hex: customHex,
+      label: `Personalizada (${formatted.toUpperCase()})`,
+      hex: formatted,
       bgClass: "bg-neutral-800",
     };
   }

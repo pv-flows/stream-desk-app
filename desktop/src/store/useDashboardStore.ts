@@ -30,6 +30,7 @@ export interface AppearanceSettings {
   vibration_enabled: boolean;
   icon_style: "linha" | "preenchido";
   custom_accent_hex?: string | null;
+  custom_bg_hex?: string | null;
   button_radius?: "sharp" | "smooth" | "pill" | string;
   show_labels?: boolean;
   label_font_size?: "compact" | "normal" | "large" | string;
@@ -133,6 +134,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     vibration_enabled: true,
     icon_style: "linha",
     custom_accent_hex: null,
+    custom_bg_hex: null,
     button_radius: "smooth",
     show_labels: true,
     label_font_size: "normal",

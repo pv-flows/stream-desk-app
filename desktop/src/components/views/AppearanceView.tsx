@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Contrast,
   Palette,
@@ -18,6 +18,8 @@ import {
   Pipette,
   Calculator,
   MicOff,
+  Paintbrush,
+  Undo2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -27,8 +29,11 @@ import {
   getAccentColor,
   ACCENT_OPTIONS,
   type AccentOption,
+  BG_PRESETS,
+  type BgPreset,
   getButtonRadiusClass,
   getLabelFontSizeClass,
+  isHexColorLight,
 } from "@/lib/buttonUtils";
 
 export function AppearanceView() {
@@ -38,7 +43,7 @@ export function AppearanceView() {
   const setAppearance = useDashboardStore((s) => s.setAppearance);
 
   const rawTheme = (appearance?.theme || theme || "escuro").toLowerCase();
-  
+
   // Resolução de tema ativo (se for sistema, checa media query)
   const systemPrefersDark =
     typeof window !== "undefined" &&
@@ -52,14 +57,25 @@ export function AppearanceView() {
         : "claro"
       : rawTheme;
 
-  const isLight = resolvedTheme === "claro" || resolvedTheme === "light";
-  const isAmoled = resolvedTheme === "amoled";
+  const customBgHex = appearance?.custom_bg_hex || null;
+  const isCustomBg = Boolean(customBgHex);
+  const isCustomBgLight = isCustomBg ? isHexColorLight(customBgHex) : false;
 
-  const accent = getAccentColor(appearance?.accent_color, appearance?.custom_accent_hex);
+  const isLight = isCustomBg ? isCustomBgLight : (resolvedTheme === "claro" || resolvedTheme === "light");
+  const isAmoled = !isCustomBg && resolvedTheme === "amoled";
+
+  const accent = getAccentColor(appearance);
   const [sliderValue, setSliderValue] = useState<number[]>([appearance?.grid_columns || 5]);
+
+  // Estados locais para inputs hex
   const [customHexInput, setCustomHexInput] = useState(
     appearance?.custom_accent_hex || (accent.id === "custom" ? accent.hex : "#6366f1")
   );
+  const [customBgInput, setCustomBgInput] = useState(customBgHex || "#0a0a0c");
+
+  // Timers de debounce para evitar flood de persistência e pop-ups durante o arrasto
+  const accentDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bgDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const vibrationEnabled = appearance?.vibration_enabled ?? true;
   const iconStyle = appearance?.icon_style === "preenchido" ? "preenchido" : "linha";
@@ -81,6 +97,20 @@ export function AppearanceView() {
     }
   }, [appearance?.custom_accent_hex]);
 
+  useEffect(() => {
+    if (appearance?.custom_bg_hex) {
+      setCustomBgInput(appearance.custom_bg_hex);
+    }
+  }, [appearance?.custom_bg_hex]);
+
+  // Limpa timers ao desmontar
+  useEffect(() => {
+    return () => {
+      if (accentDebounceTimer.current) clearTimeout(accentDebounceTimer.current);
+      if (bgDebounceTimer.current) clearTimeout(bgDebounceTimer.current);
+    };
+  }, []);
+
   const handleThemeChange = async (novoTema: "sistema" | "escuro" | "claro" | "amoled") => {
     try {
       await setAppearance({ theme: novoTema });
@@ -93,6 +123,7 @@ export function AppearanceView() {
     }
   };
 
+  // 1. Cor de Destaque Pré-definida
   const handleSelectColor = async (col: AccentOption) => {
     try {
       await setAppearance({ accent_color: col.id });
@@ -105,15 +136,40 @@ export function AppearanceView() {
     }
   };
 
+  // 2. Cor de Destaque no Arrasto do Seletor (Color Picker) - Sem flood de toasts
+  const handleAccentPickerDrag = (newHex: string) => {
+    setCustomHexInput(newHex);
+    // Aplicação imediata no DOM CSS para zero latência
+    document.documentElement.style.setProperty("--accent-primary", newHex);
+
+    if (accentDebounceTimer.current) {
+      clearTimeout(accentDebounceTimer.current);
+    }
+    accentDebounceTimer.current = setTimeout(async () => {
+      try {
+        await setAppearance({
+          accent_color: "custom",
+          custom_accent_hex: newHex,
+        });
+      } catch (err) {
+        console.warn("[AppearanceView] Erro ao salvar cor personalizada silenciosamente:", err);
+      }
+    }, 300);
+  };
+
+  // 3. Aplicação explícita da Cor de Destaque Customizada (Dispara 1 único toast)
   const handleApplyCustomHex = async (hex: string) => {
     const formatted = hex.startsWith("#") ? hex : `#${hex}`;
     if (!/^#[0-9A-Fa-f]{6}$/.test(formatted)) {
       toast({
         title: "Cor Inválida",
-        description: "Insira uma cor hexadecimal válida (ex: #6366f1).",
+        description: "Insira uma cor hexadecimal válida com 6 dígitos (ex: #6366f1).",
         variant: "destructive",
       });
       return;
+    }
+    if (accentDebounceTimer.current) {
+      clearTimeout(accentDebounceTimer.current);
     }
     try {
       await setAppearance({
@@ -122,11 +178,83 @@ export function AppearanceView() {
       });
       setCustomHexInput(formatted);
       toast({
-        title: "Cor Personalizada",
-        description: `Cor ${formatted} definida com sucesso.`,
+        title: "Cor de Destaque Personalizada",
+        description: `Cor ${formatted.toUpperCase()} aplicada à interface.`,
       });
     } catch (err) {
       console.warn("[AppearanceView] Erro ao salvar cor personalizada:", err);
+    }
+  };
+
+  // 4. Cor de Fundo Pré-definida
+  const handleSelectBgPreset = async (preset: BgPreset) => {
+    if (bgDebounceTimer.current) clearTimeout(bgDebounceTimer.current);
+    try {
+      await setAppearance({ custom_bg_hex: preset.hex });
+      setCustomBgInput(preset.hex);
+      toast({
+        title: "Cor de Fundo",
+        description: `Fundo "${preset.label}" (${preset.hex}) aplicado com sucesso.`,
+      });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao salvar cor de fundo:", err);
+    }
+  };
+
+  // 5. Cor de Fundo no Arrasto do Seletor - Sem flood de toasts
+  const handleBgPickerDrag = (newHex: string) => {
+    setCustomBgInput(newHex);
+    document.documentElement.style.setProperty("--app-bg-custom", newHex);
+
+    if (bgDebounceTimer.current) {
+      clearTimeout(bgDebounceTimer.current);
+    }
+    bgDebounceTimer.current = setTimeout(async () => {
+      try {
+        await setAppearance({ custom_bg_hex: newHex });
+      } catch (err) {
+        console.warn("[AppearanceView] Erro ao salvar fundo silenciosamente:", err);
+      }
+    }, 300);
+  };
+
+  // 6. Aplicação explícita do Fundo Customizado (Dispara 1 único toast)
+  const handleApplyCustomBg = async (hex: string) => {
+    const formatted = hex.startsWith("#") ? hex : `#${hex}`;
+    if (!/^#[0-9A-Fa-f]{6}$/.test(formatted)) {
+      toast({
+        title: "Cor de Fundo Inválida",
+        description: "Insira um código hexadecimal válido de 6 dígitos (ex: #121214).",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (bgDebounceTimer.current) {
+      clearTimeout(bgDebounceTimer.current);
+    }
+    try {
+      await setAppearance({ custom_bg_hex: formatted });
+      setCustomBgInput(formatted);
+      toast({
+        title: "Cor de Fundo Atualizada",
+        description: `Fundo ${formatted.toUpperCase()} aplicado ao aplicativo.`,
+      });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao salvar cor de fundo:", err);
+    }
+  };
+
+  // 7. Restaurar Fundo Padrão do Tema
+  const handleResetBgToTheme = async () => {
+    if (bgDebounceTimer.current) clearTimeout(bgDebounceTimer.current);
+    try {
+      await setAppearance({ custom_bg_hex: null });
+      toast({
+        title: "Fundo Restaurado",
+        description: "A interface voltou ao fundo original correspondente ao tema.",
+      });
+    } catch (err) {
+      console.warn("[AppearanceView] Erro ao restaurar fundo:", err);
     }
   };
 
@@ -235,11 +363,14 @@ export function AppearanceView() {
   };
 
   const handleResetDefaults = async () => {
+    if (accentDebounceTimer.current) clearTimeout(accentDebounceTimer.current);
+    if (bgDebounceTimer.current) clearTimeout(bgDebounceTimer.current);
     try {
       await setAppearance({
         theme: "escuro",
-        accent_color: "indigo",
-        custom_accent_hex: undefined,
+        accent_color: "purple",
+        custom_accent_hex: null,
+        custom_bg_hex: null,
         grid_columns: 5,
         vibration_enabled: true,
         haptic_strength: "medium",
@@ -251,9 +382,10 @@ export function AppearanceView() {
       });
       setSliderValue([5]);
       setCustomHexInput("#6366f1");
+      setCustomBgInput("#0a0a0c");
       toast({
         title: "Padrões Restaurados",
-        description: "Todas as preferências de aparência voltaram às configurações padrão.",
+        description: "Todas as preferências de aparência e cores foram resetadas.",
       });
     } catch (err) {
       console.warn("[AppearanceView] Erro ao restaurar padrões:", err);
@@ -262,10 +394,10 @@ export function AppearanceView() {
 
   // Dinâmica de classes por tema
   const cardBgClass = isLight
-    ? "bg-white border-slate-200/90 shadow-sm hover:border-slate-300"
+    ? "bg-white/90 border-slate-200/90 shadow-sm hover:border-slate-300"
     : isAmoled
-    ? "bg-neutral-950 border-neutral-900 shadow-sm hover:border-neutral-800"
-    : "bg-neutral-900/50 border-neutral-800/80 shadow-sm hover:bg-neutral-900/70";
+    ? "bg-neutral-950/90 border-neutral-900 shadow-sm hover:border-neutral-800"
+    : "bg-neutral-900/60 border-neutral-800/80 shadow-sm hover:bg-neutral-900/80";
 
   const textPrimaryClass = isLight ? "text-slate-800" : isAmoled ? "text-white" : "text-neutral-200";
   const textSecondaryClass = isLight ? "text-slate-500" : "text-neutral-400";
@@ -280,8 +412,13 @@ export function AppearanceView() {
 
   return (
     <div
+      style={customBgHex ? { backgroundColor: customBgHex } : undefined}
       className={`flex-1 flex flex-col min-w-0 p-6 md:p-8 overflow-y-auto select-none transition-colors duration-200 ${
-        isLight
+        customBgHex
+          ? isCustomBgLight
+            ? "text-slate-900"
+            : "text-white"
+          : isLight
           ? "bg-slate-50/90 text-slate-900"
           : isAmoled
           ? "bg-black text-white"
@@ -323,13 +460,17 @@ export function AppearanceView() {
             Demonstração em tempo real das preferências ativas
            ======================================================== */}
         <div
-          className={`border rounded-2xl p-5 transition-all backdrop-blur-md relative overflow-hidden ${
-            isLight
-              ? "bg-gradient-to-br from-white via-slate-50 to-indigo-50/30 border-slate-200 shadow-sm"
+          style={{
+            borderColor: `${accent.hex}33`,
+            backgroundColor: customBgHex
+              ? customBgHex
+              : isLight
+              ? "#ffffff"
               : isAmoled
-              ? "bg-gradient-to-br from-neutral-950 via-black to-neutral-900/40 border-neutral-800 shadow-md"
-              : "bg-gradient-to-br from-neutral-900/70 via-neutral-950/80 to-indigo-950/20 border-neutral-800/90 shadow-md"
-          }`}
+              ? "#000000"
+              : "rgba(23, 23, 23, 0.7)",
+          }}
+          className="border rounded-2xl p-5 transition-all backdrop-blur-md relative overflow-hidden shadow-md"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -368,7 +509,7 @@ export function AppearanceView() {
                 />
               </div>
               {showLabels && (
-                <span className={`font-medium truncate w-full ${previewFontSizeClass} ${textPrimaryClass}`}>
+                <span className={`font-medium truncate w-full ${previewFontSizeClass.title} ${textPrimaryClass}`}>
                   Calculadora
                 </span>
               )}
@@ -398,7 +539,7 @@ export function AppearanceView() {
                 />
               </div>
               {showLabels && (
-                <span className={`font-medium truncate w-full ${previewFontSizeClass} ${textPrimaryClass}`}>
+                <span className={`font-medium truncate w-full ${previewFontSizeClass.title} ${textPrimaryClass}`}>
                   Mudo
                 </span>
               )}
@@ -429,7 +570,7 @@ export function AppearanceView() {
                 />
               </div>
               {showLabels && (
-                <span className={`font-medium truncate w-full ${previewFontSizeClass} ${textPrimaryClass}`}>
+                <span className={`font-medium truncate w-full ${previewFontSizeClass.title} ${textPrimaryClass}`}>
                   Mídia Play
                 </span>
               )}
@@ -524,6 +665,7 @@ export function AppearanceView() {
                 <Switch
                   checked={glowEnabled}
                   onCheckedChange={handleToggleGlow}
+                  style={glowEnabled ? { backgroundColor: accent.hex } : undefined}
                   className={`data-[state=checked]:bg-indigo-600 ${
                     isLight
                       ? "data-[state=unchecked]:bg-slate-300 border-slate-300"
@@ -556,7 +698,7 @@ export function AppearanceView() {
               })}
             </div>
 
-            {/* Seletor Customizado HEX (Native Color Picker) */}
+            {/* Seletor Customizado HEX (Native Color Picker com Debounce e Sem Flood de Toasts) */}
             <div
               className={`pt-3 border-t flex flex-wrap items-center justify-between gap-3 ${
                 isLight ? "border-slate-100" : "border-neutral-800/80"
@@ -569,9 +711,9 @@ export function AppearanceView() {
                   <input
                     type="color"
                     value={accent.hex.startsWith("#") ? accent.hex : "#6366f1"}
-                    onChange={(e) => handleApplyCustomHex(e.target.value)}
+                    onChange={(e) => handleAccentPickerDrag(e.target.value)}
                     className="w-7 h-7 rounded-lg cursor-pointer border-0 p-0 overflow-hidden bg-transparent"
-                    title="Seletor de cor livre"
+                    title="Selecione na roda de cores"
                   />
                 </div>
               </div>
@@ -582,6 +724,9 @@ export function AppearanceView() {
                   maxLength={7}
                   value={customHexInput}
                   onChange={(e) => setCustomHexInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleApplyCustomHex(customHexInput);
+                  }}
                   placeholder="#6366f1"
                   className={`w-24 px-2 py-1 text-xs font-mono rounded-lg border outline-none ${
                     isLight
@@ -592,10 +737,11 @@ export function AppearanceView() {
                 <button
                   type="button"
                   onClick={() => handleApplyCustomHex(customHexInput)}
+                  style={{ borderColor: `${accent.hex}66`, color: accent.hex }}
                   className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors ${
                     isLight
-                      ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
-                      : "bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-300"
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      : "bg-neutral-900 hover:bg-neutral-800 text-neutral-300"
                   }`}
                 >
                   Aplicar
@@ -604,7 +750,134 @@ export function AppearanceView() {
             </div>
           </div>
 
-          {/* Card 3: Geometria e Arredondamento dos Botões */}
+          {/* Card 3: NOVO - Manipulação de Cor de Fundo da Interface (Padrão & Personalizada) */}
+          <div className={`border rounded-2xl p-5 transition-colors backdrop-blur-sm ${cardBgClass}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full border flex items-center justify-center ${iconBubbleClass}`}>
+                  <Paintbrush className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className={`text-sm font-semibold ${textPrimaryClass}`}>Cor de Fundo da Interface</span>
+                  <p className={`text-[11px] ${textSecondaryClass}`}>
+                    Fundo ativo:{" "}
+                    <strong>
+                      {customBgHex
+                        ? `Personalizada (${customBgHex.toUpperCase()})`
+                        : `Padrão do Tema (${resolvedTheme.toUpperCase()})`}
+                    </strong>
+                  </p>
+                </div>
+              </div>
+
+              {customBgHex && (
+                <button
+                  type="button"
+                  onClick={handleResetBgToTheme}
+                  className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                    isLight
+                      ? "border-slate-300 hover:border-slate-400 bg-slate-100 text-slate-700"
+                      : "border-neutral-700 hover:border-neutral-600 bg-neutral-900 text-neutral-300"
+                  }`}
+                  title="Reverter para o fundo padrão nativo do tema"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  <span>Fundo do Tema</span>
+                </button>
+              )}
+            </div>
+
+            {/* Presets de Cor de Fundo */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pb-3">
+              {BG_PRESETS.map((bgOpt) => {
+                const isSelected = customBgHex?.toLowerCase() === bgOpt.hex.toLowerCase();
+                return (
+                  <button
+                    key={bgOpt.id}
+                    type="button"
+                    onClick={() => handleSelectBgPreset(bgOpt)}
+                    style={{
+                      backgroundColor: bgOpt.hex,
+                      borderColor: isSelected ? accent.hex : undefined,
+                    }}
+                    className={`h-11 px-3 rounded-xl border flex items-center justify-between transition-all ${
+                      isSelected
+                        ? "ring-2 ring-offset-2 ring-white scale-[1.02] shadow-md font-semibold"
+                        : "opacity-85 hover:opacity-100 border-neutral-700/60 hover:scale-[1.01]"
+                    }`}
+                  >
+                    <span
+                      className={`text-xs ${
+                        bgOpt.isLight ? "text-slate-900" : "text-white"
+                      }`}
+                    >
+                      {bgOpt.label}
+                    </span>
+                    {isSelected && (
+                      <Check
+                        className={`w-3.5 h-3.5 stroke-[3] ${
+                          bgOpt.isLight ? "text-slate-900" : "text-white"
+                        }`}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Seletor Customizado de Cor de Fundo */}
+            <div
+              className={`pt-3 border-t flex flex-wrap items-center justify-between gap-3 ${
+                isLight ? "border-slate-100" : "border-neutral-800/80"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Pipette className={`w-4 h-4 ${textSecondaryClass}`} />
+                <span className={`text-xs ${textSecondaryClass}`}>Fundo Personalizado:</span>
+                <div className="relative flex items-center">
+                  <input
+                    type="color"
+                    value={customBgHex || "#0a0a0c"}
+                    onChange={(e) => handleBgPickerDrag(e.target.value)}
+                    className="w-7 h-7 rounded-lg cursor-pointer border-0 p-0 overflow-hidden bg-transparent"
+                    title="Seletor de cor de fundo livre"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  maxLength={7}
+                  value={customBgInput}
+                  onChange={(e) => setCustomBgInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleApplyCustomBg(customBgInput);
+                  }}
+                  placeholder="#0a0a0c"
+                  className={`w-24 px-2 py-1 text-xs font-mono rounded-lg border outline-none ${
+                    isLight
+                      ? "bg-slate-100 border-slate-200 text-slate-800 focus:border-indigo-500"
+                      : "bg-neutral-950 border-neutral-800 text-neutral-200 focus:border-indigo-500"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleApplyCustomBg(customBgInput)}
+                  style={{ borderColor: `${accent.hex}66`, color: accent.hex }}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors ${
+                    isLight
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      : "bg-neutral-900 hover:bg-neutral-800 text-neutral-300"
+                  }`}
+                >
+                  Aplicar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Geometria e Arredondamento dos Botões */}
           <div className={`border rounded-2xl p-5 transition-colors backdrop-blur-sm ${cardBgClass}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className={`w-8 h-8 rounded-full border flex items-center justify-center ${iconBubbleClass}`}>
@@ -667,7 +940,7 @@ export function AppearanceView() {
             </div>
           </div>
 
-          {/* Card 4: Tamanho dos Botões (Escala de 1 a 10) */}
+          {/* Card 5: Tamanho dos Botões (Escala de 1 a 10) */}
           <div
             className={`border rounded-2xl px-5 py-4 flex items-center justify-between gap-3 transition-colors backdrop-blur-sm ${cardBgClass}`}
           >
@@ -736,7 +1009,7 @@ export function AppearanceView() {
             </div>
           </div>
 
-          {/* Card 5: Tipografia & Rótulos dos Botões */}
+          {/* Card 6: Tipografia & Rótulos dos Botões */}
           <div className={`border rounded-2xl p-5 transition-colors backdrop-blur-sm ${cardBgClass}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -754,6 +1027,7 @@ export function AppearanceView() {
               <Switch
                 checked={showLabels}
                 onCheckedChange={handleToggleLabels}
+                style={showLabels ? { backgroundColor: accent.hex } : undefined}
                 className={`data-[state=checked]:bg-emerald-500 ${
                   isLight
                     ? "data-[state=unchecked]:bg-slate-300 border-slate-300"
@@ -808,7 +1082,7 @@ export function AppearanceView() {
             )}
           </div>
 
-          {/* Card 6: Estilo de Ícones (Linha vs Preenchido) */}
+          {/* Card 7: Estilo de Ícones (Linha vs Preenchido) */}
           <div
             className={`border rounded-2xl px-5 py-4 flex items-center justify-between transition-colors backdrop-blur-sm ${cardBgClass}`}
           >
@@ -875,7 +1149,7 @@ export function AppearanceView() {
             </div>
           </div>
 
-          {/* Card 7: Resposta Tátil Mobile (Haptics) */}
+          {/* Card 8: Resposta Tátil Mobile (Haptics) */}
           <div className={`border rounded-2xl p-5 transition-colors backdrop-blur-sm ${cardBgClass}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -893,6 +1167,7 @@ export function AppearanceView() {
               <Switch
                 checked={vibrationEnabled}
                 onCheckedChange={handleToggleVibration}
+                style={vibrationEnabled ? { backgroundColor: accent.hex } : undefined}
                 className={`data-[state=checked]:bg-emerald-500 ${
                   isLight
                     ? "data-[state=unchecked]:bg-slate-300 border-slate-300"
@@ -951,7 +1226,7 @@ export function AppearanceView() {
       {/* Rodapé: Dica de Produtividade */}
       <footer className="mt-auto pt-8 pb-2 text-center">
         <p className={`text-xs leading-relaxed max-w-lg mx-auto ${textSecondaryClass}`}>
-          Dica: As preferências visuais e respostas táteis são sincronizadas em tempo real com todos os clientes móveis conectados.
+          Dica: As preferências visuais, paletas e cores de fundo personalizadas são sincronizadas em tempo real.
         </p>
       </footer>
     </div>

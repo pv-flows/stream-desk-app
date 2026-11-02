@@ -94,7 +94,7 @@ export function MobilePreview({
   const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
   const isAmoled = normalizedTheme === "amoled";
 
-  const activeAccentObj = getAccentColor(appearance?.accent_color, appearance?.custom_accent_hex);
+  const activeAccentObj = getAccentColor(appearance);
   const defaultThemeAccent = activeAccentObj.hex;
   const buttonRadiusClass = getButtonRadiusClass(appearance?.button_radius);
   const showLabels = appearance?.show_labels ?? true;
