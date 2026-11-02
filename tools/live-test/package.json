@@ -1,0 +1,14 @@
+{
+  "name": "stream-desk-live-test",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Harness de teste ao vivo do agente tester: dirige o app Tauri real via CDP (WebView2).",
+  "scripts": {
+    "probe": "node probe.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.56.0"
+  }
+}
+

@@ -8,15 +8,17 @@ Todo o ciclo (planejar → implementar → validar → versionar) acontece **den
 3. **Contrato primeiro:** comandos IPC (`invoke`) e eventos WebSocket novos são documentados em `docs/ARCHITECTURE.md` antes de serem consumidos.
 4. **Definição de Pronto:** veja `global_rules.md` §4. Nenhuma entrega sem os gates verdes.
 5. **Regras de base:** `global_rules.md` (Smart Server / Dumb Client, idioma, commits, segurança).
+6. **Prova ao vivo antes de entregar:** o `tester` (`.agents/tester.md`) opera o app real (`tools/live-test/`) contra critérios congelados. Nada é declarado "resolvido" sem `PASS`. **Anti-loop:** no máx. 3 ciclos corrigir→testar; falha idêntica 2× exige hipótese nova; estourou → entregar `NÃO RESOLVIDO` com evidência e uma pergunta.
 
 ## Formato obrigatório de encerramento
 Toda resposta que conclui uma tarefa de código termina com:
 
 ```
 [RELATÓRIO DE ENTREGA]
+0. Status: ✅ RESOLVIDO | ⚠️ PARCIAL (itens BLOCKED) | ❌ NÃO RESOLVIDO
 1. Entregue: (2–3 linhas sobre o que mudou e por quê)
 2. Arquivos: (lista curta de caminhos, com links)
-3. Validação: (resultado de cada gate: cargo check / npm run build / tsc --noEmit / teste manual)
+3. Validação: (resultado de cada gate: cargo check / npm run build / tsc --noEmit / teste ao vivo: cenário, n/n passos, ciclos k/3, evidência)
 4. Riscos e pendências: (débitos, fallbacks "Em breve", limitações conhecidas — ou "Nenhum")
 5. Próximo passo sugerido: (recomendação do orchestrator; marque [DECISÃO DO USUÁRIO] só se depender de produto)
 ```

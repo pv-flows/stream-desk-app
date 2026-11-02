@@ -1,0 +1,9 @@
+{
+  "name": "nav-check",
+  "steps": [
+    { "do": "click", "selector": "nav >> role=button[name='Aparência']", "label": "abrir Aparência" },
+    { "do": "expect", "selector": "role=heading[level=1]", "text": "Aparência", "label": "título mudou para Aparência" },
+    { "do": "click", "selector": "nav >> role=button[name='Conexão']", "label": "voltar para Conexão" },
+    { "do": "expect", "selector": "role=heading[level=1]", "text": "TEXTO-INEXISTENTE", "label": "falha proposital (valida evidência)" }
+  ]
+}

@@ -4,6 +4,11 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Added
+- **Agente `tester` e teste ao vivo (`tools/live-test/`)**:
+  - Persona `.agents/tester.md`: congela critérios de aceite em cenário, opera o app Tauri real (clique, digitação, arrasto, snapshot de acessibilidade, prints) e só libera a entrega com `PASS`.
+  - Harness `probe.mjs` (playwright-core via CDP do WebView2) + `start-app.ps1` / `stop-app.ps1`; evidência automática (snapshot + print) na falha.
+  - Orçamento anti-loop: 3 ciclos corrigir→testar, falha idêntica 2× exige hipótese nova, limites de prints/tempo; estourou → entrega `NÃO RESOLVIDO`.
+  - Pipeline, Definição de Pronto e `[RELATÓRIO DE ENTREGA]` (campo Status) atualizados.
 - **Épico E7 (Descoberta Automática de Rede na LAN - Zeroconf / UDP Beacon / HTTP Discovery)**:
   - Endpoints HTTP `/discovery` e `/health` no servidor Axum (`desktop/src-tauri/src/server.rs`) retornando metadados de pareamento (`app`, `name`, `ip`, `ws_url`).
   - Responder e beacon UDP na porta 8081 para anúncio e descoberta Zeroconf em tempo real na rede local.

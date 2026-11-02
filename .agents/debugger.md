@@ -20,6 +20,10 @@ Checagens adicionais:
 
 Se algum gate falhar: devolva ao `orchestrator` o erro exato (arquivo:linha + mensagem) e a camada responsável.
 
+Gates verdes **não** significam que o pedido foi resolvido: em seguida vem o gate ao vivo do `tester` (`.agents/tester.md`).
+
+> Quando o `tester` reportar a mesma falha 2× seguidas, você é acionado no Modo 2 com a evidência dele (snapshot/print/`consoleErrors`). Entregue uma hipótese de causa raiz **diferente** da já tentada, antes de qualquer nova correção.
+
 ## Modo 2 — Debug (causa raiz)
 Isole a falha numa das 4 camadas:
 1. **Mobile** (Expo/Zustand/PagerView): gestos, ciclo de vida, stale closures, layout.

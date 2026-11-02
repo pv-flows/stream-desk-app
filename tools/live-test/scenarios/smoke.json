@@ -1,0 +1,9 @@
+{
+  "name": "smoke",
+  "steps": [
+    { "do": "waitFor", "selector": "body", "label": "app carregou" },
+    { "do": "snapshot", "selector": "body", "maxChars": 2500, "label": "estrutura inicial da tela" },
+    { "do": "screenshot", "name": "inicial" }
+  ]
+}
+

@@ -11,6 +11,7 @@
 - `desktop/src-tauri/` → backend Rust (persona `backend_desktop`).
 - `mobile/` → cliente Expo (persona `frontend_mobile`).
 - `docs/` → arquitetura, changelog e TODO (persona `version_controller`).
+- `tools/live-test/` → harness de teste ao vivo (persona `tester`).
 - Dependências isoladas por projeto (`desktop/package.json`, `mobile/package.json`, `Cargo.toml`).
 
 ## 3. Padrões de Código
@@ -29,9 +30,12 @@ Uma tarefa só termina quando todos os gates aplicáveis estão verdes:
 | Rust compila | `cd desktop/src-tauri; cargo check` | Qualquer mudança em `src-tauri/` |
 | Frontend Desktop | `cd desktop; npm run build` | Qualquer mudança em `desktop/src/` |
 | Mobile typecheck | `cd mobile; npx tsc --noEmit` | Qualquer mudança em `mobile/` |
+| Teste ao vivo | `tools/live-test/probe.mjs` com cenário da tarefa → `PASS` | Toda mudança com efeito visível ou de comportamento (persona `tester`) |
 | Contrato | `docs/ARCHITECTURE.md` atualizado | Novo/alterado `invoke` ou evento WS |
 | Rastreio | `docs/CHANGELOG.md` + `docs/TODO.md` | Toda entrega de feature/fix |
 | Versionamento | Commit convencional atômico | Toda entrega |
+
+**Compilar não é resolver.** Sem `PASS` no teste ao vivo, a tarefa só pode ser entregue como `NÃO RESOLVIDO` (orçamento anti-loop esgotado) ou com itens `BLOCKED` acompanhados de roteiro de verificação manual. Orçamento: 3 ciclos corrigir→testar por tarefa (ver `.agents/tester.md`).
 
 ## 5. Versionamento
 - **Commits convencionais:** `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `perf:`, `test:` (escopo opcional: `feat(desktop): ...`).

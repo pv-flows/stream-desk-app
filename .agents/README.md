@@ -10,18 +10,24 @@ Personas especializadas usadas pelo Antigravity para o refinamento do monorepo. 
 | Backend Desktop | [backend_desktop.md](backend_desktop.md) | `desktop/src-tauri/` | Rust, IPC, SQLite, WebSocket, integração com o SO |
 | Frontend Designer | [frontend_designer.md](frontend_designer.md) | `desktop/src/` | React, Tailwind, shadcn/ui, Zustand |
 | Frontend Mobile | [frontend_mobile.md](frontend_mobile.md) | `mobile/` | Expo / React Native (dumb client) |
-| QA & Debugger | [debugger.md](debugger.md) | Todo o repo (correções mínimas) | Gates de qualidade e causa raiz |
+| QA & Debugger | [debugger.md](debugger.md) | Todo o repo (correções mínimas) | Gates estáticos (compila) e causa raiz |
+| Tester | [tester.md](tester.md) | `tools/live-test/` | Opera o app real (clica, arrasta, prints, snapshot) e dá o veredito PASS/FAIL |
 | Version Controller | [version_controller.md](version_controller.md) | `docs/` + git | Changelog, TODO, commits, relatório |
 
 ## Pipeline padrão
 
 ```
-Usuário → orchestrator (plano + contrato)
+Usuário → orchestrator (critérios observáveis + plano + contrato)
+        → tester (congela critérios em cenário; bug: reproduz a falha)
         → backend_desktop → frontend_designer / frontend_mobile
-        → debugger (QA gate)  ──falhou──▶ volta para a camada responsável
-        → version_controller (docs + commit + push)
+        → debugger (gate estático)  ──falhou──▶ volta para a camada responsável
+        → tester (gate ao vivo)     ──FAIL──▶ volta para a camada (máx. 3 ciclos)
+                                    ──orçamento estourado──▶ entrega "NÃO RESOLVIDO" + pergunta
+        → version_controller (docs + commit + push)   [só com PASS]
         → [RELATÓRIO DE ENTREGA] ao usuário
 ```
+
+**Orçamento anti-loop:** 3 ciclos corrigir→testar por tarefa; falha idêntica 2× seguidas proíbe repetir a abordagem; máx. 2 prints abertos por ciclo (snapshot em texto primeiro). Detalhes em [tester.md](tester.md).
 
 ## Modos de execução
 - **Solo:** tarefa em 1 camada e ≤ 3 arquivos → o agente principal assume a persona e executa direto.
