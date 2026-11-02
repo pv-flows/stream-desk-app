@@ -4,6 +4,10 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Fixed
+- **Trava de Responsividade e Proteção da Sidebar**:
+  - Implementação de trava estrita de expansão da `Sidebar.tsx` quando `window.innerWidth < 1100px` (ou proporção de tela <= 4:3.4), assegurando largura saudável contínua para a Área Central e o Mobile Preview (`320px`).
+  - Auto-colapso automático ao redimensionar para baixo de 1100px e desativação do botão de expansão (`disabled`, estilo pontilhado e opacidade atenuada com tooltip explicativo `"Aumente a largura da janela para expandir o menu"`).
+  - Restauração dinâmica e automática do controle de alternância manual quando a janela atinge `>= 1100px`.
 - **Limpeza Visual e Polimento na Tela "Páginas e Botões"**:
   - Remoção do badge técnico `"D&D + IPC Active"` e da etiqueta redundante `"Página ID: #X"`.
   - Remoção do indicador redundante de slots no header (`"{pageButtons.length} slots"`), mantendo a linha de busca limpa e despoluída.

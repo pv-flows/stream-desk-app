@@ -60,8 +60,8 @@ export function Sidebar({
 
   const accent = getAccentColor(appearance);
 
-  // Detecção de proporção quadrada ou 4:3 (aspect ratio <= 1.35 ou largura <= 1040px)
-  const [isAutoCompact, setIsAutoCompact] = useState(false);
+  // Detecção de largura insuficiente para expansão (< 1100px) ou proporção muito compacta
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const [manualOverride, setManualOverride] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -69,9 +69,9 @@ export function Sidebar({
       const width = window.innerWidth;
       const height = window.innerHeight;
       const ratio = width / (height || 1);
-      // Ao achatar a tela para proporção 4:3.5 ou limite horizontal de segurança, recolhe liberando espaço
-      const isSquareOrCompact = ratio <= (4 / 3.4) || width <= 1040;
-      setIsAutoCompact(isSquareOrCompact);
+      // Ponto de corte seguro: 240px (Sidebar) + 540px (Área Central min) + 320px (Mobile Preview) = 1100px
+      const isNarrowOrSquare = width < 1100 || ratio <= (4 / 3.4);
+      setIsNarrowViewport(isNarrowOrSquare);
     };
 
     checkViewportRatio();
@@ -79,11 +79,13 @@ export function Sidebar({
     return () => window.removeEventListener("resize", checkViewportRatio);
   }, []);
 
-  const isCollapsed = manualOverride !== null ? manualOverride : isAutoCompact;
+  // Quando a janela está comprimida (< 1100px), a Sidebar é obrigatoriamente colapsada
+  const isCollapsed = isNarrowViewport ? true : (manualOverride !== null ? manualOverride : false);
 
   const toggleCollapsed = () => {
+    if (isNarrowViewport) return; // Bloqueio estrito de expansão em dimensões insuficientes
     setHoveredTag(null);
-    setManualOverride((prev) => (prev !== null ? !prev : !isAutoCompact));
+    setManualOverride((prev) => (prev !== null ? !prev : true));
   };
 
   // Estado da Tag Flutuante (Tooltip) ativo exclusivamente durante o recolhimento
@@ -234,9 +236,26 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={toggleCollapsed}
-                onMouseEnter={(e) => handleMouseEnter("Expandir menu lateral", e)}
+                disabled={isNarrowViewport}
+                title={
+                  isNarrowViewport
+                    ? "Aumente a largura da janela para expandir o menu"
+                    : "Expandir menu lateral"
+                }
+                onMouseEnter={(e) =>
+                  handleMouseEnter(
+                    isNarrowViewport
+                      ? "Aumente a largura da janela para expandir"
+                      : "Expandir menu lateral",
+                    e
+                  )
+                }
                 onMouseLeave={handleMouseLeave}
-                className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all shadow-sm cursor-pointer ${
+                className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all shadow-sm ${
+                  isNarrowViewport
+                    ? "opacity-50 cursor-not-allowed border-dashed"
+                    : "cursor-pointer hover:scale-105 active:scale-95"
+                } ${
                   isLight
                     ? "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"

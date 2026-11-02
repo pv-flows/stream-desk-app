@@ -1,0 +1,17 @@
+{
+  "name": "sidebar-responsive-lock-check",
+  "continueOnFail": false,
+  "steps": [
+    { "do": "viewport", "width": 1280, "height": 800, "label": "viewport amplo (1280x800)" },
+    { "do": "wait", "ms": 500 },
+    { "do": "eval", "label": "verificar sidebar expandida e botão habilitado", "js": "(() => { const aside = document.querySelector('aside'); const btn = aside.querySelector('button[title*=\"barra lateral\"], button[title*=\"menu lateral\"]'); return JSON.stringify({ width: aside.clientWidth, isCollapsed: aside.clientWidth < 100, disabled: btn ? btn.disabled : null }); })()" },
+    { "do": "viewport", "width": 950, "height": 700, "label": "viewport comprimido (950x700)" },
+    { "do": "wait", "ms": 500 },
+    { "do": "eval", "label": "verificar auto-colapso e botão desabilitado com tooltip", "js": "(() => { const aside = document.querySelector('aside'); const btn = aside.querySelector('button[title*=\"Aumente a largura\"], button[title*=\"menu\"]'); return JSON.stringify({ width: aside.clientWidth, isCollapsed: aside.clientWidth < 100, disabled: btn ? btn.disabled : null, title: btn ? btn.getAttribute('title') : null }); })()" },
+    { "do": "screenshot", "name": "sidebar-locked-narrow-viewport" },
+    { "do": "viewport", "width": 1280, "height": 800, "label": "restaurar viewport amplo (1280x800)" },
+    { "do": "wait", "ms": 500 },
+    { "do": "eval", "label": "verificar desbloqueio em viewport amplo", "js": "(() => { const aside = document.querySelector('aside'); const btn = aside.querySelector('button'); return JSON.stringify({ width: aside.clientWidth, disabled: btn ? btn.disabled : null }); })()" },
+    { "do": "overflowCheck", "label": "sem extravasamento", "max": 0 }
+  ]
+}
