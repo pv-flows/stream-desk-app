@@ -455,13 +455,15 @@ export function CentralArea({
                             </div>
 
                             {showLabels && (
-                              <div className="mt-3">
-                                <h4 className={`font-semibold tracking-tight ${labelFontSizeClass} ${isLight ? "text-slate-800" : "text-neutral-100"}`}>
+                              <div className="mt-auto pt-2 min-w-0">
+                                <h4
+                                  title={btn.label}
+                                  className={`font-semibold tracking-tight truncate w-full ${labelFontSizeClass.title} ${
+                                    isLight ? "text-slate-800" : "text-neutral-100"
+                                  }`}
+                                >
                                   {btn.label}
                                 </h4>
-                                <code className={`text-[10px] font-mono truncate block mt-0.5 ${isLight ? "text-slate-500" : "text-neutral-400"}`}>
-                                  {btn.action_name}
-                                </code>
                               </div>
                             )}
                           </Card>

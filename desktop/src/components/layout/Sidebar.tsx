@@ -69,9 +69,9 @@ export function Sidebar({
       const width = window.innerWidth;
       const height = window.innerHeight;
       const ratio = width / (height || 1);
-      // Ao achatar a tela para formato quadrado ou 4:3, recolhe liberando espaço
-      const isSquareOr4x3 = ratio <= 1.35 || width <= 1040;
-      setIsAutoCompact(isSquareOr4x3);
+      // Ao achatar a tela para proporção 4:3.5 ou limite horizontal de segurança, recolhe liberando espaço
+      const isSquareOrCompact = ratio <= (4 / 3.4) || width <= 1080;
+      setIsAutoCompact(isSquareOrCompact);
     };
 
     checkViewportRatio();

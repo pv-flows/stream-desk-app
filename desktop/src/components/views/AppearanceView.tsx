@@ -596,10 +596,10 @@ export function AppearanceView() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {[
-                { id: "sistema", label: "Sistema (Auto)", icon: Monitor, desc: "Segue o SO" },
-                { id: "escuro", label: "Escuro", icon: Moon, desc: "Padrão escuro" },
-                { id: "claro", label: "Claro", icon: Sun, desc: "Luminoso" },
-                { id: "amoled", label: "AMOLED", icon: Flame, desc: "Preto puro #000" },
+                { id: "sistema", label: "Sistema (Auto)", icon: Monitor },
+                { id: "escuro", label: "Escuro", icon: Moon },
+                { id: "claro", label: "Claro", icon: Sun },
+                { id: "amoled", label: "AMOLED", icon: Flame },
               ].map((t) => {
                 const isSelected = rawTheme === t.id;
                 const IconComp = t.icon;
@@ -616,7 +616,7 @@ export function AppearanceView() {
                           }
                         : undefined
                     }
-                    className={`border rounded-xl p-3 flex flex-col items-start gap-1.5 transition-all text-left relative ${
+                    className={`border rounded-xl p-3 flex items-center gap-2.5 transition-all text-left relative ${
                       isSelected
                         ? "shadow-sm"
                         : isLight
@@ -627,17 +627,14 @@ export function AppearanceView() {
                     {isSelected && (
                       <span
                         style={{ backgroundColor: accent.hex }}
-                        className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full"
+                        className="absolute top-2 right-2 w-2 h-2 rounded-full"
                       />
                     )}
                     <IconComp
-                      className="w-4 h-4"
+                      className="w-4 h-4 flex-shrink-0"
                       style={{ color: isSelected ? accent.hex : undefined }}
                     />
-                    <div>
-                      <div className={`text-xs font-semibold ${textPrimaryClass}`}>{t.label}</div>
-                      <div className={`text-[10px] ${textSecondaryClass}`}>{t.desc}</div>
-                    </div>
+                    <span className={`text-xs font-semibold truncate ${textPrimaryClass}`}>{t.label}</span>
                   </button>
                 );
               })}
@@ -893,9 +890,9 @@ export function AppearanceView() {
 
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: "sharp", label: "Reto", radius: "rounded-md", desc: "Cantos de 6px" },
-                { id: "smooth", label: "Suave", radius: "rounded-xl", desc: "Padrão de 12px" },
-                { id: "pill", label: "Pílula", radius: "rounded-3xl", desc: "Curva de 24px" },
+                { id: "sharp", label: "Reto", radius: "rounded-md" },
+                { id: "smooth", label: "Suave", radius: "rounded-xl" },
+                { id: "pill", label: "Pílula", radius: "rounded-3xl" },
               ].map((item) => {
                 const isSelected = buttonRadius === item.id;
                 return (
@@ -930,10 +927,7 @@ export function AppearanceView() {
                     >
                       {isSelected && <Check className="w-3.5 h-3.5" style={{ color: accent.hex }} />}
                     </div>
-                    <div className="text-center">
-                      <div className={`text-xs font-semibold ${textPrimaryClass}`}>{item.label}</div>
-                      <div className={`text-[10px] ${textSecondaryClass}`}>{item.desc}</div>
-                    </div>
+                    <span className={`text-xs font-semibold ${textPrimaryClass}`}>{item.label}</span>
                   </button>
                 );
               })}

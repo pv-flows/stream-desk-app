@@ -92,7 +92,7 @@ export function App() {
   return (
     <div
       style={appearance?.custom_bg_hex ? { backgroundColor: appearance.custom_bg_hex } : undefined}
-      className={`h-screen w-screen flex ${appBgClass} overflow-hidden min-w-[720px] min-h-[520px] transition-colors duration-200`}
+      className={`h-screen w-screen flex ${appBgClass} overflow-hidden min-w-[800px] min-h-[540px] transition-colors duration-200`}
     >
       {/* 1. Barra Lateral de Navegação (recolhível automaticamente em 4:3 ou sob demanda) */}
       <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />

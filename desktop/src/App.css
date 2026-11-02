@@ -52,10 +52,60 @@
 @layer base {
   * {
     @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(160, 160, 160, 0.25) transparent;
   }
   body {
     @apply bg-neutral-950 text-neutral-100 antialiased selection:bg-sky-500/30 selection:text-white;
   }
+}
+
+/* ==========================================================================
+   Barras de rolagem globais minimalistas (5px) com adaptação automática ao tema
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(160, 160, 160, 0.22);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 160, 160, 0.42);
+}
+
+/* Modo escuro e AMOLED */
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+/* Modo claro */
+.light * {
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.36);
 }
 
 /* Utilitário para ocultar barras de rolagem mantendo a navegação ativa */
