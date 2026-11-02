@@ -187,11 +187,14 @@ export function Sidebar({
   return (
     <>
       <aside
+        style={appearance?.custom_bg_hex ? { backgroundColor: appearance.custom_bg_hex } : undefined}
         className={`${
           isCollapsed
             ? "w-[68px] min-w-[68px] max-w-[68px]"
             : "w-[240px] min-w-[240px] max-w-[240px]"
-        } flex-shrink-0 flex flex-col border-r ${sidebarBg} backdrop-blur-md select-none transition-all duration-200 ease-in-out relative z-30 overflow-x-hidden no-scrollbar`}
+        } flex-shrink-0 flex flex-col border-r ${
+          appearance?.custom_bg_hex ? (isLight ? "text-slate-800" : "text-white") : sidebarBg
+        } backdrop-blur-md select-none transition-all duration-200 ease-in-out relative z-30 overflow-x-hidden no-scrollbar`}
       >
         {/* Header com Branding e Botão Harmônico para Ativar/Desarmar Accordion */}
         <div className={`h-14 flex-shrink-0 px-3 flex items-center justify-between border-b ${borderColor} overflow-hidden`}>
@@ -536,8 +539,17 @@ export function Sidebar({
 
         {/* Sidebar Footer com IP Real */}
         <div
+          style={appearance?.custom_bg_hex ? { backgroundColor: appearance.custom_bg_hex } : undefined}
           className={`p-3 border-t ${borderColor} ${
-            isLight ? "bg-slate-50 text-slate-600" : isAmoled ? "bg-black text-neutral-400" : "bg-neutral-950/40 text-neutral-400"
+            appearance?.custom_bg_hex
+              ? isLight
+                ? "text-slate-600"
+                : "text-neutral-400"
+              : isLight
+              ? "bg-slate-50 text-slate-600"
+              : isAmoled
+              ? "bg-black text-neutral-400"
+              : "bg-neutral-950/40 text-neutral-400"
           } flex items-center ${
             isCollapsed ? "justify-center" : "justify-between"
           } text-xs overflow-hidden flex-shrink-0`}

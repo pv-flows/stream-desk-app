@@ -1,0 +1,21 @@
+{
+  "name": "theme-engine-sync-check",
+  "continueOnFail": false,
+  "steps": [
+    { "do": "click", "selector": "nav >> role=button[name='Aparência']", "label": "navegar para Aparência" },
+    { "do": "wait", "ms": 500 },
+    { "do": "click", "selector": "role=button[name=/^Claro/]", "label": "selecionar modo Claro" },
+    { "do": "wait", "ms": 600 },
+    { "do": "eval", "label": "verificar estado Claro em Sidebar, Central e MobilePreview", "js": "(() => { const side = document.querySelector('aside'); const preview = document.querySelectorAll('aside')[1]; const main = document.querySelector('main') || document.querySelector('h1').closest('div'); return JSON.stringify({ isLight: document.documentElement.classList.contains('light'), sideColor: getComputedStyle(side).color, previewColor: getComputedStyle(preview).color }); })()" },
+    { "do": "screenshot", "name": "theme-light-sync" },
+    { "do": "click", "selector": "role=button[name=/^AMOLED/]", "label": "selecionar modo AMOLED" },
+    { "do": "wait", "ms": 600 },
+    { "do": "eval", "label": "verificar preto absoluto AMOLED em Sidebar, Central e MobilePreview", "js": "(() => { const side = document.querySelector('aside'); const preview = document.querySelectorAll('aside')[1]; const root = document.querySelector('#root > div'); return JSON.stringify({ isAmoled: document.documentElement.classList.contains('amoled'), sideBg: getComputedStyle(side).backgroundColor, previewBg: getComputedStyle(preview).backgroundColor, rootBg: getComputedStyle(root).backgroundColor }); })()" },
+    { "do": "screenshot", "name": "theme-amoled-sync" },
+    { "do": "click", "selector": "role=button[name=/^Escuro/]", "label": "selecionar modo Escuro" },
+    { "do": "wait", "ms": 600 },
+    { "do": "eval", "label": "verificar modo Escuro", "js": "(() => { const side = document.querySelector('aside'); const root = document.querySelector('#root > div'); return JSON.stringify({ isDark: document.documentElement.classList.contains('dark'), rootBg: getComputedStyle(root).backgroundColor }); })()" },
+    { "do": "screenshot", "name": "theme-escuro-sync" },
+    { "do": "overflowCheck", "label": "sem extravasamento", "max": 0 }
+  ]
+}

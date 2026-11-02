@@ -58,14 +58,19 @@ export interface BgPreset {
 }
 
 export const BG_PRESETS: BgPreset[] = [
+  // Presets Escuros (Dark)
   { id: "dark_studio", label: "Estúdio Grafite", hex: "#0a0a0c", isLight: false },
-  { id: "amoled_pure", label: "AMOLED Puro", hex: "#000000", isLight: false },
   { id: "midnight", label: "Azul Meia-Noite", hex: "#0b101b", isLight: false },
   { id: "slate_dark", label: "Ardósia Escura", hex: "#0f172a", isLight: false },
   { id: "charcoal", label: "Carvão Zinc", hex: "#18181b", isLight: false },
   { id: "matte_grey", label: "Cinza Fosco", hex: "#22252a", isLight: false },
+  // Preset AMOLED (Preto Puro)
+  { id: "amoled_pure", label: "AMOLED Puro", hex: "#000000", isLight: false },
+  // Presets Claros (Light)
   { id: "slate_light", label: "Névoa Clara", hex: "#f8fafc", isLight: true },
   { id: "pure_white", label: "Branco Puro", hex: "#ffffff", isLight: true },
+  { id: "warm_gray", label: "Cinza Suave", hex: "#f3f4f6", isLight: true },
+  { id: "soft_zinc", label: "Gelo Zinc", hex: "#f4f4f5", isLight: true },
 ];
 
 export function isHexColorLight(hex?: string | null): boolean {

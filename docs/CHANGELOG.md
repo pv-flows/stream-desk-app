@@ -4,6 +4,10 @@ Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 ### Fixed
+- **Refatoração do Motor de Temas e Sincronização de Fundos**:
+  - `AppearanceView.tsx`: catálogo de presets de cor de fundo agora filtra dinamicamente de acordo com o modo de tema ativo (`Claro`, `Escuro` e `AMOLED`).
+  - Ao alternar entre temas macro, o fundo personalizado é resetado automaticamente para o padrão correspondente (evitando conflito de contraste com texto claro em fundo claro ou vice-versa). Em modo AMOLED, força `#000000` em toda a interface.
+  - Sincronização visual em tempo real nos três componentes mestres: `Sidebar.tsx`, `CentralArea.tsx` e `MobilePreview.tsx` (incluindo o chassi e a tela interna do smartphone simulado), garantindo paridade estética total.
 - **Trava de Responsividade e Proteção da Sidebar**:
   - Implementação de trava estrita de expansão da `Sidebar.tsx` quando `window.innerWidth < 1100px` (ou proporção de tela <= 4:3.4), assegurando largura saudável contínua para a Área Central e o Mobile Preview (`320px`).
   - Auto-colapso automático ao redimensionar para baixo de 1100px e desativação do botão de expansão (`disabled`, estilo pontilhado e opacidade atenuada com tooltip explicativo `"Aumente a largura da janela para expandir o menu"`).

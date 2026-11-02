@@ -113,9 +113,19 @@ export function AppearanceView() {
 
   const handleThemeChange = async (novoTema: "sistema" | "escuro" | "claro" | "amoled") => {
     try {
-      await setAppearance({ theme: novoTema, custom_bg_hex: null });
-      setCustomBgInput("#0a0a0c");
-      document.documentElement.style.removeProperty("--app-bg-custom");
+      // Ao alternar tema macro, redefine o fundo para o padrão daquele modo para evitar conflitos de contraste
+      let defaultBgForTheme: string | null = null;
+      if (novoTema === "amoled") {
+        defaultBgForTheme = "#000000";
+      }
+
+      await setAppearance({ theme: novoTema, custom_bg_hex: defaultBgForTheme });
+      setCustomBgInput(defaultBgForTheme || (novoTema === "claro" ? "#f8fafc" : "#0a0a0c"));
+      if (defaultBgForTheme) {
+        document.documentElement.style.setProperty("--app-bg-custom", defaultBgForTheme);
+      } else {
+        document.documentElement.style.removeProperty("--app-bg-custom");
+      }
       toast({
         title: "Tema Atualizado",
         description: `Modo "${novoTema.toUpperCase()}" aplicado com sucesso.`,
@@ -786,9 +796,17 @@ export function AppearanceView() {
               )}
             </div>
 
-            {/* Presets de Cor de Fundo */}
+            {/* Presets de Cor de Fundo Dinâmicos Filtrados por Modo */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pb-3">
-              {BG_PRESETS.map((bgOpt) => {
+              {BG_PRESETS.filter((bgOpt) => {
+                if (resolvedTheme === "amoled") {
+                  return bgOpt.id === "amoled_pure";
+                }
+                if (isLight) {
+                  return bgOpt.isLight;
+                }
+                return !bgOpt.isLight && bgOpt.id !== "amoled_pure";
+              }).map((bgOpt) => {
                 const isSelected = customBgHex?.toLowerCase() === bgOpt.hex.toLowerCase();
                 return (
                   <button

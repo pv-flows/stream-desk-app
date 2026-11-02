@@ -20,6 +20,7 @@ import {
   resolveAccentColorHex,
   getAccentColor,
   getButtonRadiusClass,
+  isHexColorLight,
 } from "@/lib/buttonUtils";
 
 export interface MobilePreviewProps {
@@ -91,8 +92,14 @@ export function MobilePreview({
   const appearance = useDashboardStore((s) => s.appearance);
 
   const normalizedTheme = (appearance?.theme || theme || "escuro").toLowerCase();
-  const isLight = normalizedTheme === "claro" || normalizedTheme === "light";
-  const isAmoled = normalizedTheme === "amoled";
+  const customBgHex = appearance?.custom_bg_hex || null;
+  const isCustomBg = Boolean(customBgHex);
+  const isCustomBgLight = isCustomBg ? isHexColorLight(customBgHex) : false;
+
+  const isLight = isCustomBg
+    ? isCustomBgLight
+    : normalizedTheme === "claro" || normalizedTheme === "light";
+  const isAmoled = !isCustomBg && normalizedTheme === "amoled";
 
   const activeAccentObj = getAccentColor(appearance);
   const defaultThemeAccent = activeAccentObj.hex;
@@ -108,8 +115,11 @@ export function MobilePreview({
     .filter((btn) => btn.page_index === activePageIndex)
     .sort((a, b) => a.position - b.position);
 
-  // Estilos de fundo sincronizados com o app mobile
-  const screenBgClass = isLight
+  const screenBgClass = isCustomBg
+    ? isCustomBgLight
+      ? "text-slate-900"
+      : "text-white"
+    : isLight
     ? "bg-gradient-to-br from-slate-100 via-white to-indigo-50 text-slate-900"
     : isAmoled
     ? "bg-black text-white"
@@ -122,8 +132,13 @@ export function MobilePreview({
 
   return (
     <aside
+      style={customBgHex ? { backgroundColor: customBgHex } : undefined}
       className={`w-[320px] min-w-[320px] max-w-[320px] flex-shrink-0 flex flex-col border-l ${
-        isLight
+        customBgHex
+          ? isLight
+            ? "border-slate-200 text-slate-800"
+            : "border-neutral-800/80 text-white"
+          : isLight
           ? "bg-white/95 border-slate-200 text-slate-800"
           : isAmoled
           ? "bg-black border-neutral-900 text-white"
@@ -203,6 +218,7 @@ export function MobilePreview({
 
           {/* Simulated Phone Screen Content */}
           <div
+            style={customBgHex ? { backgroundColor: customBgHex } : undefined}
             className={`flex-1 rounded-[1.8rem] p-2.5 flex flex-col justify-between overflow-hidden relative transition-colors duration-300 ${screenBgClass}`}
           >
             {/* Grade flex adaptativa sincronizada com o app mobile:
