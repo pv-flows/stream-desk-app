@@ -46,3 +46,5 @@
 - [x] **E6** Integração OBS WebSocket v5 (primeira integração real em `IntegrationsView.tsx`).
 - [x] **E7** Descoberta de rede mDNS/Zeroconf (item 2 acima).
 - [x] **E8** Limpeza técnica: remover `ButtonEditorView.tsx` órfão e aplicar code-splitting (bundle > 500 kB).
+- [x] **E9** Catálogo categorizado de 125 ícones Lucide (tree-shaking preservado) com paridade total Mobile/Desktop e compactação zero-scroll do `ButtonEditorSheet`.
+- [ ] **E10** Paridade Visual e UX Mobile: sincronização completa das 12 propriedades de aparência e eliminação de logs/erros na tela do celular.

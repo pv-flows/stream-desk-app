@@ -3,6 +3,20 @@
 Todas as mudanças relevantes no projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
+### Added
+- **Catálogo Categorizado de 125 Ícones Lucide (`desktop/src/lib/iconCatalog.ts` e `mobile/src/components/MobileIcon.tsx`)**:
+  - Catálogo tipado contendo 125 ícones essenciais importados individualmente para preservar 100% de *tree-shaking* (chunk `vendor-lucide` em apenas 45.75 kB / 15.27 kB gzipped).
+  - Organização em 6 categorias completas: `Mídia & Áudio` (24), `Navegação & Redes` (20), `Automação & Dev` (23), `Sistema & Dispositivos` (19), `Produtividade & Arquivos` (19) e `Smart Home & Utilitários` (20).
+  - Resolução O(1) via mapa no Desktop (`desktop/src/lib/buttonUtils.ts`) e paridade total no Mobile via `lucide-react-native` (`mobile/src/components/MobileIcon.tsx`), mantendo retrocompatibilidade com aliases legados e fallback seguro para `Zap`.
+  - Suporte a ícones nativos do Windows extraídos em Base64 através do scanner de binários.
+### Changed
+- **Compactação Vertical e UX Zero-Scroll no `ButtonEditorSheet.tsx`**:
+  - Reestruturação do layout do formulário eliminando qualquer rolagem externa no modal: cabeçalho, campos e rodapé compactados cabem 100% na altura da viewport padrão.
+  - Grade de ícones com altura travada em exatamente 3 linhas visíveis (`h-[132px]`) com rolagem interna funcional e scrollbar estilizada discreta.
+  - Barra de busca instantânea compacta (`h-7`) filtrando por nome, identificador e palavras-chave PT/EN, acompanhada de pills horizontais de categoria e toggle para alternar entre ícone executável nativo (Base64) e ícones Lucide.
+- **Harness de Teste ao Vivo (`tools/live-test/probe.mjs`)**:
+  - Tratamento preventivo em `truncate` para retornos `undefined` em avaliações JS (`page.evaluate`), assegurando estabilidade em asserções booleanas.
+  - Criação do cenário automatizado `icon-catalog-compact-sheet-check.json` validando zero-scroll, 3 linhas na grade, busca, filtros e persistência.
 ### Fixed
 - **Refatoração do Motor de Temas e Sincronização de Fundos**:
   - `AppearanceView.tsx`: catálogo de presets de cor de fundo agora filtra dinamicamente de acordo com o modo de tema ativo (`Claro`, `Escuro` e `AMOLED`).
